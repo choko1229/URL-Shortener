@@ -25,6 +25,40 @@
 
 > 要件定義では Laravel 11 でしたが、11.x はサポート終了かつ未修正の脆弱性（CVE-2026-48019）があるため 12 を採用しています。
 
+## サーバーへのインストール（WordPress と同じ手順）
+
+サーバー側で Composer や Node.js を使う必要はありません。
+
+1. [Releases](https://github.com/choko1229/URL-Shortener/releases) から `chok-ooo-vX.X.X.zip` をダウンロードして展開する
+2. サーバーの管理画面で MySQL 8.0 のデータベースとユーザーを作成する（文字コード utf8mb4）
+3. 展開した `chok-ooo` フォルダの**中身**を、FTP で公開フォルダ（例: `public_html`）に丸ごとアップロードする
+4. `chok.ooo` / `dash.chok.ooo` / `api.chok.ooo` / `redirect.chok.ooo` の公開フォルダを、すべて手順3のフォルダに向ける
+5. ブラウザで `https://chok.ooo/` を開き、表示されるセットアップ画面に沿って進める
+   1. 動作環境の確認（PHP・拡張モジュール・書き込み権限・設定ファイルが外から見えないこと）
+   2. データベースの接続情報を入力
+   3. ドメインと Discord の Client ID / Secret（任意）を入力 → テーブル作成・初期データ登録まで自動で完了
+
+> **注意**: WordPress と同様、セットアップが完了するまでは誰でもセットアップ画面を操作できます。アップロードしたら、すぐに最後まで進めてください。
+
+### 設置に関する補足
+
+- 公開フォルダの直下に置いた場合、直下の `.htaccess` がすべてのリクエストを `public/` へ転送し、`.env` などへの直接アクセスを防ぎます。Apache の mod_rewrite と `.htaccess`（AllowOverride）が必要です。
+- 管理画面で公開フォルダを `public/` に指定できる場合は、そちらのほうがより安全です（同じ zip のままで動きます）。
+- nginx など `.htaccess` を使えないサーバーでは、必ず公開フォルダを `public/` に指定してください。
+- セットアップ時に `.env`（DB パスワードと暗号鍵 APP_KEY を含む）が自動生成されます。バックアップを取り、他人に渡さないでください。
+- 設定をやり直す場合は `storage/app/private/installed.json` を削除すると、セットアップ画面が再び開きます。
+- SSH が使える場合は、`.env` を直接編集したうえで `php artisan app:install` でもセットアップできます。
+
+### 配布用 zip の作り方
+
+`vYY.MM.patch` 形式のタグ（例: `v26.9.0`）を push すると、GitHub Actions がテストを実行し、`vendor/` とビルド済みアセットを同梱した zip を Releases に添付します（`.github/workflows/release.yml`）。
+
+手元で作る場合は次のコマンドを実行します（`build/release/` に出力。Composer と Node.js が必要）。
+
+```bash
+bash scripts/build-release.sh v26.9.0
+```
+
 ## ローカル開発環境のセットアップ
 
 必要なもの: PHP 8.2 以上（`curl` `fileinfo` `mbstring` `openssl` `pdo_sqlite` `pdo_mysql` `zip` 拡張）、Composer 2、Node.js 20 以上
@@ -57,10 +91,10 @@ SHORTENER_REDIRECT_DOMAIN=redirect.localhost
 SHORTENER_SHORT_URL_BASE=http://localhost:8000
 ```
 
-データベースを作成し、予約語の初期データを投入します。
+データベースの作成・予約語の初期データ投入を行い、インストール済みとして記録します（記録が無いとセットアップ画面へ転送されます）。
 
 ```bash
-php artisan migrate --seed
+php artisan app:install
 ```
 
 アセットをビルドして開発サーバーを起動します（開発中は `npm run build` の代わりに `npm run dev` も使えます）。
@@ -114,8 +148,9 @@ app/
 │   │   ├── Main/           # chok.ooo
 │   │   ├── Dashboard/      # dash.chok.ooo
 │   │   └── Preview/        # local 専用プレビュー
-│   ├── Middleware/         # セキュリティヘッダー
+│   ├── Middleware/         # セキュリティヘッダー、未インストール時のセットアップ画面への誘導
 │   └── Requests/           # 入力検証
+├── Installer/              # Web インストーラ（.env 生成・動作環境確認・DB 接続確認・セットアップ処理）
 ├── Models/
 ├── Policies/               # 削除権限など
 ├── Services/Dashboard/     # ダッシュボード表示データの組み立て（参照のみ）
@@ -132,8 +167,10 @@ resources/
     ├── dashboard/          # ダッシュボード
     └── errors/             # エラーページ
 routes/
-├── web.php                 # サブドメインごとのルート
+├── web.php                 # サブドメインごとのルート、セットアップ画面（/install）
 └── preview.php             # local 専用プレビュー
+scripts/                    # 配布用 zip の作成
+.htaccess / index.php       # 公開フォルダ直下に設置した場合の転送設定・案内ページ
 ```
 
 ## 実装状況
@@ -144,6 +181,7 @@ routes/
 - デザイントークン（Tailwind CSS）と共通コンポーネント
 - マイグレーション・モデル（users / short_urls / short_url_clicks / reserved_words / app_settings）
 - 発行フォームの入力検証、削除の権限チェック、セキュリティヘッダー
+- Web インストーラ（ファイル設置 → ブラウザでセットアップ）と配布用 zip の自動作成
 
 未実装（バックエンド）
 
@@ -152,7 +190,7 @@ routes/
 - QRコード生成、削除・スラッグ編集、削除用トークンによる削除
 - リダイレクトフロー（中間ページ・パスワード保護とロックアウト・Safe Browsing チェック・期限切れページ・アクセス記録）
 - 統計詳細、管理画面（APIキー・予約語・ユーザー・設定）、退会
-- API、初期セットアップウィザード、自動アップデート機構
+- API、自動アップデート機構
 
 ## セキュリティに関する注意
 
