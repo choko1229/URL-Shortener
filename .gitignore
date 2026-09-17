@@ -43,6 +43,8 @@ id_ed25519*
 /vendor
 /node_modules
 /public/build
+# 配布用 zip の作業ディレクトリ（scripts/build-release.sh）
+/build/
 /public/hot
 /public/storage
 /storage/pail
