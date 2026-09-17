@@ -19,6 +19,9 @@ class ReservedWordSeeder extends Seeder
         'system' => [
             'api', 'admin', 'kanri', 'dashboard', 'dash', 'redirect', 'www', 'mail', 'ftp', 'cdn',
             'app', 'static', 'assets', 'cron', 'cli', 'root', 'system', 'sys',
+            // アプリのルート・設置フォルダ内のディレクトリと衝突する語
+            'install', 'shorten', 'links', 'build', 'public', 'storage', 'vendor', 'bootstrap',
+            'config', 'database', 'resources', 'routes', 'tests', 'scripts', 'node_modules',
         ],
         'auth' => [
             'login', 'logout', 'register', 'signup', 'signin', 'signout', 'auth', 'oauth', 'callback',

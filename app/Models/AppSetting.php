@@ -19,6 +19,11 @@ use JsonException;
  */
 class AppSetting extends Model
 {
+    public const DISCORD_CLIENT_ID = 'discord.client_id';
+
+    // APP_KEY で暗号化して保存する（requirements.md 7-2, 10）
+    public const DISCORD_CLIENT_SECRET = 'discord.client_secret';
+
     /** @var list<string> */
     protected $fillable = [
         'key',
@@ -48,6 +53,20 @@ class AppSetting extends Model
         $setting = static::query()->where('key', $key)->first();
 
         return $setting?->decodedValue();
+    }
+
+    /**
+     * 設定値を保存する（既存のキーは上書き）
+     *
+     * @throws QueryException DB に接続できない場合
+     */
+    public static function store(string $key, mixed $value, bool $encrypt = false): self
+    {
+        $setting = static::query()->firstOrNew(['key' => $key]);
+        $setting->assignValue($value, $encrypt);
+        $setting->save();
+
+        return $setting;
     }
 
     public function decodedValue(): mixed
