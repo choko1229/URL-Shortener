@@ -1,16 +1,79 @@
-# Cache objects
+# ==========================================================
+# 機密情報（絶対にコミットしない）
+# ==========================================================
+# 環境変数（APP_KEY・DB接続情報などを含む）。雛形の .env.example のみ追跡する
+.env
+.env.*
+!.env.example
+# Composer の認証情報
+/auth.json
+# Laravel Passport 等の鍵
+/storage/*.key
+# 証明書・秘密鍵
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+
+# ==========================================================
+# 個人情報を含み得るデータ
+# ==========================================================
+# ローカル DB（SQLite）※ database/.gitignore でも除外
+*.sqlite
+*.sqlite-journal
+# DB ダンプ・自動アップデートのバックアップ（requirements.md 7-3）
+*.sql
+*.sql.gz
+*.dump
+# php artisan schema:dump の出力（テーブル構造のみでデータを含まない）は追跡する
+!/database/schema/*.sql
+/backups/
+/storage/backups/
+# GeoIP データベース（MaxMind 等は再配布不可）
+*.mmdb
+# ログ
+*.log
+
+# ==========================================================
+# 依存パッケージ・ビルド成果物（再生成できるもの）
+# ==========================================================
+/vendor
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/pail
+/coverage
+.phpunit.result.cache
+/.phpunit.cache
+
+# ==========================================================
+# 個人の開発環境固有の設定
+# ==========================================================
+# Claude Code のローカル設定（PHP の絶対パスなど PC 固有の値を含む）
+/.claude/launch.json
+/.claude/settings.local.json
+.phpactor.json
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+Homestead.json
+Homestead.yaml
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================================================
+# （リポジトリ作成時の Packer テンプレート由来）
+# ==========================================================
 packer_cache/
-
-# Crash log
 crash.log
-
-# https://www.packer.io/guides/hcl/variables
-# Exclude all .pkrvars.hcl files, which are likely to contain sensitive data, 
-# such as password, private keys, and other secrets. These should not be part of 
-# version control as they are data points which are potentially sensitive and 
-# subject to change depending on the environment.
-#
+# 機密情報を含み得る変数ファイル
 *.pkrvars.hcl
-
-# For built boxes
 *.box
