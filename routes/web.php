@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\LogoutController;
+use App\Http\Controllers\Install\InstallController;
 use App\Http\Controllers\Main\DiscordLoginController;
 use App\Http\Controllers\Main\HomeController;
 use App\Http\Controllers\ShortUrlController;
@@ -13,6 +14,19 @@ use Illuminate\Support\Facades\Route;
 | 4 つのサブドメインを単一アプリで扱う（requirements.md 1-1）。
 | api / redirect サブドメインと、短縮コード（chok.ooo/{code}）のルートは別途実装する。
 */
+
+// 初期セットアップ（未インストール時のみ有効。ドメイン未確定でも使えるようドメインを限定しない）
+Route::prefix('install')
+    ->name('install.')
+    ->controller(InstallController::class)
+    ->group(static function (): void {
+        Route::get('/', 'requirements')->name('requirements');
+        Route::post('/', 'confirmRequirements')->name('requirements.confirm');
+        Route::get('/database', 'database')->name('database');
+        Route::post('/database', 'storeDatabase')->name('database.store');
+        Route::get('/site', 'site')->name('site');
+        Route::post('/site', 'storeSite')->name('site.store');
+    });
 
 // chok.ooo: トップページ・発行フォーム
 Route::domain(config('shortener.domains.main'))

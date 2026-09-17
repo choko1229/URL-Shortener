@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Installer\EnvironmentFile;
+use App\Installer\InstallationState;
 use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\ServiceProvider;
@@ -18,6 +21,16 @@ class AppServiceProvider extends ServiceProvider
         // 設定値はリクエスト単位でキャッシュする
         $this->app->scoped(ShortenerSettings::class);
         $this->app->singleton(ShortUrlBuilder::class);
+
+        $this->app->singleton(
+            InstallationState::class,
+            static fn (Application $app): InstallationState => new InstallationState($app->storagePath(InstallationState::LOCK_FILE)),
+        );
+        // .env の場所は実行時に変わりうる（テスト等）ため都度解決する
+        $this->app->bind(
+            EnvironmentFile::class,
+            static fn (Application $app): EnvironmentFile => new EnvironmentFile($app->environmentFilePath()),
+        );
     }
 
     public function boot(): void
