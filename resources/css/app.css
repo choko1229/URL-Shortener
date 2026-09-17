@@ -1,0 +1,94 @@
+@import 'tailwindcss';
+
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+/*
+ * design.md のデザイントークン。
+ * ユーティリティ名は design.md のトークン名と 1:1 で対応させる
+ * 例) color-primary → bg-primary / color-text-secondary → text-text-secondary / color-border → border-border
+ */
+@theme {
+    --font-sans: 'Noto Sans JP', ui-sans-serif, system-ui, sans-serif;
+    --font-rounded: 'M PLUS Rounded 1c', 'Noto Sans JP', ui-sans-serif, system-ui, sans-serif;
+
+    /* 1. カラー */
+    --color-primary: #2ec5e0;
+    --color-primary-dark: #0891b2;
+    --color-primary-darker: #067a98;
+    --color-primary-tint: #e3f7fc;
+    --color-primary-tint-soft: #f4fbff;
+    --color-border: #e7f5fa;
+    --color-border-strong: #dff3fb;
+    --color-border-input: #d7eff7;
+    --color-text-primary: #0f2a3d;
+    --color-text-secondary: #5e7a87;
+    --color-text-muted: #94a9b3;
+    --color-dark-panel: #0f2a3d;
+    --color-dark-panel-button: #1c3f52;
+    --color-accent-warm: #ffd166;
+    --color-success: #0891b2;
+    --color-warning: #d98c00;
+    --color-danger: #d64545;
+    /* 4. テーブル */
+    --color-table-header: #f7fcfe;
+    --color-table-divider: #eef7fb;
+
+    /* 2. タイポグラフィ */
+    --text-hero: 52px;
+    --text-hero--line-height: 1.35;
+    --text-section: 20px;
+    --text-section--line-height: 1.5;
+    --text-stat: 32px;
+    --text-stat--line-height: 1.2;
+
+    /* 3. 角丸・シャドウ */
+    --radius-card: 18px;
+    --radius-card-lg: 24px;
+    --radius-control: 12px;
+    --radius-button: 14px;
+    --shadow-card: 0 8px 24px rgba(15, 42, 61, 0.06);
+    --shadow-card-lg: 0 12px 32px rgba(15, 42, 61, 0.08);
+}
+
+@layer base {
+    body {
+        @apply bg-primary-tint-soft font-sans text-text-primary antialiased;
+    }
+
+    /* キーボード操作時のフォーカスを常に可視化する（入力欄は .form-control 側でリング表示） */
+    :where(a, button, summary, [tabindex]):focus-visible {
+        outline: 3px solid var(--color-primary-dark);
+        outline-offset: 2px;
+    }
+
+    [hidden] {
+        display: none !important;
+    }
+}
+
+@layer components {
+    /* 入力フィールド: 枠線 1.5px / 角丸 12〜14px / フォーカス時 primary（design.md 4） */
+    .form-control {
+        @apply block w-full min-w-0 rounded-control border-[1.5px] border-border-input bg-white px-[18px] py-[14px] text-[15px] text-text-primary transition-colors placeholder:text-text-muted focus:border-primary focus:ring-4 focus:ring-primary/20 focus:outline-none disabled:cursor-not-allowed disabled:bg-primary-tint-soft disabled:text-text-muted;
+    }
+
+    .form-control[aria-invalid='true'] {
+        @apply border-danger focus:ring-danger/15;
+    }
+
+    /* オプション切り替え用のピル型チップ */
+    .chip {
+        @apply inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-primary-tint-soft px-3.5 text-[13px] font-medium text-text-secondary transition-colors hover:border-primary hover:text-primary-dark aria-expanded:border-primary aria-expanded:bg-primary-tint aria-expanded:text-primary-dark;
+    }
+
+    /* ラジオボタンをピル型で表示（input は sr-only で残し、キーボード・支援技術で操作可能にする） */
+    .radio-pill {
+        @apply inline-flex min-h-10 items-center gap-1.5 rounded-full border-[1.5px] border-border-input bg-white px-4 text-[13px] font-medium text-text-secondary transition-colors peer-checked:border-primary peer-checked:bg-primary-tint peer-checked:text-primary-dark peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary-dark hover:border-primary;
+    }
+
+    .dialog {
+        @apply m-auto w-[calc(100%-32px)] max-w-md rounded-card-lg bg-white p-0 text-text-primary shadow-card-lg backdrop:bg-text-primary/45;
+    }
+}
