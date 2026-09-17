@@ -1,0 +1,103 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Support;
+
+use App\Models\AppSetting;
+use Illuminate\Contracts\Config\Repository as Config;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
+
+/**
+ * 業務ルール値の読み出し口。
+ * app_settings テーブルの値を優先し、無い・読めない場合は config/shortener.php の初期値を使う。
+ */
+final class ShortenerSettings
+{
+    /** @var array<string, int> リクエスト内キャッシュ */
+    private array $resolved = [];
+
+    public function __construct(private readonly Config $config) {}
+
+    public function memberMonthlyLimit(): int
+    {
+        return $this->int('member_monthly_limit');
+    }
+
+    public function guestMonthlyLimit(): int
+    {
+        return $this->int('guest_monthly_limit');
+    }
+
+    public function guestMaxExpiryDays(): int
+    {
+        return $this->int('guest_max_expiry_days');
+    }
+
+    public function expiryWarningDays(): int
+    {
+        return $this->int('expiry_warning_days');
+    }
+
+    public function customSlugMinLength(): int
+    {
+        return $this->int('custom_slug_min_length');
+    }
+
+    public function customSlugMaxLength(): int
+    {
+        return $this->int('custom_slug_max_length');
+    }
+
+    public function dashboardLinksPerPage(): int
+    {
+        return $this->int('dashboard_links_per_page');
+    }
+
+    public function displayTimezone(): string
+    {
+        return (string) $this->config->get('shortener.display_timezone', 'Asia/Tokyo');
+    }
+
+    private function int(string $key): int
+    {
+        if (array_key_exists($key, $this->resolved)) {
+            return $this->resolved[$key];
+        }
+
+        $default = $this->config->get("shortener.defaults.{$key}");
+        if (! is_int($default)) {
+            throw new InvalidArgumentException("shortener.defaults.{$key} が整数で定義されていません。");
+        }
+
+        return $this->resolved[$key] = $this->override($key) ?? $default;
+    }
+
+    private function override(string $key): ?int
+    {
+        try {
+            $value = AppSetting::valueFor($key);
+        } catch (QueryException $e) {
+            Log::warning('app_settings を読み込めないため初期値を使用します。', [
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        if ($value === null) {
+            return null;
+        }
+
+        if (! is_int($value) || $value < 0) {
+            Log::warning('app_settings の値が不正なため初期値を使用します。', ['key' => $key]);
+
+            return null;
+        }
+
+        return $value;
+    }
+}
