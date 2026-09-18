@@ -1,0 +1,46 @@
+# ==============================================================================
+# chok.ooo を public_html 直下にフォルダごと設置した場合の設定
+#
+# すべてのリクエストを public/ へ内部転送し、設置フォルダ直下のファイル
+# （.env・vendor・storage など）には外部から到達できないようにする。
+# 公開フォルダを public/ に指定している場合、このファイルは使われない。
+# ==============================================================================
+
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # /public/xxx で直接アクセスされた場合は /xxx へ統一する
+    RewriteCond %{THE_REQUEST} \s/+public/ [NC]
+    RewriteRule ^public/(.*)$ /$1 [R=301,L]
+
+    # SSL 証明書の発行（HTTP-01 認証）用のファイルはそのまま配信する
+    RewriteCond %{REQUEST_URI} !^/\.well-known/
+
+    # それ以外はすべて public/ へ
+    RewriteRule ^(?!public/)(.*)$ public/$1 [L]
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 以下は mod_rewrite が使えない・無効な場合の保険
+# ------------------------------------------------------------------------------
+
+# 機密情報を含むファイルへのアクセスを拒否する
+<FilesMatch "^(\.env.*|artisan|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|vite\.config\.js|.*\.(md|log|sql|sqlite))$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# アプリケーションのディレクトリを見えなくする
+<IfModule !mod_rewrite.c>
+    <IfModule mod_alias.c>
+        RedirectMatch 404 ^/(app|bootstrap|config|database|resources|routes|scripts|storage|tests|vendor|node_modules)(/|$)
+    </IfModule>
+</IfModule>
