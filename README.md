@@ -47,33 +47,40 @@
 - Blade + Tailwind CSS 4 + Vite、素の JavaScript（外部ライブラリなし）
 - endroid/qr-code（QRコード）、maxmind-db/reader（国の判定）
 
-> 要件定義では Laravel 11 でしたが、11.x はサポート終了かつ未修正の脆弱性（CVE-2026-48019）があるため 12 を採用しています。
+> 11.x はサポート終了かつ未修正の脆弱性（CVE-2026-48019）があるため 12 を採用しています（requirements.md も 12.x に更新済み）。
 
 ## サーバーへのインストール（WordPress と同じ手順）
 
-サーバー側で Composer や Node.js を使う必要はありません。
+サーバー側で Composer・Node.js・SSH・cron を使う必要はありません。**ファイルを置いて、ブラウザで開いて、DB の接続情報を入力するだけ**です。
 
 1. [Releases](https://github.com/choko1229/URL-Shortener/releases) から `chok-ooo-vX.X.X.zip` をダウンロードして展開する（まだリリースが無い場合は、下記「[リリース手順](#リリース手順)」でタグを作成すると自動で作られます）
 2. サーバーの管理画面で MySQL 8.0 のデータベースとユーザーを作成する（文字コード utf8mb4）
 3. 展開した `chok-ooo` フォルダの**中身**を、FTP で公開フォルダ（例: `public_html`）に丸ごとアップロードする
-4. `chok.ooo` / `dash.chok.ooo` / `api.chok.ooo` / `redirect.chok.ooo` の公開フォルダを、すべて手順3のフォルダに向ける
-5. [Discord Developer Portal](https://discord.com/developers/applications) でアプリケーションを作成し、OAuth2 の Redirects に `https://dash.chok.ooo/login/callback` を登録する
-6. ブラウザで `https://chok.ooo/` を開き、表示されるセットアップ画面に沿って進める
-   1. 動作環境の確認（PHP・拡張モジュール・書き込み権限・設定ファイルが外から見えないこと）
-   2. データベースの接続情報を入力
-   3. ドメイン、Discord の Client ID / Secret、外部サービスのキー（任意）を入力 → テーブル作成・初期データ登録まで自動で完了
-7. `https://dash.chok.ooo/` から Discord でログインする（最初にログインした人が管理者になる）
-8. 自動アップデートを使う場合は、cron を登録し（下記）、ダッシュボードの「アップデート」で GitHub のトークンと Discord Webhook を設定する
+4. `chok.ooo` / `dash.chok.ooo` / `api.chok.ooo` / `redirect.chok.ooo` の公開フォルダを、すべて手順3のフォルダに向ける（SSL もここで設定）
+5. ブラウザで `https://chok.ooo/` を開くとセットアップ画面が表示される。動作環境の確認結果を見て、**データベースの接続情報を入力するだけ**で完了（テーブル作成・初期データ登録まで自動。ドメインはアクセス中のホスト名から自動で決まり、必要なときだけ変更できる）
+6. 完了画面のボタンから `https://dash.chok.ooo/login` を開くと、Discord ログインの設定画面が表示される。画面に出る Redirect URI を [Discord Developer Portal](https://discord.com/developers/applications) に登録し、Client ID / Secret を入力すると、そのまま Discord ログインへ進む（**最初にログインした人が管理者**になる）
+7. 必要に応じて、ダッシュボードの「外部サービス」で悪意URLチェック・reCAPTCHA を、「アップデート」で GitHub のトークンと Discord Webhook を設定する
 
-> **注意**: WordPress と同様、セットアップが完了するまでは誰でもセットアップ画面を操作できます。アップロードしたら、すぐに最後まで進めてください。
+> **注意**: WordPress と同様、セットアップが完了するまでは誰でもセットアップ画面を操作できます。Discord ログインの設定画面も、管理者が登録されるまでは誰でも開けます。アップロードしたら、すぐに最後まで（管理者としてログインするまで）進めてください。
 
-### cron の設定
+サーバーの管理画面でしかできない作業（サブドメインの公開フォルダ・SSL の設定、データベースの作成）と、Discord 側での Redirect URI の登録だけは、自動化できないため手作業になります。セットアップ画面では、サブドメインがこのフォルダを向いているかも確認します（向いていなくても「注意」として進めます）。
 
-自動アップデート（毎日 4:00）のため、サーバーの cron に次を登録します。
+### 定期処理（cron の登録は不要）
+
+自動アップデートなどの 1 日 1 回の処理は、WordPress の WP-Cron と同じく**サイトへのアクセスをきっかけに自動で実行**されます（日本時間 4:00 を過ぎてから最初のアクセス時）。
+
+- PHP-FPM / LiteSpeed の環境では、訪問者へ応答を返し終えた後に同じプロセスで実行するため、訪問者を待たせません
+- それ以外の環境では、自分自身へ合言葉（APP_KEY から生成）付きのリクエスト（`POST /_cron`）を送り、そちらで実行します
+- 実行の確認は数分に 1 回だけ行うため、通常のアクセスに負荷はかかりません。前回の実行時刻はダッシュボードの「アップデート」に表示されます
+- 更新時の `migrate` などは別プロセスの PHP（CLI）で実行します。PHP（CLI）を起動できないサーバーでは、同じプロセスの中で実行します
+
+アクセスが少ないサイトで時刻どおりに実行したい場合は、cron を登録することもできます（登録されていれば cron を優先し、アクセスでの実行は止まります）。
 
 ```
 * * * * * cd /path/to/chok-ooo && php artisan schedule:run >> /dev/null 2>&1
 ```
+
+cron だけで動かしたい場合は `.env` に `SHORTENER_WEB_CRON=false` を設定します。
 
 ### 設置に関する補足
 
@@ -88,10 +95,10 @@
 
 | 機能 | 必要なもの | 設定場所 | 未設定の場合 |
 |---|---|---|---|
-| ログイン | Discord の Client ID / Client Secret | セットアップ画面 | ログインできない |
-| 悪意URLチェック | Google Safe Browsing API キー（Google Cloud で Safe Browsing API を有効化） | セットアップ画面 | 転送時に「安全性を確認できませんでした」と表示し、利用者が判断して移動 |
-| スパム対策（未ログインの発行） | reCAPTCHA v3 のサイトキーとシークレットキー | セットアップ画面 | 検証しない（レート制限と月間上限のみ） |
-| アクセス元の国 | MaxMind の `GeoLite2-Country.mmdb`（無料アカウント登録で入手） | `storage/app/private/geoip/GeoLite2-Country.mmdb` に FTP で配置 | 国を記録しない（他の項目は記録する） |
+| ログイン | Discord の Client ID / Client Secret | 初回: `dash.chok.ooo/login` を開くと表示される設定画面。以後: ダッシュボードの「外部サービス」 | ログインできない |
+| 悪意URLチェック | Google Safe Browsing API キー（Google Cloud で Safe Browsing API を有効化） | ダッシュボードの「外部サービス」 | 転送時に「安全性を確認できませんでした」と表示し、利用者が判断して移動 |
+| スパム対策（未ログインの発行） | reCAPTCHA v3 のサイトキーとシークレットキー | ダッシュボードの「外部サービス」 | 検証しない（レート制限と月間上限のみ） |
+| アクセス元の国 | MaxMind の `GeoLite2-Country.mmdb`（無料アカウント登録で入手） | `storage/app/private/geoip/GeoLite2-Country.mmdb` に FTP で配置（「外部サービス」に読み込み状況を表示） | 国を記録しない（他の項目は記録する） |
 | 自動アップデート | GitHub の Fine-grained トークン（対象リポジトリの Contents: Read） | ダッシュボードの「アップデート」 | 更新しない |
 | 管理者への通知 | Discord Webhook URL | ダッシュボードの「アップデート」 | 通知しない（ログには残る） |
 
@@ -100,7 +107,7 @@
 
 ## 自動アップデート（requirements.md 7 章）
 
-毎日 4:00 に `php artisan app:update` が実行され、次の順に処理します。
+1日1回（日本時間 4:00 以降、上記「[定期処理](#定期処理cron-の登録は不要)」の仕組みで）、次の順に処理します。
 
 1. GitHub Releases の最新リリース（`vYY.MM.patch` 形式のタグ）を確認する。現在より新しくなければ何もしない
 2. バックアップを取る（`storage/app/private/backups/`、直近 3 世代を保持）
@@ -119,7 +126,7 @@
 | `php artisan app:update --manual` | 自動アップデートが無効でも今すぐ実行 |
 | `php artisan app:health-check` | ヘルスチェックのみ |
 
-実行ファイルの場所がサーバーで異なる場合は `.env` の `SHORTENER_PHP_BINARY` `SHORTENER_COMPOSER_BINARY` `SHORTENER_GIT_BINARY` `SHORTENER_MYSQLDUMP_BINARY` で指定します。
+PHP（CLI）はサーバー上の一般的な場所から自動で探します。実行ファイルの場所がサーバーで異なる場合は `.env` の `SHORTENER_PHP_BINARY` `SHORTENER_COMPOSER_BINARY` `SHORTENER_GIT_BINARY` `SHORTENER_MYSQLDUMP_BINARY` で指定できます。
 
 ## API（requirements.md 5 章）
 
@@ -249,7 +256,7 @@ Actions タブから「Release package」を手動実行すると、タグを付
 |---|---|---|
 | 環境ごとに異なる値 | `.env` | `APP_KEY`、DB 接続情報、サブドメイン、実行ファイルの場所 |
 | 業務ルールの初期値 | `config/shortener.php` | 月間発行上限、レート制限、未ログイン時の最大有効期限、ロックアウト |
-| 管理画面・セットアップ画面で変更する値 | `app_settings` テーブル（初期値を上書き。機密値は暗号化） | Discord・Safe Browsing・reCAPTCHA のキー、GitHub トークン、Webhook URL |
+| 管理画面で変更する値 | `app_settings` テーブル（初期値を上書き。機密値は暗号化） | Discord・Safe Browsing・reCAPTCHA のキー、GitHub トークン、Webhook URL |
 | 予約語 | `reserved_words` テーブル（ダッシュボードで追加・削除） | 初期データは `ReservedWordSeeder` |
 
 業務ルールの値は `.env` に書かず、必ず `App\Support\ShortenerSettings` 経由で読み出してください。
@@ -258,19 +265,19 @@ Actions タブから「Release package」を手動実行すると、タグを付
 
 ```
 app/
-├── Console/Commands/       # app:install / app:update / app:health-check
+├── Console/Commands/       # app:install / app:update / app:health-check / app:periodic-tasks
 ├── Enums/                  # 状態・種別（UserRole, SlugType, LinkStatus, IconName など）
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Main/           # chok.ooo（トップ・削除用トークンでの削除）
-│   │   ├── Auth/           # Discord ログイン
+│   │   ├── Auth/           # Discord ログイン・初回のログイン設定
 │   │   ├── Dashboard/      # dash.chok.ooo（ダッシュボード・リンク詳細・設定）
-│   │   ├── Admin/          # 管理者機能（全URL・ユーザー・予約語・APIキー・アップデート）
+│   │   ├── Admin/          # 管理者機能（全URL・ユーザー・予約語・APIキー・外部サービス・アップデート）
 │   │   ├── Api/V1/         # api.chok.ooo
 │   │   ├── Redirect/       # chok.ooo/{コード}（中間ページ・パスワード）と redirect.chok.ooo
 │   │   ├── Install/        # セットアップ画面
 │   │   └── Preview/        # local 専用プレビュー
-│   ├── Middleware/         # セキュリティヘッダー、セットアップ画面への誘導、API キー認証
+│   ├── Middleware/         # セキュリティヘッダー、セットアップ画面への誘導、API キー認証、アクセス時の定期処理
 │   └── Requests/           # 入力検証
 ├── Installer/              # Web インストーラ
 ├── Models/
@@ -282,14 +289,16 @@ app/
 │   ├── ShortUrl/           # 発行・コードの照合と空き判定・スラッグ編集・削除用トークン・QRコード
 │   ├── Redirect/           # チケット・パスワード試行制限・Safe Browsing・アクセス記録
 │   ├── Security/           # reCAPTCHA v3
+│   ├── Settings/           # 外部サービスのキーの保存
+│   ├── Tasks/              # 定期処理（cron 不要の WP-Cron 方式）
 │   ├── Dashboard/          # ダッシュボード・統計の表示データ
 │   └── Update/             # 自動アップデート（バックアップ・更新方式・ヘルスチェック・通知）
 ├── Support/                # 設定値・外部サービスのキーの読み出し、短縮URLの組み立て、ナビゲーション
 └── ViewModels/             # Blade に渡す readonly なデータ
 routes/
 ├── web.php                 # chok.ooo / dash.chok.ooo / redirect.chok.ooo、セットアップ画面
-├── api.php                 # api.chok.ooo
-├── console.php             # 定期実行（自動アップデート）
+├── api.php                 # api.chok.ooo、定期処理の起動口（/_cron）
+├── console.php             # cron を登録した場合の定期実行
 └── preview.php             # local 専用プレビュー
 scripts/                    # 配布用 zip の作成
 .htaccess / index.php       # 公開フォルダ直下に設置した場合の転送設定・案内ページ
@@ -322,14 +331,13 @@ requirements.md に記載が無い、または食い違っていた点は次の�
 | 2-5 | パスワードは 4〜72 文字。ロックアウトは「リンク × アクセス元 IP」単位（第三者によるリンクの締め出しを防ぐため） |
 | 2-6 | リファラはホスト名のみ、IP は保存しない。国は MaxMind GeoLite2。クリックは JavaScript を実行したブラウザのみ数える（リンクプレビューのボットを除外） |
 | 2-7 | 危険 → 停止、確認不能 → 警告して利用者が選択 |
-| 4-2 | セットアップ画面は WordPress と同様に保護なし。管理者が一人もいなくなる権限変更・退会はできない |
+| 4-2 | セットアップ画面は WordPress と同様に保護なし。入力は DB 接続情報のみで、Discord のキーは初回ログイン時の設定画面（管理者が登録されるまで有効）で入力する。管理者が一人もいなくなる権限変更・退会はできない |
 | 4-3 | 月間件数は日本時間の暦月で数え、削除分も含める。レート制限は発行に成功した回数のみ数える。管理者もログインユーザーと同じ上限（API は除く） |
 | 4-4 | reCAPTCHA v3 を未ログインの発行にのみ適用。Google 側の障害時は発行を止めない。退会時、発行済みの短縮URLは残すか削除するかを選べる |
 | 5 | API はレート制限に加えて月間上限も適用しない（管理者の他プロジェクトからの発行専用のため） |
+| 7-1 | 定期実行は cron を必須とせず、アクセスをきっかけに実行する（WP-Cron 方式）。cron を登録した場合はそちらを優先する |
 | 7-1 | Git で設置した環境は要件どおり git / Composer で更新し、配布用 zip で設置した環境は zip の入れ替えで更新する。`mysqldump` が使えない場合は PHP でダンプする |
 | 7-2 | GitHub トークンは要件どおり暗号化して DB に保存。ただし DB 接続情報は DB 自体に置けないため `.env` に保存する |
-| 8 | Laravel 11 → 12 |
-
 ## トラブルシューティング
 
 ### セットアップ・運用時
@@ -342,9 +350,10 @@ requirements.md に記載が無い、または食い違っていた点は次の�
 | 「設定ファイルが外部から見えないこと」が **NG** | `.env` などが外から読める状態。上と同じく `.htaccess` の設定か公開フォルダを見直す（解決するまで先へ進めない） |
 | 同じ項目が **要確認** | サーバーが自分自身へアクセスできない環境。表示されたリンクを開き、ファイルの中身が表示されないことを確認してチェックを入れる |
 | 「ページの有効期限が切れました」（419） | 最初にアクセスしたときと違うスキーム（http / https）で開いている。最初と同じ URL で開き直す |
-| 「Discord ログインが設定されていません」 | セットアップで Client ID / Secret を入力していない。`installed.json` を削除してセットアップをやり直す |
-| Discord で「Invalid OAuth2 redirect_uri」 | Discord Developer Portal の Redirects に `https://dash.chok.ooo/login/callback` を登録する |
-| 自動アップデートが動かない | cron（`schedule:run`）と、「アップデート」画面のトークン・有効化を確認する。実行履歴にエラー内容が残る |
+| 「Discord ログインが設定されていません」 | 保存済みの Client ID / Secret を読み出せない（`.env` の APP_KEY を変更した等）。APP_KEY を元に戻す。管理者がいない状態なら `dash.chok.ooo/login` で設定画面が開く |
+| Discord で「Invalid OAuth2 redirect_uri」 | Discord Developer Portal の Redirects に `https://dash.chok.ooo/login/callback` を登録する（設定画面・「外部サービス」に表示される URL をコピー） |
+| セットアップで「サブドメインの向き先」が **注意** | サブドメインの公開フォルダが未設定か、DNS・SSL がまだ反映されていない。後から設定しても構わない |
+| 自動アップデートが動かない | 「アップデート」画面の「前回の定期処理」、トークン・有効化を確認する。実行履歴にエラー内容が残る。サーバーが自分自身へ接続できない環境（PHP-FPM 以外）では、cron を登録する |
 
 ### Windows の開発環境
 
@@ -357,12 +366,12 @@ requirements.md に記載が無い、または食い違っていた点は次の�
 - CSP（Content-Security-Policy）ヘッダーが未設定
 - 悪意URLチェックは Safe Browsing Lookup API v4 を使用している。Google が v5 への移行を進めているため、v4 の提供状況は定期的に確認が必要
 - レンタルサーバーがリバースプロキシ経由の場合、訪問者の IP（レート制限・国判定・ロックアウトに使用）が正しく取れない可能性がある。その場合は `bootstrap/app.php` で信頼するプロキシを設定する
-- 公開フォルダ直下への設置（`.htaccess`）、`mysqldump`・cron の利用、自動アップデートは、実サーバー（kagoya）での動作が未検証（requirements.md 8 章の未確認事項）
+- 公開フォルダ直下への設置（`.htaccess`）、`mysqldump` の利用、アクセス時の定期処理、自動アップデートは、実サーバー（kagoya）での動作が未検証（requirements.md 8 章の未確認事項）
 
 ## セキュリティに関する注意
 
 - `.env`、DB ダンプ、バックアップ、証明書・鍵ファイルはコミットしないでください（`.gitignore` で除外しています）。
 - 本番では `APP_ENV=production`・`APP_DEBUG=false` にしてください（セットアップ画面が自動生成する `.env` はこの設定です）。`/_preview` 系ルートは読み込まれなくなります。
-- セットアップ画面は完了するまで誰でも操作できます。設置したらすぐに完了させてください。完了後に `storage/app/private/installed.json` を消すとセットアップ画面が再び開くため、FTP アカウントの管理にも注意してください。
+- セットアップ画面は完了するまで、Discord ログインの設定画面は管理者が登録されるまで、誰でも操作できます。設置したらすぐに管理者としてログインするところまで進めてください。完了後に `storage/app/private/installed.json` を消すとセットアップ画面が再び開くため、FTP アカウントの管理にも注意してください。
 - API キー・GitHub トークン・Webhook URL は第三者に渡さないでください。漏れた場合はダッシュボードで無効化・再設定してください。
 - 脆弱性を見つけた場合は Issue ではなく管理者へ直接連絡してください。
