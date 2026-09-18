@@ -21,7 +21,7 @@ class ReservedWordSeeder extends Seeder
             'app', 'static', 'assets', 'cron', 'cli', 'root', 'system', 'sys',
             // アプリのルート・設置フォルダ内のディレクトリと衝突する語
             'install', 'shorten', 'links', 'build', 'public', 'storage', 'vendor', 'bootstrap',
-            'config', 'database', 'resources', 'routes', 'tests', 'scripts', 'node_modules',
+            'config', 'database', 'resources', 'routes', 'tests', 'scripts', 'node_modules', '_cron',
         ],
         'auth' => [
             'login', 'logout', 'register', 'signup', 'signin', 'signout', 'auth', 'oauth', 'callback',

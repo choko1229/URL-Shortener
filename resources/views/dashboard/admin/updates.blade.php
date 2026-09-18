@@ -10,14 +10,29 @@
     @var \Illuminate\Support\Collection<int, \App\Models\UpdateRun> $runs
     @var list<string> $backups
     @var string $timezone
+    @var \Carbon\CarbonImmutable|null $lastRunAt
+    @var string|null $lastTrigger
+    @var bool $cronActive
+    @var bool $hasPhpCli
 --}}
-<x-dashboard.page :viewer="$viewer" title="アップデート" description="1日1回（午前4時）GitHub Releases を確認し、新しいリリースがあればバックアップを取ってから自動で更新します。失敗した場合は自動で元に戻し、Discord に通知します。">
+<x-dashboard.page :viewer="$viewer" title="アップデート" description="1日1回（午前4時以降の最初のアクセス時）GitHub Releases を確認し、新しいリリースがあればバックアップを取ってから自動で更新します。失敗した場合は自動で元に戻し、Discord に通知します。">
     <section aria-labelledby="status-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
         <h2 id="status-heading" class="font-rounded text-[15px] font-bold">現在の状態</h2>
-        <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
+        <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div><dt class="text-xs text-text-secondary">バージョン</dt><dd class="mt-0.5 font-medium">{{ $currentVersion ?? '不明（開発中のコード）' }}</dd></div>
             <div><dt class="text-xs text-text-secondary">更新方法</dt><dd class="mt-0.5">{{ $strategy === 'git' ? 'Git（git checkout と composer install）' : '配布用 zip の入れ替え' }}</dd></div>
             <div><dt class="text-xs text-text-secondary">自動アップデート</dt><dd class="mt-0.5">{{ $enabled && $hasToken ? '有効' : ($enabled ? '有効（トークン未設定のため停止中）' : '無効') }}</dd></div>
+            <div>
+                <dt class="text-xs text-text-secondary">前回の定期処理</dt>
+                <dd class="mt-0.5">
+                    @if ($lastRunAt)
+                        {{ $lastRunAt->setTimezone($timezone)->format('Y/m/d H:i') }}
+                        <span class="text-text-secondary">（{{ $lastTrigger === 'cron' ? 'cron' : 'アクセス時' }}）</span>
+                    @else
+                        まだ実行されていません
+                    @endif
+                </dd>
+            </div>
         </dl>
         <div class="mt-5 flex flex-wrap gap-2.5">
             <form method="POST" action="{{ route('dashboard.admin.updates.check') }}">
@@ -33,7 +48,14 @@
             </form>
         </div>
         <p class="mt-4 text-xs leading-relaxed text-text-secondary">
-            自動アップデートにはサーバーの cron 設定が必要です: <code class="rounded bg-primary-tint-soft px-1">* * * * * cd （設置フォルダ） &amp;&amp; php artisan schedule:run</code>。
+            @if ($cronActive)
+                サーバーの cron から定期処理が実行されています。
+            @else
+                定期処理はサイトへのアクセスをきっかけに自動で実行されるため、cron の登録は不要です（アクセスが少ないサイトでは実行が遅れることがあります。登録する場合は <code class="rounded bg-primary-tint-soft px-1">* * * * * cd （設置フォルダ） &amp;&amp; php artisan schedule:run</code>）。
+            @endif
+            @unless ($hasPhpCli)
+                サーバーで PHP（CLI）を起動できないため、更新時のマイグレーション等は Web の処理の中で実行します。
+            @endunless
             SSH が使える場合は <code class="rounded bg-primary-tint-soft px-1">php artisan app:update --manual</code> で今すぐ更新できます。
         </p>
     </section>

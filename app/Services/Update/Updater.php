@@ -113,6 +113,7 @@ final class Updater
 
         try {
             $this->strategy->apply($release, $token);
+            self::resetOpcache();
             // 以降は新しいコードで実行する
             $this->artisan->run(['optimize:clear']);
             $this->artisan->run(['migrate', '--force']);
@@ -130,6 +131,7 @@ final class Updater
     {
         try {
             $this->strategy->rollback($backup);
+            self::resetOpcache();
             $this->database->restore($backup->databasePath());
             $this->artisan->run(['optimize:clear']);
         } catch (Throwable $e) {
@@ -143,6 +145,14 @@ final class Updater
         }
 
         return $this->finish($run, UpdateRunStatus::RolledBack, "更新に失敗したため {$from} に戻しました。原因: {$cause->getMessage()}");
+    }
+
+    /** Web サーバーの PHP がキャッシュした古いコードを破棄する（使えない環境では何もしない） */
+    private static function resetOpcache(): void
+    {
+        if (function_exists('opcache_reset')) {
+            @opcache_reset();
+        }
     }
 
     private function finish(UpdateRun $run, UpdateRunStatus $status, string $message): UpdateOutcome

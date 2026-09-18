@@ -15,12 +15,14 @@ use App\Services\Update\CodeTree;
 use App\Services\Update\DatabaseBackup;
 use App\Services\Update\GitHubReleaseClient;
 use App\Services\Update\GitStrategy;
+use App\Services\Update\PhpBinaryResolver;
 use App\Services\Update\ReleaseZipStrategy;
 use App\Services\Update\UpdateStrategy;
 use App\Support\ExternalServiceKeys;
 use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
@@ -83,10 +85,16 @@ class AppServiceProvider extends ServiceProvider
             $app->make(CodeTree::class),
         ));
 
-        $this->app->bind(
-            ArtisanProcess::class,
-            static fn (Application $app): ArtisanProcess => new ArtisanProcess($app->basePath(), self::config($app, 'shortener.update.php_binary')),
+        $this->app->singleton(
+            PhpBinaryResolver::class,
+            static fn (Application $app): PhpBinaryResolver => new PhpBinaryResolver($app->make('config')->get('shortener.update.php_binary')),
         );
+
+        $this->app->bind(ArtisanProcess::class, static fn (Application $app): ArtisanProcess => new ArtisanProcess(
+            $app->basePath(),
+            $app->make(PhpBinaryResolver::class),
+            $app->make(Kernel::class),
+        ));
 
         // Git で設置した環境は git / Composer で、配布用 zip で設置した環境は zip の入れ替えで更新する
         $this->app->bind(UpdateStrategy::class, static fn (Application $app): UpdateStrategy => $app->make(AppVersion::class)->isGitCheckout()

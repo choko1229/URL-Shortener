@@ -6,14 +6,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\UpdateRun;
+use App\Services\Tasks\PeriodicTasks;
 use App\Services\Update\AppVersion;
 use App\Services\Update\BackupManager;
 use App\Services\Update\DiscordWebhookNotifier;
+use App\Services\Update\PhpBinaryResolver;
 use App\Services\Update\Updater;
 use App\Services\Update\UpdateSettings;
 use App\Services\Update\UpdateStrategy;
 use App\Support\ShortenerSettings;
 use App\ViewModels\ViewerData;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +34,8 @@ final class UpdateController extends Controller
         UpdateStrategy $strategy,
         BackupManager $backups,
         ShortenerSettings $shortener,
+        PeriodicTasks $tasks,
+        PhpBinaryResolver $php,
     ): View {
         return view('dashboard.admin.updates', [
             'viewer' => ViewerData::fromUser($request->user()),
@@ -43,6 +48,10 @@ final class UpdateController extends Controller
             'runs' => UpdateRun::query()->latest('id')->limit(self::RECENT_RUNS)->get(),
             'backups' => array_map('basename', $backups->list()),
             'timezone' => $shortener->displayTimezone(),
+            'lastRunAt' => $tasks->lastRunAt(),
+            'lastTrigger' => $tasks->lastTrigger(),
+            'cronActive' => $tasks->cronIsActive(CarbonImmutable::now()),
+            'hasPhpCli' => $php->resolve() !== null,
         ]);
     }
 

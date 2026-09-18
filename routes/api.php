@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\LinkController;
+use App\Http\Controllers\CronController;
 use App\Http\Controllers\Redirect\ShortLinkController;
 use App\Http\Middleware\AuthenticateApiKey;
 use Illuminate\Support\Facades\Route;
@@ -26,3 +27,8 @@ Route::domain(config('shortener.domains.api'))
             ->where('code', ShortLinkController::CODE_PATTERN)
             ->name('links.destroy');
     });
+
+// 定期処理の起動口（WebCron が自分自身へ送る。APP_KEY から作った合言葉で認証し、セッション・CSRF は使わない）
+Route::post('/_cron', CronController::class)
+    ->middleware('throttle:10,1')
+    ->name('cron.run');

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Middleware\EnsureApplicationInstalled;
 use App\Http\Middleware\SetSecurityHeaders;
+use App\Http\Middleware\TriggerPeriodicTasks;
 use App\Installer\InstallationState;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -22,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // ドメイン設定が未確定の状態でもセットアップ画面へ誘導できるよう、ルーティングより前に判定する
         $middleware->prepend(EnsureApplicationInstalled::class);
+        // 応答を返した後に、1 日 1 回の定期処理を起動する（cron の登録を不要にする）
+        $middleware->append(TriggerPeriodicTasks::class);
 
         $middleware->web(append: [
             SetSecurityHeaders::class,

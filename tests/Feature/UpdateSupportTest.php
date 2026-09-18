@@ -82,15 +82,15 @@ final class UpdateSupportTest extends TestCase
         $this->artisan('app:health-check')->assertFailed();
     }
 
-    public function test_update_is_scheduled_daily(): void
+    public function test_periodic_tasks_are_checked_every_minute_when_cron_is_configured(): void
     {
         $events = array_filter(
             app(Schedule::class)->events(),
-            static fn (Event $event): bool => str_contains((string) $event->command, 'app:update'),
+            static fn (Event $event): bool => str_contains((string) $event->command, 'app:periodic-tasks'),
         );
 
         $this->assertCount(1, $events);
-        $this->assertSame('0 4 * * *', array_values($events)[0]->expression);
+        $this->assertSame('* * * * *', array_values($events)[0]->expression);
     }
 
     public function test_admin_can_save_update_settings_with_encrypted_secrets(): void
