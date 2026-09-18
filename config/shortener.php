@@ -32,6 +32,19 @@ return [
     // 国判定に使う MaxMind GeoLite2 Country のデータベース（無ければ国は記録しない）
     'geoip_database' => storage_path('app/private/geoip/GeoLite2-Country.mmdb'),
 
+    // 自動アップデート（requirements.md 7 章）。リポジトリ・トークン・通知先は管理画面で設定する
+    'update' => [
+        'repository' => 'choko1229/URL-Shortener',
+        'backup_path' => storage_path('app/private/backups'),
+        'work_path' => storage_path('app/private/update-work'),
+        'backup_generations' => 3,
+        // サーバーごとに異なる実行ファイルの場所
+        'php_binary' => env('SHORTENER_PHP_BINARY', PHP_BINARY),
+        'composer_binary' => env('SHORTENER_COMPOSER_BINARY', 'composer'),
+        'git_binary' => env('SHORTENER_GIT_BINARY', 'git'),
+        'mysqldump_binary' => env('SHORTENER_MYSQLDUMP_BINARY', 'mysqldump'),
+    ],
+
     // app_settings テーブルに値が無い場合の初期値
     'defaults' => [
         // 2-1 短縮コード

@@ -39,6 +39,9 @@ git -C "$ROOT" ls-files -z --cached --others --exclude-standard \
 
 cd "$STAGE_DIR"
 
+# 自動アップデートが現在のバージョンを判定するためのファイル（requirements.md 7 章）
+printf '%s\n' "$VERSION" > VERSION
+
 echo "==> 本番用の PHP 依存パッケージをインストールしています"
 $COMPOSER_BIN install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
