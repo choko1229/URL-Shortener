@@ -199,9 +199,142 @@ function initConfirmForms() {
     });
 }
 
+/** 中間ページ: redirect サブドメインへ自動で POST する（requirements.md 3: 手順 4） */
+function initAutoSubmitForms() {
+    document.querySelectorAll('form[data-auto-submit]').forEach((form) => {
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+        } else {
+            form.submit();
+        }
+    });
+}
+
+const RECAPTCHA_SCRIPT_URL = 'https://www.google.com/recaptcha/api.js';
+let recaptchaLoading = null;
+
+function loadRecaptcha(siteKey) {
+    if (!recaptchaLoading) {
+        recaptchaLoading = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = `${RECAPTCHA_SCRIPT_URL}?render=${encodeURIComponent(siteKey)}`;
+            script.async = true;
+            script.onload = () => window.grecaptcha.ready(() => resolve(window.grecaptcha));
+            script.onerror = () => reject(new Error('reCAPTCHA のスクリプトを読み込めませんでした。'));
+            document.head.append(script);
+        });
+    }
+    return recaptchaLoading;
+}
+
+/** reCAPTCHA v3: 送信直前にトークンを取得してから送信する（未ログインの発行フォームのみ） */
+function initRecaptchaForms() {
+    document.querySelectorAll('form[data-recaptcha-site-key]').forEach((form) => {
+        const siteKey = form.dataset.recaptchaSiteKey ?? '';
+        const tokenInput = form.querySelector('[data-recaptcha-token]');
+        if (!siteKey || !tokenInput) {
+            return;
+        }
+
+        // 入力を始めた時点で読み込んでおき、送信時の待ち時間を減らす
+        form.addEventListener('focusin', () => loadRecaptcha(siteKey).catch(() => {}), { once: true });
+
+        form.addEventListener('submit', async (event) => {
+            if (form.dataset.recaptchaReady === 'true') {
+                return;
+            }
+            event.preventDefault();
+
+            try {
+                const grecaptcha = await loadRecaptcha(siteKey);
+                tokenInput.value = await grecaptcha.execute(siteKey, { action: form.dataset.recaptchaAction ?? 'submit' });
+            } catch (error) {
+                // トークン無しで送信し、サーバー側でエラーを表示する
+                console.error('[recaptcha]', error);
+            }
+
+            form.dataset.recaptchaReady = 'true';
+            form.requestSubmit(event.submitter ?? undefined);
+        });
+    });
+}
+
+const SAFETY_CHECK_TIMEOUT_MS = 15000;
+const SAFE_REDIRECT_DELAY_MS = 1200;
+
+/** 転送ページ: 安全性チェックの結果に応じて表示を切り替え、安全なら移動する（requirements.md 2-7, 3） */
+function initSafetyCheck() {
+    const container = document.querySelector('[data-safety-check]');
+    if (!(container instanceof HTMLElement)) {
+        return;
+    }
+
+    const show = (state, { message = '', threats = [], destination = null } = {}) => {
+        container.querySelectorAll('[data-state]').forEach((panel) => {
+            panel.hidden = panel.dataset.state !== state;
+        });
+        const panel = container.querySelector(`[data-state="${state}"]`);
+        if (!panel) {
+            return;
+        }
+        panel.querySelectorAll('[data-message]').forEach((element) => {
+            element.textContent = message;
+        });
+        const list = panel.querySelector('[data-threats]');
+        if (list) {
+            list.replaceChildren(...threats.map((threat) => Object.assign(document.createElement('li'), { textContent: threat })));
+        }
+        panel.querySelectorAll('[data-destination-link]').forEach((link) => {
+            if (destination) {
+                link.setAttribute('href', destination);
+            }
+        });
+    };
+
+    const isHttpUrl = (value) => typeof value === 'string' && /^https?:\/\//i.test(value);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), SAFETY_CHECK_TIMEOUT_MS);
+
+    fetch(container.dataset.checkUrl ?? '', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ ticket: container.dataset.ticket ?? '' }),
+        signal: controller.signal,
+    })
+        .then(async (response) => ({ ok: response.ok, body: await response.json() }))
+        .then(({ body }) => {
+            const destination = isHttpUrl(body.destination) ? body.destination : null;
+
+            if (body.status === 'safe' && destination) {
+                show('safe', { destination });
+                window.setTimeout(() => window.location.replace(destination), SAFE_REDIRECT_DELAY_MS);
+            } else if (body.status === 'unsafe') {
+                show('unsafe', { threats: Array.isArray(body.threats) ? body.threats : [] });
+            } else if (body.status === 'unknown' && destination) {
+                show('unknown', { message: body.message ?? '', destination });
+            } else {
+                show('invalid', { message: body.message ?? 'リンクをもう一度開いてください。' });
+            }
+        })
+        .catch((error) => {
+            // 確認できなかった場合は警告したうえで利用者に任せる（危険判定の場合はここに来ない）
+            console.error('[safety-check]', error);
+            const destination = container.dataset.destination;
+            if (isHttpUrl(destination)) {
+                show('unknown', { message: '安全性の確認に時間がかかっているか、通信に失敗しました。', destination });
+            } else {
+                show('invalid', { message: '元のリンクをもう一度開いてください。' });
+            }
+        })
+        .finally(() => window.clearTimeout(timer));
+}
+
 initDisclosures();
 initExpiryGroups();
 initDialogs();
 initCopyButtons();
 initMenus();
 initConfirmForms();
+initRecaptchaForms();
+initAutoSubmitForms();
+initSafetyCheck();

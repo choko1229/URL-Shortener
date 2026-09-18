@@ -8,19 +8,12 @@ use App\Installer\InstallationState;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
-        then: static function (Application $app): void {
-            // 画面確認用プレビューは local 環境でのみ有効にする
-            if ($app->environment('local')) {
-                Route::middleware('web')->group(base_path('routes/preview.php'));
-            }
-        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // ドメイン設定が未確定の状態でもセットアップ画面へ誘導できるよう、ルーティングより前に判定する

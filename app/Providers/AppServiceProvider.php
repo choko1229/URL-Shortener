@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Installer\EnvironmentFile;
 use App\Installer\InstallationState;
+use App\Services\Redirect\CountryResolver;
+use App\Support\ExternalServiceKeys;
 use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
 use Carbon\CarbonImmutable;
@@ -18,9 +20,15 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // 設定値はリクエスト単位でキャッシュする
+        // 設定値・外部サービスのキーはリクエスト単位でキャッシュする
         $this->app->scoped(ShortenerSettings::class);
+        $this->app->scoped(ExternalServiceKeys::class);
         $this->app->singleton(ShortUrlBuilder::class);
+
+        $this->app->scoped(
+            CountryResolver::class,
+            static fn (Application $app): CountryResolver => new CountryResolver((string) $app->make('config')->get('shortener.geoip_database')),
+        );
 
         $this->app->singleton(
             InstallationState::class,

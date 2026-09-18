@@ -6,7 +6,7 @@ use App\Http\Controllers\Preview\PreviewController;
 use Illuminate\Support\Facades\Route;
 
 /*
-| 【local 環境専用】bootstrap/app.php で APP_ENV=local の場合のみ読み込む。
+| 【local 環境専用】routes/web.php から APP_ENV=local の場合のみ読み込む。
 | 認証・発行処理の実装後に削除する想定。
 */
 
