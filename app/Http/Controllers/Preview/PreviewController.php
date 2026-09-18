@@ -88,6 +88,8 @@ final class PreviewController extends Controller
                 links: new LengthAwarePaginator($rows, total: 24, perPage: count($rows), currentPage: 1, options: [
                     'path' => $request->url(),
                 ]),
+                issuedLink: null,
+                displayTimezone: $timezone,
             ),
         ]);
     }

@@ -29,14 +29,32 @@ return [
     // 画面表示・月間集計に使うタイムゾーン（DB保存は UTC）
     'display_timezone' => 'Asia/Tokyo',
 
+    // 国判定に使う MaxMind GeoLite2 Country のデータベース（無ければ国は記録しない）
+    'geoip_database' => storage_path('app/private/geoip/GeoLite2-Country.mmdb'),
+
     // app_settings テーブルに値が無い場合の初期値
     'defaults' => [
+        // 2-1 短縮コード
+        'random_code_length' => 7,
         'custom_slug_min_length' => 3,
         'custom_slug_max_length' => 20,
+        // 4-3 利用制限
         'member_monthly_limit' => 60,
         'guest_monthly_limit' => 5,
+        'member_rate_limit_per_minute' => 5,
+        'guest_rate_limit_interval_minutes' => 3,
+        // 2-3 有効期限
         'guest_max_expiry_days' => 30,
         'expiry_warning_days' => 3,
+        // 2-5 パスワード保護
+        'password_max_attempts' => 5,
+        'password_lockout_minutes' => 15,
+        // 2-7 悪意URLチェック
+        'safe_browsing_cache_days' => 3,
+        // 3 リダイレクト: 中間ページから redirect サブドメインへ渡すチケットの有効時間
+        'redirect_ticket_ttl_minutes' => 10,
+        // 4-4 reCAPTCHA v3 の合格スコア（百分率。50 = 0.5）
+        'recaptcha_min_score_percent' => 50,
         'dashboard_links_per_page' => 10,
     ],
 

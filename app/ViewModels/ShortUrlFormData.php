@@ -28,10 +28,17 @@ final readonly class ShortUrlFormData
         public int $customSlugMinLength,
         public int $customSlugMaxLength,
         public string $shortHost,
+        // reCAPTCHA v3 のサイトキー。未ログインかつ設定済みの場合のみ
+        public ?string $recaptchaSiteKey = null,
     ) {}
 
-    public static function build(bool $isMember, ShortenerSettings $settings, ShortUrlBuilder $urls, CarbonImmutable $now): self
-    {
+    public static function build(
+        bool $isMember,
+        ShortenerSettings $settings,
+        ShortUrlBuilder $urls,
+        CarbonImmutable $now,
+        ?string $recaptchaSiteKey = null,
+    ): self {
         $localNow = $now->setTimezone($settings->displayTimezone());
         $maxDays = $isMember ? null : $settings->guestMaxExpiryDays();
 
@@ -45,6 +52,7 @@ final readonly class ShortUrlFormData
             customSlugMinLength: $settings->customSlugMinLength(),
             customSlugMaxLength: $settings->customSlugMaxLength(),
             shortHost: $urls->host(),
+            recaptchaSiteKey: $isMember ? null : $recaptchaSiteKey,
         );
     }
 

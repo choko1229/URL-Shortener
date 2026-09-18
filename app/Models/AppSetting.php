@@ -24,6 +24,15 @@ class AppSetting extends Model
     // APP_KEY で暗号化して保存する（requirements.md 7-2, 10）
     public const DISCORD_CLIENT_SECRET = 'discord.client_secret';
 
+    // 暗号化して保存する
+    public const SAFE_BROWSING_API_KEY = 'safe_browsing.api_key';
+
+    // サイトキーはページに埋め込む公開値のため平文で保存する
+    public const RECAPTCHA_SITE_KEY = 'recaptcha.site_key';
+
+    // 暗号化して保存する
+    public const RECAPTCHA_SECRET_KEY = 'recaptcha.secret_key';
+
     /** @var list<string> */
     protected $fillable = [
         'key',

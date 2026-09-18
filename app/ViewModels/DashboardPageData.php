@@ -16,6 +16,9 @@ final readonly class DashboardPageData
         public ShortUrlFormData $form,
         public ?DashboardStatsData $stats,
         public ?LengthAwarePaginator $links,
+        // 直前に発行した短縮URL（発行結果パネルに表示）
+        public ?IssuedLinkData $issuedLink,
+        public string $displayTimezone,
     ) {}
 
     /** DB 障害などで統計・履歴を取得できなかった場合 true（発行フォームは表示を続ける） */

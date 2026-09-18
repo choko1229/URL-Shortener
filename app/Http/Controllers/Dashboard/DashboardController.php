@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Dashboard\DashboardPageBuilder;
+use App\ViewModels\IssuedLinkData;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -25,7 +26,7 @@ final class DashboardController extends Controller
         }
 
         return view('dashboard.index', [
-            'page' => $builder->build($user, CarbonImmutable::now()),
+            'page' => $builder->build($user, CarbonImmutable::now(), IssuedLinkData::fromSession($request->session())),
         ]);
     }
 }

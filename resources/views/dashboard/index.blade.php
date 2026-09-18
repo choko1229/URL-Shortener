@@ -24,6 +24,10 @@
                     ? "今月あと {$page->stats->remainingThisMonth()} 件発行できます（{$page->stats->monthlyLimit}件/月まで）"
                     : null,
             ])
+
+            @if ($page->issuedLink)
+                @include('partials.issued-link', ['link' => $page->issuedLink, 'timezone' => $page->displayTimezone])
+            @endif
         </section>
 
         @if ($page->stats)

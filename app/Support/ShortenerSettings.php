@@ -56,6 +56,46 @@ final class ShortenerSettings
         return $this->int('dashboard_links_per_page');
     }
 
+    public function randomCodeLength(): int
+    {
+        return $this->int('random_code_length');
+    }
+
+    public function memberRateLimitPerMinute(): int
+    {
+        return $this->int('member_rate_limit_per_minute');
+    }
+
+    public function guestRateLimitIntervalMinutes(): int
+    {
+        return $this->int('guest_rate_limit_interval_minutes');
+    }
+
+    public function passwordMaxAttempts(): int
+    {
+        return $this->int('password_max_attempts');
+    }
+
+    public function passwordLockoutMinutes(): int
+    {
+        return $this->int('password_lockout_minutes');
+    }
+
+    public function safeBrowsingCacheDays(): int
+    {
+        return $this->int('safe_browsing_cache_days');
+    }
+
+    public function redirectTicketTtlMinutes(): int
+    {
+        return $this->int('redirect_ticket_ttl_minutes');
+    }
+
+    public function recaptchaMinimumScore(): float
+    {
+        return min(100, $this->int('recaptcha_min_score_percent')) / 100;
+    }
+
     public function displayTimezone(): string
     {
         return (string) $this->config->get('shortener.display_timezone', 'Asia/Tokyo');

@@ -24,8 +24,16 @@
     $showExpiryPanel = $errors->hasAny(['expiry', 'expires_at']);
 @endphp
 
-<form method="POST" action="{{ $action }}" class="space-y-4">
+<form
+    method="POST"
+    action="{{ $action }}"
+    class="space-y-4"
+    @if ($form->recaptchaSiteKey) data-recaptcha-site-key="{{ $form->recaptchaSiteKey }}" data-recaptcha-action="{{ \App\Services\Security\RecaptchaVerifier::ACTION }}" @endif
+>
     @csrf
+    @if ($form->recaptchaSiteKey)
+        <input type="hidden" name="recaptcha_token" value="" data-recaptcha-token>
+    @endif
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div class="min-w-0 flex-1">
@@ -170,4 +178,12 @@
         </div>
         <x-field-error name="expiry" :id="$ids['expiryPanel'].'-error'" />
     </div>
+
+    @if ($form->recaptchaSiteKey)
+        <p class="text-[11px] leading-relaxed text-text-secondary">
+            このフォームは reCAPTCHA で保護されており、Google の
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" class="underline hover:text-primary-dark">プライバシーポリシー</a>と
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" class="underline hover:text-primary-dark">利用規約</a>が適用されます。
+        </p>
+    @endif
 </form>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\ExpiryOption;
+use App\Services\ShortUrl\ShortUrlDraft;
 use App\Support\ShortenerSettings;
 use App\ViewModels\ShortUrlFormData;
 use Carbon\CarbonImmutable;
@@ -13,8 +14,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * 短縮URL発行フォームの入力検証。
- * 予約語チェック・スラッグ重複チェック・発行上限チェックは保存処理とあわせて別途実装する。
+ * 短縮URL発行フォームの入力検証（形式のみ）。
+ * 予約語・スラッグの重複・発行上限は DB を参照するため ShortUrlIssuer で確認する。
  */
 final class StoreShortUrlRequest extends FormRequest
 {
@@ -37,7 +38,7 @@ final class StoreShortUrlRequest extends FormRequest
         $isMember = $this->user() !== null;
 
         return [
-            'original_url' => ['required', 'string', 'max:'.self::ORIGINAL_URL_MAX_LENGTH, 'url:http,https'],
+            'original_url' => ['required', 'string', 'max:'.self::ORIGINAL_URL_MAX_LENGTH, 'url:http,https', $this->notOwnDomainRule()],
             'custom_slug' => $isMember
                 ? [
                     'nullable',
@@ -55,7 +56,38 @@ final class StoreShortUrlRequest extends FormRequest
                 $this->expiresAtRule($isMember, $settings),
             ],
             'password' => ['nullable', 'string', 'min:'.self::PASSWORD_MIN_LENGTH, 'max:'.self::PASSWORD_MAX_LENGTH],
+            // reCAPTCHA v3 のトークン（検証はコントローラで行う）
+            'recaptcha_token' => ['nullable', 'string', 'max:4096'],
         ];
+    }
+
+    public function toDraft(): ShortUrlDraft
+    {
+        $customSlug = $this->validated('custom_slug');
+        $expiresAt = $this->validated('expires_at');
+        $password = $this->validated('password');
+
+        return new ShortUrlDraft(
+            originalUrl: (string) $this->validated('original_url'),
+            customSlug: is_string($customSlug) && $customSlug !== '' ? $customSlug : null,
+            expiry: ExpiryOption::from((string) $this->validated('expiry')),
+            expiresAtLocal: is_string($expiresAt) ? $expiresAt : null,
+            password: is_string($password) && $password !== '' ? $password : null,
+        );
+    }
+
+    /** 自サービスの URL を短縮するとリダイレクトが循環するため拒否する */
+    private function notOwnDomainRule(): Closure
+    {
+        $ownHosts = array_map('strtolower', array_filter((array) config('shortener.domains'), 'is_string'));
+
+        return static function (string $attribute, mixed $value, Closure $fail) use ($ownHosts): void {
+            $host = is_string($value) ? parse_url($value, PHP_URL_HOST) : null;
+
+            if (is_string($host) && in_array(strtolower($host), $ownHosts, true)) {
+                $fail('chok.ooo 自身の URL は短縮できません。');
+            }
+        };
     }
 
     /** @return array<string, string> */

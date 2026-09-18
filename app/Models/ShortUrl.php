@@ -119,6 +119,11 @@ class ShortUrl extends Model
         return $this->slug_type === SlugType::Custom;
     }
 
+    public function isExpiredAt(CarbonInterface $at): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->lessThanOrEqualTo($at);
+    }
+
     public function statusAt(CarbonInterface $at, int $warningDays): LinkStatus
     {
         if ($this->expires_at === null) {

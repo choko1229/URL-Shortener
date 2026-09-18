@@ -10,6 +10,7 @@ use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
 use App\ViewModels\DashboardPageData;
 use App\ViewModels\DashboardStatsData;
+use App\ViewModels\IssuedLinkData;
 use App\ViewModels\LinkRowData;
 use App\ViewModels\ShortUrlFormData;
 use App\ViewModels\ViewerData;
@@ -26,7 +27,7 @@ final class DashboardPageBuilder
         private readonly ShortUrlBuilder $urls,
     ) {}
 
-    public function build(User $user, CarbonImmutable $now): DashboardPageData
+    public function build(User $user, CarbonImmutable $now, ?IssuedLinkData $issuedLink = null): DashboardPageData
     {
         $viewer = ViewerData::fromUser($user);
         $form = ShortUrlFormData::build(true, $this->settings, $this->urls, $now);
@@ -40,10 +41,10 @@ final class DashboardPageBuilder
                 'error' => $e->getMessage(),
             ]);
 
-            return new DashboardPageData($viewer, $form, stats: null, links: null);
+            return new DashboardPageData($viewer, $form, stats: null, links: null, issuedLink: $issuedLink, displayTimezone: $this->settings->displayTimezone());
         }
 
-        return new DashboardPageData($viewer, $form, $stats, $links);
+        return new DashboardPageData($viewer, $form, $stats, $links, $issuedLink, $this->settings->displayTimezone());
     }
 
     private function stats(User $user, CarbonImmutable $now): DashboardStatsData
