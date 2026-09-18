@@ -126,6 +126,10 @@ class ShortUrl extends Model
 
     public function statusAt(CarbonInterface $at, int $warningDays): LinkStatus
     {
+        if ($this->trashed()) {
+            return LinkStatus::Deleted;
+        }
+
         if ($this->expires_at === null) {
             return LinkStatus::Active;
         }

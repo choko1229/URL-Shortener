@@ -33,6 +33,17 @@ class AppSetting extends Model
     // 暗号化して保存する
     public const RECAPTCHA_SECRET_KEY = 'recaptcha.secret_key';
 
+    // 自動アップデート（requirements.md 7 章）
+    public const UPDATE_ENABLED = 'update.enabled';
+
+    public const UPDATE_REPOSITORY = 'update.repository';
+
+    // GitHub のトークンは APP_KEY で暗号化して保存する（requirements.md 7-2）
+    public const UPDATE_GITHUB_TOKEN = 'update.github_token';
+
+    // 管理者への通知先。URL 自体が投稿権限を持つため暗号化して保存する
+    public const DISCORD_WEBHOOK_URL = 'notifications.discord_webhook_url';
+
     /** @var list<string> */
     protected $fillable = [
         'key',

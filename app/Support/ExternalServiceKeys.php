@@ -32,6 +32,32 @@ final class ExternalServiceKeys
         return $this->string(AppSetting::RECAPTCHA_SECRET_KEY);
     }
 
+    public function discordClientId(): ?string
+    {
+        return $this->string(AppSetting::DISCORD_CLIENT_ID);
+    }
+
+    public function discordClientSecret(): ?string
+    {
+        return $this->string(AppSetting::DISCORD_CLIENT_SECRET);
+    }
+
+    public function githubToken(): ?string
+    {
+        return $this->string(AppSetting::UPDATE_GITHUB_TOKEN);
+    }
+
+    public function discordWebhookUrl(): ?string
+    {
+        return $this->string(AppSetting::DISCORD_WEBHOOK_URL);
+    }
+
+    /** 保存後に同じリクエスト内で読み直せるよう、キャッシュを破棄する */
+    public function forget(): void
+    {
+        $this->resolved = [];
+    }
+
     private function string(string $key): ?string
     {
         if (array_key_exists($key, $this->resolved)) {
