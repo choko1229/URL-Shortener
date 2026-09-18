@@ -61,17 +61,17 @@ final class HomePageTest extends TestCase
             ->assertSessionHasErrors(['original_url']);
     }
 
-    public function test_valid_request_returns_not_implemented_notice_without_flashing_password(): void
+    public function test_validation_error_does_not_flash_password(): void
     {
         $this->from($this->mainUrl())
             ->post($this->mainUrl('/shorten'), [
-                'original_url' => 'https://example.com/path',
+                'original_url' => 'not a url',
                 'expiry' => '7d',
                 'password' => 'secret-pass',
             ])
             ->assertRedirect($this->mainUrl())
-            ->assertSessionHasNoErrors()
-            ->assertSessionHas('notice')
+            ->assertSessionHasErrors('original_url')
+            ->assertSessionHas('_old_input.original_url', 'not a url')
             ->assertSessionMissing('_old_input.password');
     }
 

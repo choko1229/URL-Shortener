@@ -33,4 +33,9 @@ abstract class TestCase extends BaseTestCase
     {
         return 'http://'.config('shortener.domains.dashboard').$path;
     }
+
+    protected function redirectUrl(string $path = '/'): string
+    {
+        return 'http://'.config('shortener.domains.redirect').$path;
+    }
 }

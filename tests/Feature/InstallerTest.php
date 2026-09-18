@@ -161,6 +161,9 @@ final class InstallerTest extends TestCase
                 'redirect_domain' => 'redirect.chok.ooo',
                 'discord_client_id' => '123456789012345678',
                 'discord_client_secret' => 'abcdefghijklmnopqrstuvwxyz_12345',
+                'safe_browsing_api_key' => 'AIzaSy-safe-browsing-key_0123',
+                'recaptcha_site_key' => '6Lc-site-key-abcdefghijklmn',
+                'recaptcha_secret_key' => '6Lc-secret-key-abcdefghijklmn',
             ])
             ->assertOk()
             ->assertSee('セットアップが完了しました')
@@ -171,6 +174,11 @@ final class InstallerTest extends TestCase
         $this->assertSame('123456789012345678', AppSetting::valueFor(AppSetting::DISCORD_CLIENT_ID));
         $this->assertSame('abcdefghijklmnopqrstuvwxyz_12345', AppSetting::valueFor(AppSetting::DISCORD_CLIENT_SECRET));
         $this->assertTrue(AppSetting::query()->where('key', AppSetting::DISCORD_CLIENT_SECRET)->value('is_encrypted'));
+        $this->assertSame('AIzaSy-safe-browsing-key_0123', AppSetting::valueFor(AppSetting::SAFE_BROWSING_API_KEY));
+        $this->assertTrue(AppSetting::query()->where('key', AppSetting::SAFE_BROWSING_API_KEY)->value('is_encrypted'));
+        $this->assertSame('6Lc-site-key-abcdefghijklmn', AppSetting::valueFor(AppSetting::RECAPTCHA_SITE_KEY));
+        $this->assertSame('6Lc-secret-key-abcdefghijklmn', AppSetting::valueFor(AppSetting::RECAPTCHA_SECRET_KEY));
+        $this->assertTrue(AppSetting::query()->where('key', AppSetting::RECAPTCHA_SECRET_KEY)->value('is_encrypted'));
         $this->assertStringNotContainsString(
             'abcdefghijklmnopqrstuvwxyz_12345',
             (string) AppSetting::query()->where('key', AppSetting::DISCORD_CLIENT_SECRET)->value('value'),
