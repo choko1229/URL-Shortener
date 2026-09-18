@@ -32,6 +32,7 @@
         <env name="SHORTENER_MAIN_DOMAIN" value="localhost"/>
         <env name="SHORTENER_DASHBOARD_DOMAIN" value="dash.localhost"/>
         <env name="SHORTENER_REDIRECT_DOMAIN" value="redirect.localhost"/>
+        <env name="SHORTENER_API_DOMAIN" value="api.localhost"/>
         <env name="SHORTENER_SHORT_URL_BASE" value="https://localhost"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>

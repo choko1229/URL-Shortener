@@ -16,7 +16,7 @@ final class DashboardPageTest extends TestCase
     public function test_guest_is_redirected_to_login(): void
     {
         $this->get($this->dashboardUrl())
-            ->assertRedirect($this->mainUrl('/login'));
+            ->assertRedirect($this->dashboardUrl('/login'));
     }
 
     public function test_member_sees_own_stats_and_links_only(): void
