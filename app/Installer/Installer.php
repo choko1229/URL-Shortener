@@ -42,15 +42,24 @@ final class Installer
     {
         $this->setUpDatabase();
 
-        if ($settings->hasDiscordCredentials()) {
-            try {
+        try {
+            if ($settings->hasDiscordCredentials()) {
                 AppSetting::store(AppSetting::DISCORD_CLIENT_ID, $settings->discordClientId);
                 AppSetting::store(AppSetting::DISCORD_CLIENT_SECRET, $settings->discordClientSecret, encrypt: true);
-            } catch (Throwable $e) {
-                Log::error('セットアップ: Discord の設定を保存できませんでした。', ['exception' => $e::class, 'error' => $e->getMessage()]);
-
-                throw new InstallationException('Discord の設定を保存できませんでした。', previous: $e);
             }
+
+            if ($settings->safeBrowsingApiKey !== null) {
+                AppSetting::store(AppSetting::SAFE_BROWSING_API_KEY, $settings->safeBrowsingApiKey, encrypt: true);
+            }
+
+            if ($settings->hasRecaptchaKeys()) {
+                AppSetting::store(AppSetting::RECAPTCHA_SITE_KEY, $settings->recaptchaSiteKey);
+                AppSetting::store(AppSetting::RECAPTCHA_SECRET_KEY, $settings->recaptchaSecretKey, encrypt: true);
+            }
+        } catch (Throwable $e) {
+            Log::error('セットアップ: 外部サービスの設定を保存できませんでした。', ['exception' => $e::class, 'error' => $e->getMessage()]);
+
+            throw new InstallationException('Discord・Safe Browsing・reCAPTCHA の設定を保存できませんでした。', previous: $e);
         }
 
         try {

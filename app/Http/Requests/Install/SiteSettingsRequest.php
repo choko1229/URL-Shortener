@@ -13,6 +13,9 @@ final class SiteSettingsRequest extends FormRequest
     /** ホスト名（ポート・スキームなし）。localhost などの単一ラベルも許可 */
     private const HOST_PATTERN = '/\A(?=.{1,253}\z)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*\z/';
 
+    /** Google の API キー・reCAPTCHA キー（英数字・ハイフン・アンダースコア） */
+    private const API_KEY_PATTERN = '/\A[A-Za-z0-9_\-]{20,100}\z/';
+
     /** @var array<string, string> */
     private const DOMAIN_FIELDS = [
         'main_domain' => 'メインドメイン',
@@ -50,6 +53,9 @@ final class SiteSettingsRequest extends FormRequest
         return $rules + [
             'discord_client_id' => ['nullable', 'required_with:discord_client_secret', 'string', 'regex:/\A\d{17,20}\z/'],
             'discord_client_secret' => ['nullable', 'required_with:discord_client_id', 'string', 'min:16', 'max:128', 'regex:/\A[A-Za-z0-9_\-]+\z/'],
+            'safe_browsing_api_key' => ['nullable', 'string', 'regex:'.self::API_KEY_PATTERN],
+            'recaptcha_site_key' => ['nullable', 'required_with:recaptcha_secret_key', 'string', 'regex:'.self::API_KEY_PATTERN],
+            'recaptcha_secret_key' => ['nullable', 'required_with:recaptcha_site_key', 'string', 'regex:'.self::API_KEY_PATTERN],
         ];
     }
 
@@ -83,6 +89,11 @@ final class SiteSettingsRequest extends FormRequest
             'discord_client_secret.min' => 'Client Secret が短すぎます。コピーした値を確認してください。',
             'discord_client_secret.max' => 'Client Secret が長すぎます。コピーした値を確認してください。',
             'discord_client_secret.regex' => 'Client Secret の形式が正しくありません。',
+            'safe_browsing_api_key.regex' => 'Safe Browsing の API キーの形式が正しくありません。',
+            'recaptcha_site_key.required_with' => 'シークレットキーを入力した場合はサイトキーも入力してください。',
+            'recaptcha_site_key.regex' => 'reCAPTCHA のサイトキーの形式が正しくありません。',
+            'recaptcha_secret_key.required_with' => 'サイトキーを入力した場合はシークレットキーも入力してください。',
+            'recaptcha_secret_key.regex' => 'reCAPTCHA のシークレットキーの形式が正しくありません。',
         ];
 
         foreach (self::DOMAIN_FIELDS as $field => $label) {
@@ -103,6 +114,14 @@ final class SiteSettingsRequest extends FormRequest
             secure: $secure,
             discordClientId: $this->filled('discord_client_id') ? $this->string('discord_client_id')->toString() : null,
             discordClientSecret: $this->filled('discord_client_secret') ? $this->string('discord_client_secret')->toString() : null,
+            safeBrowsingApiKey: $this->optionalString('safe_browsing_api_key'),
+            recaptchaSiteKey: $this->optionalString('recaptcha_site_key'),
+            recaptchaSecretKey: $this->optionalString('recaptcha_secret_key'),
         );
+    }
+
+    private function optionalString(string $key): ?string
+    {
+        return $this->filled($key) ? $this->string($key)->trim()->toString() : null;
     }
 }

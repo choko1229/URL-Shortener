@@ -22,6 +22,14 @@
             <dt class="w-32 shrink-0 text-text-secondary">Discord ログイン</dt>
             <dd class="font-medium">{{ $settings->hasDiscordCredentials() ? '設定済み' : '未設定' }}</dd>
         </div>
+        <div class="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:gap-4">
+            <dt class="w-32 shrink-0 text-text-secondary">悪意URLチェック</dt>
+            <dd class="font-medium">{{ $settings->safeBrowsingApiKey !== null ? '設定済み' : '未設定' }}</dd>
+        </div>
+        <div class="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:gap-4">
+            <dt class="w-32 shrink-0 text-text-secondary">reCAPTCHA</dt>
+            <dd class="font-medium">{{ $settings->hasRecaptchaKeys() ? '設定済み' : '未設定' }}</dd>
+        </div>
     </dl>
 
     <h2 class="mt-8 font-rounded text-base font-bold">この後に行うこと</h2>

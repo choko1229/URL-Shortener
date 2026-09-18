@@ -97,6 +97,48 @@
             </div>
         </fieldset>
 
+        @php
+            $serviceFields = [
+                'safe_browsing_api_key' => ['label' => 'Google Safe Browsing API キー', 'type' => 'password', 'hint' => '未設定の場合、リダイレクト時に「安全性を確認できませんでした」と表示し、利用者の判断で移動します。'],
+                'recaptcha_site_key' => ['label' => 'reCAPTCHA v3 サイトキー', 'type' => 'text', 'hint' => null],
+                'recaptcha_secret_key' => ['label' => 'reCAPTCHA v3 シークレットキー', 'type' => 'password', 'hint' => '未設定の場合、未ログイン発行のスパム対策は行いません（レート制限と月間上限のみ）。'],
+            ];
+        @endphp
+        <fieldset>
+            <legend class="font-rounded text-base font-bold">外部サービス（任意）</legend>
+            <p class="mt-1 text-[13px] leading-relaxed text-text-secondary">
+                悪意URLチェックとスパム対策に使います。キーは暗号化してデータベースに保存します（サイトキーは公開値のため平文）。
+            </p>
+            <div class="mt-4 grid grid-cols-1 gap-5">
+                @foreach ($serviceFields as $name => $field)
+                    <div>
+                        <label for="{{ $name }}" class="block text-[13px] font-medium text-text-secondary">{{ $field['label'] }}</label>
+                        <input
+                            id="{{ $name }}"
+                            name="{{ $name }}"
+                            type="{{ $field['type'] }}"
+                            autocomplete="{{ $field['type'] === 'password' ? 'new-password' : 'off' }}"
+                            spellcheck="false"
+                            @if ($field['type'] !== 'password') value="{{ old($name) }}" @endif
+                            class="form-control mt-2"
+                            @php
+                                $describedBy = array_filter([
+                                    $field['hint'] ? "{$name}-hint" : null,
+                                    $errors->has($name) ? "{$name}-error" : null,
+                                ]);
+                            @endphp
+                            @if ($describedBy !== []) aria-describedby="{{ implode(' ', $describedBy) }}" @endif
+                            @error($name) aria-invalid="true" @enderror
+                        >
+                        @if ($field['hint'])
+                            <p id="{{ $name }}-hint" class="mt-1.5 text-xs text-text-secondary">{{ $field['hint'] }}</p>
+                        @endif
+                        <x-field-error :name="$name" :id="$name.'-error'" />
+                    </div>
+                @endforeach
+            </div>
+        </fieldset>
+
         <div class="rounded-control border border-border-strong bg-primary-tint-soft px-4 py-3 text-[13px] leading-relaxed">
             「セットアップを完了する」を押すと、テーブルの作成と初期データの登録を行います。完了後、このセットアップ画面は使えなくなります。
         </div>

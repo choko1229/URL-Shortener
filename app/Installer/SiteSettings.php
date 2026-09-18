@@ -15,7 +15,17 @@ final readonly class SiteSettings
         public bool $secure,
         public ?string $discordClientId,
         public ?string $discordClientSecret,
+        // 悪意URLチェック（requirements.md 2-7）。未設定なら転送時に「確認できません」と表示する
+        public ?string $safeBrowsingApiKey = null,
+        // スパム対策 reCAPTCHA v3（requirements.md 4-4）。未設定なら検証しない
+        public ?string $recaptchaSiteKey = null,
+        public ?string $recaptchaSecretKey = null,
     ) {}
+
+    public function hasRecaptchaKeys(): bool
+    {
+        return $this->recaptchaSiteKey !== null && $this->recaptchaSecretKey !== null;
+    }
 
     public function baseUrl(): string
     {
