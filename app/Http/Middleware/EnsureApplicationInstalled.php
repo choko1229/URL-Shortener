@@ -32,6 +32,6 @@ final class EnsureApplicationInstalled
             return $next($request);
         }
 
-        return redirect()->route('install.requirements');
+        return redirect()->route('install.show');
     }
 }

@@ -74,6 +74,12 @@ class User extends Authenticatable
         return $this->role === UserRole::Admin;
     }
 
+    /** 管理者が一人でもいるか（いなければ、セットアップ直後で最初のログインを待っている状態） */
+    public static function adminExists(): bool
+    {
+        return static::query()->where('role', UserRole::Admin->value)->exists();
+    }
+
     public function displayName(): string
     {
         return $this->global_name !== null && $this->global_name !== '' ? $this->global_name : $this->username;

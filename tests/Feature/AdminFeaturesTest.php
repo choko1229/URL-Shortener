@@ -21,7 +21,7 @@ final class AdminFeaturesTest extends TestCase
     {
         $member = User::factory()->create();
 
-        foreach (['/admin/links', '/admin/users', '/admin/reserved-words', '/admin/api-keys', '/admin/updates'] as $path) {
+        foreach (['/admin/links', '/admin/users', '/admin/reserved-words', '/admin/api-keys', '/admin/services', '/admin/updates'] as $path) {
             $this->actingAs($member)->get($this->dashboardUrl($path))->assertForbidden();
         }
     }
@@ -30,7 +30,7 @@ final class AdminFeaturesTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
 
-        foreach (['/admin/links', '/admin/users', '/admin/reserved-words', '/admin/api-keys', '/admin/updates', '/settings'] as $path) {
+        foreach (['/admin/links', '/admin/users', '/admin/reserved-words', '/admin/api-keys', '/admin/services', '/admin/updates', '/settings'] as $path) {
             $this->actingAs($admin)->get($this->dashboardUrl($path))->assertOk();
         }
     }

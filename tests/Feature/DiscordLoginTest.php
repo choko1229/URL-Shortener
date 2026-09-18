@@ -90,6 +90,7 @@ final class DiscordLoginTest extends TestCase
 
     public function test_callback_shows_error_when_token_exchange_fails(): void
     {
+        User::factory()->admin()->create();
         Http::fake(['discord.com/api/oauth2/token' => Http::response(['error' => 'invalid_grant'], 400)]);
 
         $this->withSession(['discord_oauth_state' => 'state-value'])
@@ -100,8 +101,29 @@ final class DiscordLoginTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_login_is_unavailable_until_discord_is_configured(): void
+    public function test_callback_failure_before_first_admin_returns_to_setup(): void
     {
+        Http::fake(['discord.com/api/oauth2/token' => Http::response(['error' => 'invalid_client'], 401)]);
+
+        $this->withSession(['discord_oauth_state' => 'state-value'])
+            ->get($this->dashboardUrl('/login/callback?state=state-value&code=abc'))
+            ->assertRedirect(route('auth.setup'))
+            ->assertSessionHas('error');
+
+        $this->assertGuest();
+    }
+
+    public function test_login_leads_to_setup_until_discord_is_configured_and_no_admin_exists(): void
+    {
+        AppSetting::query()->where('key', AppSetting::DISCORD_CLIENT_SECRET)->delete();
+        app(ExternalServiceKeys::class)->forget();
+
+        $this->get($this->dashboardUrl('/login'))->assertRedirect(route('auth.setup'));
+    }
+
+    public function test_login_is_unavailable_when_discord_is_not_configured_after_admin_exists(): void
+    {
+        User::factory()->admin()->create();
         AppSetting::query()->where('key', AppSetting::DISCORD_CLIENT_SECRET)->delete();
         app(ExternalServiceKeys::class)->forget();
 

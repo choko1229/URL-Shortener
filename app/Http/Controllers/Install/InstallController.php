@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Install;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Install\DatabaseSettingsRequest;
-use App\Http\Requests\Install\SiteSettingsRequest;
+use App\Http\Requests\Install\InstallRequest;
 use App\Installer\DatabaseConnectionTester;
-use App\Installer\EnvironmentFile;
 use App\Installer\InstallationException;
 use App\Installer\Installer;
 use App\Installer\Preflight;
@@ -19,58 +17,28 @@ use App\Installer\SiteSettings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Throwable;
+use Illuminate\Http\Response;
 
 /**
  * 初期セットアップ（requirements.md 4-2）。
- * 1. 動作環境の確認 → 2. データベース → 3. サイト設定 の順に進む。
+ * 動作環境の確認と DB 接続情報の入力を 1 画面で行う。ドメインはアクセス中のホスト名から自動で決める。
  * 未インストール時のみ到達できる（EnsureApplicationInstalled）。
  */
 final class InstallController extends Controller
 {
-    private const SESSION_REQUIREMENTS_CONFIRMED = 'install.requirements_confirmed';
-
-    private const SESSION_DATABASE_CONFIGURED = 'install.database_configured';
-
-    public function requirements(Request $request, RequirementChecker $checker): View
+    public function show(Request $request, RequirementChecker $checker): View
     {
-        $results = $this->checkRequirements($request, $checker);
+        $secure = Preflight::isSecureRequest($request->server->all());
+        $suggested = SiteSettings::suggestDomains($request->getHost());
+        $results = $checker->check($request->getSchemeAndHttpHost(), $secure, $this->subdomainUrls($suggested, $secure, $request));
 
-        return view('install.requirements', [
+        return view('install.index', [
             'results' => $results,
             'hasFailure' => self::hasStatus($results, RequirementStatus::Failed),
             'needsConfirmation' => self::hasStatus($results, RequirementStatus::Unknown),
-        ]);
-    }
-
-    public function confirmRequirements(Request $request, RequirementChecker $checker): RedirectResponse
-    {
-        $results = $this->checkRequirements($request, $checker);
-
-        if (self::hasStatus($results, RequirementStatus::Failed)) {
-            return redirect()->route('install.requirements')->with('error', '動作条件を満たしていない項目があります。');
-        }
-
-        if (self::hasStatus($results, RequirementStatus::Unknown) && ! $request->boolean('confirmed')) {
-            return redirect()->route('install.requirements')->withErrors([
-                'confirmed' => 'リンク先にファイルの中身が表示されないことを確認し、チェックを入れてください。',
-            ]);
-        }
-
-        $request->session()->put(self::SESSION_REQUIREMENTS_CONFIRMED, true);
-
-        return redirect()->route('install.database');
-    }
-
-    public function database(Request $request): View|RedirectResponse
-    {
-        if (! $request->session()->get(self::SESSION_REQUIREMENTS_CONFIRMED)) {
-            return redirect()->route('install.requirements');
-        }
-
-        return view('install.database', [
-            'defaults' => [
+            'suggested' => $suggested,
+            'secure' => $secure,
+            'databaseDefaults' => [
                 'db_host' => (string) config('database.connections.mysql.host', 'localhost'),
                 'db_port' => (string) config('database.connections.mysql.port', '3306'),
                 'db_database' => (string) config('database.connections.mysql.database', ''),
@@ -79,94 +47,76 @@ final class InstallController extends Controller
         ]);
     }
 
-    public function storeDatabase(DatabaseSettingsRequest $request, DatabaseConnectionTester $tester, EnvironmentFile $environment): RedirectResponse
+    public function store(InstallRequest $request, RequirementChecker $checker, DatabaseConnectionTester $tester, Installer $installer): View|RedirectResponse
     {
-        if (! $request->session()->get(self::SESSION_REQUIREMENTS_CONFIRMED)) {
-            return redirect()->route('install.requirements');
+        $secure = Preflight::isSecureRequest($request->server->all());
+        // サブドメインの向き先は「注意」止まりのため、完了時には確認し直さない
+        $results = $checker->check($request->getSchemeAndHttpHost(), $secure);
+
+        if (self::hasStatus($results, RequirementStatus::Failed)) {
+            return $this->back($request, '動作条件を満たしていない項目があります。画面の「NG」の項目を解決してください。');
+        }
+
+        if (self::hasStatus($results, RequirementStatus::Unknown) && ! $request->boolean('confirmed')) {
+            return redirect()->route('install.show')
+                ->withInput($request->safe()->except('db_password'))
+                ->withErrors(['confirmed' => 'リンク先にファイルの中身が表示されないことを確認し、チェックを入れてください。']);
         }
 
         $credentials = $request->credentials();
-        $result = $tester->test($credentials);
+        $connection = $tester->test($credentials);
 
-        if (! $result->successful) {
-            return back()
-                ->withInput($request->safe()->except('db_password'))
-                ->with('error', $result->errorMessage);
+        if (! $connection->successful) {
+            return $this->back($request, (string) $connection->errorMessage);
         }
+
+        $site = $request->siteSettings($secure);
 
         try {
-            $environment->write($credentials->environmentValues());
-        } catch (Throwable $e) {
-            Log::error('セットアップ: DB 接続情報を .env に保存できませんでした。', ['exception' => $e::class, 'error' => $e->getMessage()]);
-
-            return back()
-                ->withInput($request->safe()->except('db_password'))
-                ->with('error', '設定ファイル（.env）に書き込めませんでした。書き込み権限を確認してください。');
+            $installer->install($credentials, $site);
+        } catch (InstallationException $e) {
+            return $this->back($request, $e->getMessage());
         }
 
-        $request->session()->put(self::SESSION_DATABASE_CONFIGURED, true);
-
-        return redirect()
-            ->route('install.site')
-            ->with('notice', $result->warning ?? "データベースに接続できました（{$result->serverVersion}）。");
-    }
-
-    public function site(Request $request, DatabaseConnectionTester $tester): View|RedirectResponse
-    {
-        if ($redirect = $this->requireDatabase($request, $tester)) {
-            return $redirect;
-        }
-
-        return view('install.site', [
-            'suggested' => SiteSettings::suggestDomains($request->getHost()),
-            'secure' => Preflight::isSecureRequest($request->server->all()),
+        return view('install.complete', [
+            'settings' => $site,
+            'databaseWarning' => $connection->warning,
         ]);
     }
 
-    public function storeSite(SiteSettingsRequest $request, DatabaseConnectionTester $tester, Installer $installer): View|RedirectResponse
+    /** サブドメインがこのフォルダを向いているかの確認用（RequirementChecker が各サブドメインから呼び出す） */
+    public function ping(RequirementChecker $checker): Response
     {
-        if ($redirect = $this->requireDatabase($request, $tester)) {
-            return $redirect;
-        }
-
-        $settings = $request->toSettings(Preflight::isSecureRequest($request->server->all()));
-
-        try {
-            $installer->complete($settings);
-        } catch (InstallationException $e) {
-            return back()
-                ->withInput($request->safe()->except('discord_client_secret'))
-                ->with('error', $e->getMessage());
-        }
-
-        $request->session()->forget([self::SESSION_REQUIREMENTS_CONFIRMED, self::SESSION_DATABASE_CONFIGURED]);
-
-        return view('install.complete', ['settings' => $settings]);
+        return response($checker->pingToken(), Response::HTTP_OK, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+            'Cache-Control' => 'no-store',
+        ]);
     }
 
-    /** @return list<RequirementResult> */
-    private function checkRequirements(Request $request, RequirementChecker $checker): array
+    /**
+     * 各サブドメインの確認先 URL（標準以外のポートでアクセスしている場合はポートも付ける）
+     *
+     * @param  array{main: string, dashboard: string, api: string, redirect: string}  $suggested
+     * @return array<string, string>
+     */
+    private function subdomainUrls(array $suggested, bool $secure, Request $request): array
     {
-        return $checker->check(
-            $request->getSchemeAndHttpHost(),
-            Preflight::isSecureRequest($request->server->all()),
-        );
+        $scheme = $secure ? 'https' : 'http';
+        $port = $request->getPort();
+        $portSuffix = in_array($port, [80, 443, null], true) ? '' : ':'.$port;
+
+        return [
+            'ダッシュボード' => "{$scheme}://{$suggested['dashboard']}{$portSuffix}",
+            'API' => "{$scheme}://{$suggested['api']}{$portSuffix}",
+            'リダイレクト確認' => "{$scheme}://{$suggested['redirect']}{$portSuffix}",
+        ];
     }
 
-    /** DB 設定が保存済みで、実際に接続できる場合のみ次へ進める */
-    private function requireDatabase(Request $request, DatabaseConnectionTester $tester): ?RedirectResponse
+    private function back(InstallRequest $request, string $error): RedirectResponse
     {
-        if (! $request->session()->get(self::SESSION_DATABASE_CONFIGURED)) {
-            return redirect()->route('install.database');
-        }
-
-        if (! $tester->canConnectWithCurrentConfiguration()) {
-            return redirect()
-                ->route('install.database')
-                ->with('error', '保存したデータベース設定で接続できませんでした。もう一度入力してください。');
-        }
-
-        return null;
+        return redirect()->route('install.show')
+            ->withInput($request->safe()->except('db_password'))
+            ->with('error', $error);
     }
 
     /** @param  list<RequirementResult>  $results */

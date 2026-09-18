@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Installer;
 
-/** セットアップ画面の「サイト設定」 */
+/** セットアップ画面の「ドメイン」（アクセス中のホスト名から自動で推測し、必要な場合のみ変更する） */
 final readonly class SiteSettings
 {
     public function __construct(
@@ -13,33 +13,21 @@ final readonly class SiteSettings
         public string $apiDomain,
         public string $redirectDomain,
         public bool $secure,
-        public ?string $discordClientId,
-        public ?string $discordClientSecret,
-        // 悪意URLチェック（requirements.md 2-7）。未設定なら転送時に「確認できません」と表示する
-        public ?string $safeBrowsingApiKey = null,
-        // スパム対策 reCAPTCHA v3（requirements.md 4-4）。未設定なら検証しない
-        public ?string $recaptchaSiteKey = null,
-        public ?string $recaptchaSecretKey = null,
     ) {}
-
-    public function hasRecaptchaKeys(): bool
-    {
-        return $this->recaptchaSiteKey !== null && $this->recaptchaSecretKey !== null;
-    }
 
     public function baseUrl(): string
     {
-        return ($this->secure ? 'https' : 'http').'://'.$this->mainDomain;
+        return $this->urlFor($this->mainDomain);
     }
 
     public function dashboardUrl(): string
     {
-        return ($this->secure ? 'https' : 'http').'://'.$this->dashboardDomain;
+        return $this->urlFor($this->dashboardDomain);
     }
 
-    public function hasDiscordCredentials(): bool
+    public function urlFor(string $domain): string
     {
-        return $this->discordClientId !== null && $this->discordClientSecret !== null;
+        return ($this->secure ? 'https' : 'http').'://'.$domain;
     }
 
     /** @return array<string, string|bool|null> */

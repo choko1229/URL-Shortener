@@ -5,9 +5,11 @@ declare(strict_types=1);
 use App\Http\Controllers\Admin\ApiKeyController;
 use App\Http\Controllers\Admin\LinkController as AdminLinkController;
 use App\Http\Controllers\Admin\ReservedWordController;
+use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\UpdateController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\DiscordAuthController;
+use App\Http\Controllers\Auth\DiscordSetupController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\LinkController;
 use App\Http\Controllers\Dashboard\LogoutController;
@@ -36,12 +38,9 @@ Route::prefix('install')
     ->name('install.')
     ->controller(InstallController::class)
     ->group(static function (): void {
-        Route::get('/', 'requirements')->name('requirements');
-        Route::post('/', 'confirmRequirements')->name('requirements.confirm');
-        Route::get('/database', 'database')->name('database');
-        Route::post('/database', 'storeDatabase')->name('database.store');
-        Route::get('/site', 'site')->name('site');
-        Route::post('/site', 'storeSite')->name('site.store');
+        Route::get('/', 'show')->name('show');
+        Route::post('/', 'store')->middleware('throttle:10,1')->name('store');
+        Route::get('/ping', 'ping')->name('ping');
     });
 
 // chok.ooo: トップページ・発行フォーム・短縮URLへのアクセス受付
@@ -74,6 +73,10 @@ Route::domain(config('shortener.domains.dashboard'))
     ->group(static function (): void {
         Route::get('/login', [DiscordAuthController::class, 'redirect'])->name('login');
         Route::get('/login/callback', [DiscordAuthController::class, 'callback'])->name('callback');
+
+        // 初回のみ: Discord の Client ID / Secret の設定（管理者が登録されると 404）
+        Route::get('/login/setup', [DiscordSetupController::class, 'show'])->name('setup');
+        Route::post('/login/setup', [DiscordSetupController::class, 'store'])->middleware('throttle:10,1')->name('setup.store');
     });
 
 // dash.chok.ooo: ダッシュボード（ログイン必須）
@@ -120,6 +123,9 @@ Route::domain(config('shortener.domains.dashboard'))
                 Route::get('/api-keys', [ApiKeyController::class, 'index'])->name('api-keys');
                 Route::post('/api-keys', [ApiKeyController::class, 'store'])->name('api-keys.store');
                 Route::delete('/api-keys/{apiKey}', [ApiKeyController::class, 'revoke'])->whereNumber('apiKey')->name('api-keys.revoke');
+
+                Route::get('/services', [ServiceController::class, 'index'])->name('services');
+                Route::put('/services', [ServiceController::class, 'update'])->name('services.update');
 
                 Route::get('/updates', [UpdateController::class, 'index'])->name('updates');
                 Route::put('/updates/settings', [UpdateController::class, 'updateSettings'])->name('updates.settings');

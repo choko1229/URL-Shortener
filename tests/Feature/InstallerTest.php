@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Installer\DatabaseConnectionSwitcher;
 use App\Installer\DatabaseConnectionTester;
 use App\Installer\DatabaseTestResult;
 use App\Installer\InstallationState;
-use App\Models\AppSetting;
+use App\Installer\RequirementChecker;
 use App\Models\ReservedWord;
 use Dotenv\Dotenv;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -40,6 +41,11 @@ final class InstallerTest extends TestCase
 
         $this->state = new InstallationState($this->workDirectory.'/installed.json');
         $this->app->instance(InstallationState::class, $this->state);
+
+        // テストは SQLite で動かすため、入力された MySQL への切り替えは行わない
+        $this->mock(DatabaseConnectionSwitcher::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('use')->byDefault();
+        });
     }
 
     protected function tearDown(): void
@@ -60,10 +66,24 @@ final class InstallerTest extends TestCase
         $this->state->markInstalled();
 
         $this->get(self::SITE.'/install')->assertNotFound();
-        $this->get(self::SITE.'/install/database')->assertNotFound();
+        $this->get(self::SITE.'/install/ping')->assertNotFound();
     }
 
-    public function test_requirements_step_blocks_when_env_file_is_exposed(): void
+    public function test_setup_page_asks_only_for_database_and_prefills_domains(): void
+    {
+        Http::fake(['*' => Http::response('<!DOCTYPE html><title>セットアップ</title>', 200)]);
+
+        $this->get('http://www.chok.example/install')
+            ->assertOk()
+            ->assertSee('name="db_host"', false)
+            ->assertSee('name="db_password"', false)
+            ->assertSee('value="chok.example"', false)
+            ->assertSee('value="dash.chok.example"', false)
+            ->assertDontSee('discord_client_id')
+            ->assertSee('セットアップを完了する');
+    }
+
+    public function test_setup_page_blocks_when_env_file_is_exposed(): void
     {
         Http::fake([
             '*/.env' => Http::response('APP_KEY=base64:secret', 200),
@@ -74,14 +94,16 @@ final class InstallerTest extends TestCase
             ->assertOk()
             ->assertSee('外部から閲覧できる状態です')
             ->assertSee(self::SITE.'/.env')
-            ->assertDontSee('次へ進む');
+            ->assertDontSee('セットアップを完了する');
 
-        $this->post(self::SITE.'/install')
+        $this->post(self::SITE.'/install', $this->input())
             ->assertRedirect(self::SITE.'/install')
             ->assertSessionHas('error');
+
+        $this->assertFalse($this->state->isInstalled());
     }
 
-    public function test_requirements_step_passes_when_protected_paths_return_other_pages(): void
+    public function test_setup_page_passes_when_protected_paths_return_other_pages(): void
     {
         // 未インストール時の /.env はセットアップ画面（200）を返すが、ファイルの中身ではないので問題なし
         Http::fake(['*' => Http::response('<!DOCTYPE html><title>セットアップ</title>', 200)]);
@@ -90,101 +112,91 @@ final class InstallerTest extends TestCase
             ->assertOk()
             ->assertDontSee('外部から閲覧できる状態です')
             ->assertDontSee('name="confirmed"', false)
-            ->assertSee('次へ進む');
+            // サブドメインは応答が違うため「向いていない」扱い（注意のみで進める）
+            ->assertSee('向いていないか')
+            ->assertSee('セットアップを完了する');
     }
 
-    public function test_requirements_step_requires_manual_confirmation_when_probe_is_unreachable(): void
+    public function test_subdomain_check_passes_when_every_subdomain_serves_this_folder(): void
+    {
+        $token = $this->app->make(RequirementChecker::class)->pingToken();
+        Http::fake([
+            '*/install/ping' => Http::response($token, 200),
+            '*' => Http::response('Not Found', 404),
+        ]);
+
+        $this->get(self::SITE.'/install')
+            ->assertOk()
+            ->assertSee('サブドメインの向き先')
+            ->assertDontSee('向いていないか');
+    }
+
+    public function test_ping_returns_token_of_this_installation(): void
+    {
+        $token = $this->app->make(RequirementChecker::class)->pingToken();
+
+        $this->get(self::SITE.'/install/ping')
+            ->assertOk()
+            ->assertSeeText($token);
+    }
+
+    public function test_requires_manual_confirmation_when_probe_is_unreachable(): void
     {
         Http::fake(fn () => throw new ConnectionException('timeout'));
+        $this->mockConnectionTester(DatabaseTestResult::succeeded('8.0.36'));
 
         $this->get(self::SITE.'/install')
             ->assertOk()
             ->assertSee('サーバー自身から確認できませんでした')
             ->assertSee('name="confirmed"', false);
 
-        $this->post(self::SITE.'/install')->assertSessionHasErrors('confirmed');
+        $this->post(self::SITE.'/install', $this->input())->assertSessionHasErrors('confirmed');
+        $this->assertFalse($this->state->isInstalled());
 
-        $this->post(self::SITE.'/install', ['confirmed' => '1'])
-            ->assertRedirect(self::SITE.'/install/database');
+        $this->post(self::SITE.'/install', $this->input(['confirmed' => '1']))
+            ->assertOk()
+            ->assertSee('セットアップが完了しました');
+        $this->assertTrue($this->state->isInstalled());
     }
 
-    public function test_database_step_requires_requirements_step(): void
+    public function test_shows_error_and_does_not_keep_password_when_connection_fails(): void
     {
-        $this->get(self::SITE.'/install/database')->assertRedirect(self::SITE.'/install');
-    }
+        Http::fake(['*' => Http::response('Not Found', 404)]);
+        $this->mockConnectionTester(DatabaseTestResult::failed('ユーザー名またはパスワードが正しくありません。'));
 
-    public function test_database_step_shows_error_and_does_not_keep_password_when_connection_fails(): void
-    {
-        $this->mock(DatabaseConnectionTester::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('test')->once()->andReturn(DatabaseTestResult::failed('ユーザー名またはパスワードが正しくありません。'));
-        });
-
-        $this->withSession(['install.requirements_confirmed' => true])
-            ->from(self::SITE.'/install/database')
-            ->post(self::SITE.'/install/database', $this->databaseInput())
-            ->assertRedirect(self::SITE.'/install/database')
+        $this->post(self::SITE.'/install', $this->input())
+            ->assertRedirect(self::SITE.'/install')
             ->assertSessionHas('error', 'ユーザー名またはパスワードが正しくありません。')
             ->assertSessionHas('_old_input.db_username', 'chok')
             ->assertSessionMissing('_old_input.db_password');
 
         $this->assertArrayNotHasKey('DB_HOST', $this->envValues());
+        $this->assertFalse($this->state->isInstalled());
     }
 
-    public function test_database_step_saves_credentials_to_env_file(): void
+    public function test_completes_installation_with_database_credentials_only(): void
     {
-        $this->mock(DatabaseConnectionTester::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('test')->once()->andReturn(DatabaseTestResult::succeeded('8.0.36'));
-        });
+        Http::fake(['*' => Http::response('Not Found', 404)]);
+        $this->mockConnectionTester(DatabaseTestResult::succeeded('8.0.36'));
 
-        $this->withSession(['install.requirements_confirmed' => true])
-            ->post(self::SITE.'/install/database', $this->databaseInput(['db_password' => 'p@ss "word" $x #1']))
-            ->assertRedirect(self::SITE.'/install/site')
-            ->assertSessionHas('install.database_configured', true);
+        $this->post(self::SITE.'/install', $this->input([
+            'db_password' => 'p@ss "word" $x #1',
+            'main_domain' => 'Chok.ooo',
+            'dashboard_domain' => 'dash.chok.ooo',
+            'api_domain' => 'api.chok.ooo',
+            'redirect_domain' => 'redirect.chok.ooo',
+        ]))
+            ->assertOk()
+            ->assertSee('セットアップが完了しました')
+            ->assertSee('http://dash.chok.ooo/login');
+
+        $this->assertTrue($this->state->isInstalled());
+        $this->assertGreaterThan(0, ReservedWord::query()->count());
 
         $values = $this->envValues();
         $this->assertSame('mysql.example.jp', $values['DB_HOST']);
         $this->assertSame('3306', $values['DB_PORT']);
         $this->assertSame('p@ss "word" $x #1', $values['DB_PASSWORD']);
-    }
-
-    public function test_site_step_completes_installation(): void
-    {
-        $this->mock(DatabaseConnectionTester::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('canConnectWithCurrentConfiguration')->andReturn(true);
-        });
-
-        $this->withSession(['install.database_configured' => true])
-            ->post(self::SITE.'/install/site', [
-                'main_domain' => 'Chok.ooo',
-                'dashboard_domain' => 'dash.chok.ooo',
-                'api_domain' => 'api.chok.ooo',
-                'redirect_domain' => 'redirect.chok.ooo',
-                'discord_client_id' => '123456789012345678',
-                'discord_client_secret' => 'abcdefghijklmnopqrstuvwxyz_12345',
-                'safe_browsing_api_key' => 'AIzaSy-safe-browsing-key_0123',
-                'recaptcha_site_key' => '6Lc-site-key-abcdefghijklmn',
-                'recaptcha_secret_key' => '6Lc-secret-key-abcdefghijklmn',
-            ])
-            ->assertOk()
-            ->assertSee('セットアップが完了しました')
-            ->assertSee('http://chok.ooo');
-
-        $this->assertTrue($this->state->isInstalled());
-        $this->assertGreaterThan(0, ReservedWord::query()->count());
-        $this->assertSame('123456789012345678', AppSetting::valueFor(AppSetting::DISCORD_CLIENT_ID));
-        $this->assertSame('abcdefghijklmnopqrstuvwxyz_12345', AppSetting::valueFor(AppSetting::DISCORD_CLIENT_SECRET));
-        $this->assertTrue(AppSetting::query()->where('key', AppSetting::DISCORD_CLIENT_SECRET)->value('is_encrypted'));
-        $this->assertSame('AIzaSy-safe-browsing-key_0123', AppSetting::valueFor(AppSetting::SAFE_BROWSING_API_KEY));
-        $this->assertTrue(AppSetting::query()->where('key', AppSetting::SAFE_BROWSING_API_KEY)->value('is_encrypted'));
-        $this->assertSame('6Lc-site-key-abcdefghijklmn', AppSetting::valueFor(AppSetting::RECAPTCHA_SITE_KEY));
-        $this->assertSame('6Lc-secret-key-abcdefghijklmn', AppSetting::valueFor(AppSetting::RECAPTCHA_SECRET_KEY));
-        $this->assertTrue(AppSetting::query()->where('key', AppSetting::RECAPTCHA_SECRET_KEY)->value('is_encrypted'));
-        $this->assertStringNotContainsString(
-            'abcdefghijklmnopqrstuvwxyz_12345',
-            (string) AppSetting::query()->where('key', AppSetting::DISCORD_CLIENT_SECRET)->value('value'),
-        );
-
-        $values = $this->envValues();
         $this->assertSame('chok.ooo', $values['SHORTENER_MAIN_DOMAIN']);
         $this->assertSame('dash.chok.ooo', $values['SHORTENER_DASHBOARD_DOMAIN']);
         $this->assertSame('http://chok.ooo', $values['APP_URL']);
@@ -192,26 +204,68 @@ final class InstallerTest extends TestCase
         $this->assertSame('database', $values['SESSION_DRIVER']);
     }
 
-    public function test_site_step_rejects_duplicate_domains(): void
+    public function test_switches_to_entered_database_before_creating_tables(): void
     {
-        $this->mock(DatabaseConnectionTester::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('canConnectWithCurrentConfiguration')->andReturn(true);
+        Http::fake(['*' => Http::response('Not Found', 404)]);
+        $this->mockConnectionTester(DatabaseTestResult::succeeded('8.0.36'));
+
+        $this->mock(DatabaseConnectionSwitcher::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('use')->once()->withArgs(
+                static fn ($credentials): bool => $credentials->host === 'mysql.example.jp' && $credentials->database === 'chok_ooo',
+            );
         });
 
-        $this->withSession(['install.database_configured' => true])
-            ->post(self::SITE.'/install/site', [
-                'main_domain' => 'chok.ooo',
-                'dashboard_domain' => 'chok.ooo',
-                'api_domain' => 'https://api.chok.ooo',
-                'redirect_domain' => 'redirect.chok.ooo',
-            ])
-            ->assertSessionHasErrors(['main_domain', 'api_domain']);
+        $this->post(self::SITE.'/install', $this->input())->assertOk();
+    }
+
+    public function test_does_not_write_env_when_table_creation_fails(): void
+    {
+        Http::fake(['*' => Http::response('Not Found', 404)]);
+        $this->mockConnectionTester(DatabaseTestResult::succeeded('8.0.36'));
+
+        // 接続できない DB に切り替わったことにして、テーブル作成を失敗させる
+        $this->mock(DatabaseConnectionSwitcher::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('use')->once()->andReturnUsing(static function (): void {
+                config([
+                    'database.connections.broken' => ['driver' => 'unsupported'],
+                    'database.default' => 'broken',
+                ]);
+            });
+        });
+
+        $this->post(self::SITE.'/install', $this->input())
+            ->assertRedirect(self::SITE.'/install')
+            ->assertSessionHas('error');
+
+        config(['database.default' => 'sqlite']);
+
+        $this->assertArrayNotHasKey('DB_HOST', $this->envValues());
+        $this->assertFalse($this->state->isInstalled());
+    }
+
+    public function test_rejects_duplicate_domains(): void
+    {
+        Http::fake(['*' => Http::response('Not Found', 404)]);
+
+        $this->post(self::SITE.'/install', $this->input([
+            'main_domain' => 'chok.ooo',
+            'dashboard_domain' => 'chok.ooo',
+            'api_domain' => 'https://api.chok.ooo',
+            'redirect_domain' => 'redirect.chok.ooo',
+        ]))->assertSessionHasErrors(['main_domain', 'api_domain']);
 
         $this->assertFalse($this->state->isInstalled());
     }
 
+    private function mockConnectionTester(DatabaseTestResult $result): void
+    {
+        $this->mock(DatabaseConnectionTester::class, function (MockInterface $mock) use ($result): void {
+            $mock->shouldReceive('test')->andReturn($result);
+        });
+    }
+
     /** @return array<string, string> */
-    private function databaseInput(array $overrides = []): array
+    private function input(array $overrides = []): array
     {
         return $overrides + [
             'db_host' => 'mysql.example.jp',
@@ -219,6 +273,10 @@ final class InstallerTest extends TestCase
             'db_database' => 'chok_ooo',
             'db_username' => 'chok',
             'db_password' => 'secret',
+            'main_domain' => 'setup.example.test',
+            'dashboard_domain' => 'dash.setup.example.test',
+            'api_domain' => 'api.setup.example.test',
+            'redirect_domain' => 'redirect.setup.example.test',
         ];
     }
 

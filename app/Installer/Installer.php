@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Installer;
 
-use App\Models\AppSetting;
 use Database\Seeders\ReservedWordSeeder;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Contracts\Foundation\Application;
@@ -22,7 +21,39 @@ final class Installer
         private readonly Kernel $artisan,
         private readonly InstallationState $state,
         private readonly EnvironmentFile $environment,
+        private readonly DatabaseConnectionSwitcher $connections,
     ) {}
+
+    /**
+     * Web インストーラ: 入力された DB にテーブルを作成し、接続情報とドメインを .env に保存して完了させる。
+     * テーブル作成に失敗した場合は .env を書き換えない（セットアップ画面を開き直せる状態を保つ）。
+     *
+     * @throws InstallationException
+     */
+    public function install(DatabaseCredentials $database, SiteSettings $site): void
+    {
+        // .env の変更はこのリクエストには反映されないため、入力された接続先を直接使う
+        $this->connections->use($database);
+
+        $this->setUpDatabase();
+
+        try {
+            $this->environment->write($database->environmentValues() + $site->environmentValues());
+        } catch (Throwable $e) {
+            Log::error('セットアップ: .env を更新できませんでした。', ['exception' => $e::class, 'error' => $e->getMessage()]);
+
+            throw new InstallationException('設定ファイル（.env）に書き込めませんでした。書き込み権限を確認してください。', previous: $e);
+        }
+
+        // 設定がキャッシュされていると .env の変更が反映されないため消去する
+        if ($this->app->configurationIsCached()) {
+            $this->runArtisan('config:clear', [], '設定キャッシュを削除できませんでした。');
+        }
+
+        $this->markInstalled();
+
+        Log::info('初期セットアップが完了しました。', ['main_domain' => $site->mainDomain]);
+    }
 
     /**
      * テーブル作成と初期データ投入。何度実行しても安全（マイグレーションは差分のみ、予約語は upsert）。
@@ -35,49 +66,6 @@ final class Installer
 
         $this->runArtisan('migrate', ['--force' => true], 'テーブルの作成に失敗しました。データベースの権限を確認してください。');
         $this->runArtisan('db:seed', ['--class' => ReservedWordSeeder::class, '--force' => true], '予約語の登録に失敗しました。');
-    }
-
-    /** @throws InstallationException */
-    public function complete(SiteSettings $settings): void
-    {
-        $this->setUpDatabase();
-
-        try {
-            if ($settings->hasDiscordCredentials()) {
-                AppSetting::store(AppSetting::DISCORD_CLIENT_ID, $settings->discordClientId);
-                AppSetting::store(AppSetting::DISCORD_CLIENT_SECRET, $settings->discordClientSecret, encrypt: true);
-            }
-
-            if ($settings->safeBrowsingApiKey !== null) {
-                AppSetting::store(AppSetting::SAFE_BROWSING_API_KEY, $settings->safeBrowsingApiKey, encrypt: true);
-            }
-
-            if ($settings->hasRecaptchaKeys()) {
-                AppSetting::store(AppSetting::RECAPTCHA_SITE_KEY, $settings->recaptchaSiteKey);
-                AppSetting::store(AppSetting::RECAPTCHA_SECRET_KEY, $settings->recaptchaSecretKey, encrypt: true);
-            }
-        } catch (Throwable $e) {
-            Log::error('セットアップ: 外部サービスの設定を保存できませんでした。', ['exception' => $e::class, 'error' => $e->getMessage()]);
-
-            throw new InstallationException('Discord・Safe Browsing・reCAPTCHA の設定を保存できませんでした。', previous: $e);
-        }
-
-        try {
-            $this->environment->write($settings->environmentValues());
-        } catch (Throwable $e) {
-            Log::error('セットアップ: .env を更新できませんでした。', ['exception' => $e::class, 'error' => $e->getMessage()]);
-
-            throw new InstallationException('設定ファイル（.env）を更新できませんでした。書き込み権限を確認してください。', previous: $e);
-        }
-
-        // 設定がキャッシュされていると .env の変更が反映されないため消去する
-        if ($this->app->configurationIsCached()) {
-            $this->runArtisan('config:clear', [], '設定キャッシュを削除できませんでした。');
-        }
-
-        $this->markInstalled();
-
-        Log::info('初期セットアップが完了しました。', ['main_domain' => $settings->mainDomain]);
     }
 
     /** @throws InstallationException */

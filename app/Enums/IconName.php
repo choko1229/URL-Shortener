@@ -35,10 +35,12 @@ enum IconName: string
     case Link = 'link';
     case Refresh = 'refresh';
     case Plus = 'plus';
+    case Plug = 'plug';
 
     public function svgContent(): string
     {
         return match ($this) {
+            self::Plug => '<path d="M9 2v6M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0Z"/><path d="M12 17v5"/>',
             self::Refresh => '<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/>',
             self::Plus => '<path d="M12 5v14M5 12h14"/>',
             self::Logo => '<path d="M9 12h6M13 6l6 6-6 6"/>',

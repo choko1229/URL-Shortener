@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\Auth\DiscordAuthException;
 use App\Services\Auth\DiscordOAuthClient;
 use App\Services\Auth\DiscordUserRegistrar;
@@ -26,6 +27,11 @@ final class DiscordAuthController extends Controller
     public function redirect(Request $request, DiscordOAuthClient $discord): RedirectResponse
     {
         if (! $discord->isConfigured()) {
+            // セットアップ直後（管理者がまだいない）なら、その場で設定してもらう
+            if (! User::adminExists()) {
+                return redirect()->route('auth.setup');
+            }
+
             Log::warning('Discord の Client ID / Secret が未設定のためログインできません。');
 
             return redirect()->route('main.home')->with('error', 'Discord ログインが設定されていません。サイトの管理者に連絡してください。');
@@ -61,6 +67,11 @@ final class DiscordAuthController extends Controller
         try {
             $profile = $discord->fetchProfile($discord->exchangeCode($code, route('auth.callback')));
         } catch (DiscordAuthException $e) {
+            // 初回設定の入力ミス（Secret・Redirect URI の不一致など）を直せるよう、設定画面へ戻す
+            if (! User::adminExists()) {
+                return redirect()->route('auth.setup')->with('error', $e->getMessage().' Client ID・Client Secret と Redirect URI の登録を確認してください。');
+            }
+
             return redirect()->route('main.home')->with('error', $e->getMessage());
         }
 
