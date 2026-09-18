@@ -15,7 +15,7 @@
             <form method="dialog">
                 <x-button type="submit" variant="secondary" size="sm" class="w-full sm:w-auto">期限を選び直す</x-button>
             </form>
-            <x-button size="sm" :href="route('main.login')">
+            <x-button size="sm" :href="route('auth.login')">
                 <x-icon name="log-in" :size="16" />
                 Discordでログイン
             </x-button>

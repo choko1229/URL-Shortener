@@ -8,12 +8,16 @@ use App\Installer\InstallationState;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        // api.chok.ooo/v1/...（ドメインで分けるためパスの接頭辞は付けない）
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        apiPrefix: '',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // ドメイン設定が未確定の状態でもセットアップ画面へ誘導できるよう、ルーティングより前に判定する
@@ -22,8 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SetSecurityHeaders::class,
         ]);
+        $middleware->api(append: [
+            SetSecurityHeaders::class,
+        ]);
 
-        $middleware->redirectGuestsTo(static fn (): string => route('main.login'));
+        $middleware->redirectGuestsTo(static fn (): string => route('auth.login'));
         $middleware->redirectUsersTo(static fn (): string => route('dashboard.home'));
 
         // Host ヘッダー偽装対策: 設定済みのサブドメインのみ受け付ける（local / テスト時は無効）。
@@ -43,4 +50,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->dontFlash([
             'password',
         ]);
+
+        // API（api.chok.ooo）のエラーは常に JSON で返す
+        $exceptions->shouldRenderJsonWhen(
+            static fn (Request $request): bool => $request->getHost() === config('shortener.domains.api') || $request->expectsJson(),
+        );
     })->create();

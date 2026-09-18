@@ -35,7 +35,11 @@
     <h2 class="mt-8 font-rounded text-base font-bold">この後に行うこと</h2>
     <ul class="mt-3 list-disc space-y-2 pl-5 text-[13px] leading-relaxed text-text-secondary">
         <li>設置フォルダの <code class="rounded bg-primary-tint-soft px-1">.env</code> にはデータベースのパスワードと暗号鍵（APP_KEY）が保存されています。バックアップを取り、他人に渡さないでください。APP_KEY を失うと暗号化した設定を復元できません。</li>
-        <li>Discord ログイン機能の実装後、最初にログインしたユーザーが管理者になります。</li>
+        <li>
+            ダッシュボード（{{ $settings->dashboardUrl() }}）から Discord でログインしてください。最初にログインしたユーザーが管理者になります。
+            Discord Developer Portal の OAuth2 Redirects に <code class="break-all rounded bg-primary-tint-soft px-1">{{ $settings->dashboardUrl() }}/login/callback</code> を登録しておく必要があります。
+        </li>
+        <li>自動アップデートを使う場合は、サーバーの cron に <code class="rounded bg-primary-tint-soft px-1">* * * * * cd （設置フォルダ） &amp;&amp; php artisan schedule:run</code> を登録し、ダッシュボードの「アップデート」で GitHub のトークンと通知先を設定してください。</li>
         <li>設定をやり直す場合は <code class="rounded bg-primary-tint-soft px-1">storage/app/private/installed.json</code> を削除すると、セットアップ画面が再び開きます。</li>
     </ul>
 

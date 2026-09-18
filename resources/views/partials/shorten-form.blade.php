@@ -97,7 +97,7 @@
             有効期限: <span id="{{ $ids['expirySummary'] }}">{{ $selectedExpiry->label() }}</span>
         </button>
         @unless ($form->isMember)
-            <a href="{{ route('main.login') }}" class="chip">
+            <a href="{{ route('auth.login') }}" class="chip">
                 <x-icon name="pencil" :size="14" />
                 カスタムスラッグ（ログインで利用可）
             </a>

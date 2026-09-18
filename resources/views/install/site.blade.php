@@ -60,10 +60,13 @@
         </fieldset>
 
         <fieldset>
-            <legend class="font-rounded text-base font-bold">Discord ログイン（任意）</legend>
+            <legend class="font-rounded text-base font-bold">Discord ログイン</legend>
             <p class="mt-1 text-[13px] leading-relaxed text-text-secondary">
                 Discord Developer Portal で作成したアプリケーションの OAuth2 情報です。Client Secret は暗号化してデータベースに保存します。
-                ログイン機能は未実装のため、今は空欄のままでも構いません。
+                OAuth2 の Redirects には
+                <code class="break-all rounded bg-primary-tint-soft px-1">{{ ($secure ? 'https' : 'http').'://'.$suggested['dashboard'].'/login/callback' }}</code>
+                （ダッシュボードのドメインを変えた場合はそのドメイン）を登録してください。
+                未入力の場合はログインできません（完了後に設定し直すこともできます）。
             </p>
             <div class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>

@@ -19,7 +19,7 @@
                             ダッシュボード
                         </x-button>
                     @else
-                        <x-button variant="secondary" size="sm" :href="route('main.login')">
+                        <x-button variant="secondary" size="sm" :href="route('auth.login')">
                             <x-icon name="log-in" :size="16" />
                             <span>Discord<span class="max-[399px]:sr-only">でログイン</span></span>
                         </x-button>

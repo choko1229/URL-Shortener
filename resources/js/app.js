@@ -329,9 +329,32 @@ function initSafetyCheck() {
         .finally(() => window.clearTimeout(timer));
 }
 
+/** 一覧の QR ボタン: 共通ダイアログの画像を差し替えて開く */
+function initQrDialogs() {
+    const dialog = document.getElementById('link-qr-dialog');
+    const image = dialog?.querySelector('[data-qr-image]');
+    const caption = dialog?.querySelector('[data-qr-caption]');
+    if (!(dialog instanceof HTMLDialogElement) || !(image instanceof HTMLImageElement)) {
+        return;
+    }
+
+    document.querySelectorAll('[data-qr-open]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const label = button.dataset.qrLabel ?? '';
+            image.src = button.dataset.qrSrc ?? '';
+            image.alt = `${label} のQRコード`;
+            if (caption) {
+                caption.textContent = label;
+            }
+            openDialog(dialog);
+        });
+    });
+}
+
 initDisclosures();
 initExpiryGroups();
 initDialogs();
+initQrDialogs();
 initCopyButtons();
 initMenus();
 initConfirmForms();

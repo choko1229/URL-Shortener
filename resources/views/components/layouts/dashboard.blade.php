@@ -2,7 +2,7 @@
 @props(['viewer', 'title' => 'ダッシュボード'])
 
 @php
-    $navItems = \App\Support\DashboardNavigation::items($viewer, request()->routeIs('dashboard.home', 'preview.dashboard*'));
+    $navItems = \App\Support\DashboardNavigation::items($viewer, request());
 @endphp
 
 <x-layouts.base :title="$title" robots="noindex, nofollow">
@@ -14,7 +14,7 @@
                         <x-logo size="sm" />
                     </a>
 
-                    <nav aria-label="ダッシュボードメニュー" class="hidden h-[72px] md:block">
+                    <nav aria-label="ダッシュボードメニュー" class="hidden h-[72px] xl:block">
                         @include('partials.dashboard-nav-items', ['items' => $navItems, 'layout' => 'desktop'])
                     </nav>
                 </div>
@@ -52,6 +52,12 @@
                                 </a>
                             </li>
                             <li>
+                                <a href="{{ route('dashboard.settings') }}" class="flex min-h-11 items-center gap-2.5 rounded-control px-3 text-text-primary hover:bg-primary-tint">
+                                    <x-icon name="sliders" :size="16" class="text-text-secondary" />
+                                    設定
+                                </a>
+                            </li>
+                            <li>
                                 <form method="POST" action="{{ route('dashboard.logout') }}">
                                     @csrf
                                     <button type="submit" class="flex min-h-11 w-full items-center gap-2.5 rounded-control px-3 text-left text-text-primary hover:bg-primary-tint">
@@ -66,7 +72,7 @@
             </div>
 
             {{-- スマホ用: 横スクロールのタブ --}}
-            <nav aria-label="ダッシュボードメニュー（モバイル）" class="overflow-x-auto border-t border-table-divider px-4 md:hidden">
+            <nav aria-label="ダッシュボードメニュー（モバイル）" class="overflow-x-auto border-t border-table-divider px-4 xl:hidden">
                 @include('partials.dashboard-nav-items', ['items' => $navItems, 'layout' => 'mobile'])
             </nav>
         </header>
