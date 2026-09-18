@@ -29,7 +29,7 @@
 
 サーバー側で Composer や Node.js を使う必要はありません。
 
-1. [Releases](https://github.com/choko1229/URL-Shortener/releases) から `chok-ooo-vX.X.X.zip` をダウンロードして展開する
+1. [Releases](https://github.com/choko1229/URL-Shortener/releases) から `chok-ooo-vX.X.X.zip` をダウンロードして展開する（まだリリースが無い場合は、下記「[開発フロー・リリース手順](#開発フローリリース手順)」でタグを作成すると自動で作られます）
 2. サーバーの管理画面で MySQL 8.0 のデータベースとユーザーを作成する（文字コード utf8mb4）
 3. 展開した `chok-ooo` フォルダの**中身**を、FTP で公開フォルダ（例: `public_html`）に丸ごとアップロードする
 4. `chok.ooo` / `dash.chok.ooo` / `api.chok.ooo` / `redirect.chok.ooo` の公開フォルダを、すべて手順3のフォルダに向ける
@@ -61,7 +61,7 @@ bash scripts/build-release.sh v26.9.0
 
 ## ローカル開発環境のセットアップ
 
-必要なもの: PHP 8.2 以上（`curl` `fileinfo` `mbstring` `openssl` `pdo_sqlite` `pdo_mysql` `zip` 拡張）、Composer 2、Node.js 20 以上
+必要なもの: PHP 8.2 以上（`curl` `fileinfo` `mbstring` `openssl` `pdo_sqlite` `pdo_mysql` `zip` 拡張）、Composer 2、Node.js 20.19 以上または 22.12 以上（Vite 7 の要件）
 
 ```bash
 composer install
@@ -126,6 +126,27 @@ php artisan test
 ```bash
 vendor/bin/pint
 ```
+
+## 開発フロー・リリース手順
+
+1. `feature/〇〇` ブランチで作業し、Conventional Commits 形式（`feat:` `fix:` `docs:` `test:` `chore:` `ci:` など）でコミットする
+2. GitHub で `main` への Pull Request を作成してマージする
+3. `main` に `vYY.MM.patch` 形式のタグ（例: 2026年9月の最初のリリースなら `v26.9.0`）を付けて push する
+
+```bash
+git switch main
+git pull
+git tag v26.9.0
+git push origin v26.9.0
+```
+
+タグを push すると GitHub Actions（`.github/workflows/release.yml`）が次を自動で行います。
+
+- テストの実行（失敗した場合は zip を作らない）
+- `vendor/`（本番用）とビルド済みアセットを同梱した配布用 zip の作成
+- GitHub Releases の作成と zip の添付
+
+Actions タブから「Release package」を手動実行すると、タグを付けずにテストと zip の作成だけを試せます（zip は実行結果の Artifacts からダウンロード）。
 
 ## 設定値の管理方針
 
@@ -192,8 +213,35 @@ scripts/                    # 配布用 zip の作成
 - 統計詳細、管理画面（APIキー・予約語・ユーザー・設定）、退会
 - API、自動アップデート機構
 
+## トラブルシューティング
+
+### セットアップ時
+
+| 表示される内容 | 原因と対処 |
+|---|---|
+| 「vendor フォルダが見つかりません」 | リポジトリのソースを設置している。Releases の配布用 zip を設置する |
+| 「設置設定を確認してください」 | `.htaccess` の転送が効いていない。mod_rewrite と AllowOverride を有効にするか、公開フォルダを `public/` にする |
+| 「セットアップを開始できません」（フォルダに書き込めません） | `storage/` 配下と `bootstrap/cache/` のパーミッションを 755（環境によっては 775）にする |
+| 「設定ファイルが外部から見えないこと」が **NG** | `.env` などが外から読める状態。上と同じく `.htaccess` の設定か公開フォルダを見直す（解決するまで先へ進めない） |
+| 同じ項目が **要確認** | サーバーが自分自身へアクセスできない環境。表示されたリンクを開き、ファイルの中身が表示されないことを確認してチェックを入れる |
+| 「ページの有効期限が切れました」（419） | 最初にアクセスしたときと違うスキーム（http / https）で開いている。最初と同じ URL で開き直す |
+
+### Windows の開発環境
+
+- **PHP / Composer で `certificate verify failed`**: ウイルス対策ソフトの HTTPS スキャンが独自の証明書で通信を中継していることがあります。Windows が信頼しているルート証明書を CA バンドルに追加し、`php.ini` の `openssl.cafile` と `curl.cainfo` に指定してください（証明書の検証自体は無効にしないこと）。
+- **Composer で `Could not delete ... antivirus`**: ウイルス対策ソフトが展開中のファイルをロックしています。除外設定を行うか、配布用 zip は GitHub Actions で作成してください。
+
+## 既知の課題
+
+- design.md のカラートークンには WCAG AA のコントラスト比を満たさない組み合わせがある（プライマリボタンの白文字 2.06:1、注意色 2.73:1 など）
+- CSP（Content-Security-Policy）ヘッダーが未設定。POST のレート制限は発行処理とあわせて実装予定
+- 公開フォルダ直下に設置する場合の `.htaccess` は、実サーバー（kagoya）での動作が未検証
+- 自動アップデート（requirements.md 7章）はサーバー上での git / Composer 実行を前提としており、配布用 zip 方式との整合を検討する必要がある
+- requirements.md 7-2 の「`.env` には APP_KEY のみ」と異なり、DB 接続情報は `.env` に保存している（DB 自体には保存できないため）
+
 ## セキュリティに関する注意
 
 - `.env`、DB ダンプ、バックアップ、証明書・鍵ファイルはコミットしないでください（`.gitignore` で除外しています）。
-- 本番では `APP_ENV=production`・`APP_DEBUG=false` にしてください。`/_preview` 系ルートは読み込まれなくなります。
+- 本番では `APP_ENV=production`・`APP_DEBUG=false` にしてください（セットアップ画面が自動生成する `.env` はこの設定です）。`/_preview` 系ルートは読み込まれなくなります。
+- セットアップ画面は完了するまで誰でも操作できます。設置したらすぐに完了させてください。完了後に `storage/app/private/installed.json` を消すとセットアップ画面が再び開くため、FTP アカウントの管理にも注意してください。
 - 脆弱性を見つけた場合は Issue ではなく管理者へ直接連絡してください。
