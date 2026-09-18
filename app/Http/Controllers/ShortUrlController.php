@@ -58,16 +58,22 @@ final class ShortUrlController extends Controller
         ));
     }
 
-    public function destroy(ShortUrl $shortUrl): RedirectResponse
+    /** 論理削除（requirements.md 2-4: 記録は残し、コードは欠番として再利用しない） */
+    public function destroy(ShortUrl $shortUrl, ShortUrlBuilder $urls): RedirectResponse
     {
         Gate::authorize('delete', $shortUrl);
 
-        // TODO: 論理削除（コードは欠番として再利用しない）
-        Log::info('短縮URLの削除が要求されましたが、削除処理は未実装です。', [
+        $shortUrl->delete();
+
+        Log::info('短縮URLを削除しました。', [
             'short_url_id' => $shortUrl->id,
             'user_id' => auth()->id(),
         ]);
 
-        return back()->with('notice', 'この機能は現在準備中です。');
+        // 詳細画面から削除した場合は一覧へ戻す
+        $previous = url()->previous();
+        $target = str_contains($previous, '/links/'.$shortUrl->id) ? route('dashboard.home') : $previous;
+
+        return redirect()->to($target)->with('notice', $urls->display($shortUrl->slug).' を削除しました。');
     }
 }

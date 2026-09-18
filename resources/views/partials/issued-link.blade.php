@@ -44,7 +44,7 @@
                 削除用トークン
             </p>
             <p class="mt-1 text-xs leading-relaxed text-white/80">
-                このリンクを削除するときに必要です。この画面を離れると二度と表示できないため、必ず控えてください。
+                このリンクを<a href="{{ route('main.delete') }}" class="text-white underline hover:text-primary-tint">削除するとき</a>に必要です。この画面を離れると二度と表示できないため、必ず控えてください。
             </p>
             <div class="mt-3 flex items-center gap-2">
                 <code class="min-w-0 flex-1 truncate rounded-control bg-dark-panel px-3 py-2.5 font-mono text-sm">{{ $link->deletionToken }}</code>

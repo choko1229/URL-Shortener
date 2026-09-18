@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\ExpiryOption;
+use App\Rules\NotOwnDomain;
 use App\Services\ShortUrl\ShortUrlDraft;
 use App\Support\ShortenerSettings;
 use App\ViewModels\ShortUrlFormData;
@@ -38,7 +39,7 @@ final class StoreShortUrlRequest extends FormRequest
         $isMember = $this->user() !== null;
 
         return [
-            'original_url' => ['required', 'string', 'max:'.self::ORIGINAL_URL_MAX_LENGTH, 'url:http,https', $this->notOwnDomainRule()],
+            'original_url' => ['required', 'string', 'max:'.self::ORIGINAL_URL_MAX_LENGTH, 'url:http,https', new NotOwnDomain],
             'custom_slug' => $isMember
                 ? [
                     'nullable',
@@ -74,20 +75,6 @@ final class StoreShortUrlRequest extends FormRequest
             expiresAtLocal: is_string($expiresAt) ? $expiresAt : null,
             password: is_string($password) && $password !== '' ? $password : null,
         );
-    }
-
-    /** 自サービスの URL を短縮するとリダイレクトが循環するため拒否する */
-    private function notOwnDomainRule(): Closure
-    {
-        $ownHosts = array_map('strtolower', array_filter((array) config('shortener.domains'), 'is_string'));
-
-        return static function (string $attribute, mixed $value, Closure $fail) use ($ownHosts): void {
-            $host = is_string($value) ? parse_url($value, PHP_URL_HOST) : null;
-
-            if (is_string($host) && in_array(strtolower($host), $ownHosts, true)) {
-                $fail('chok.ooo 自身の URL は短縮できません。');
-            }
-        };
     }
 
     /** @return array<string, string> */

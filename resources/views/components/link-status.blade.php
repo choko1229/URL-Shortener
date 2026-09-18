@@ -7,6 +7,7 @@
         \App\Enums\LinkStatus::Active => ['text-text-secondary', null],
         \App\Enums\LinkStatus::ExpiringSoon => ['text-warning', 'clock'],
         \App\Enums\LinkStatus::Expired => ['text-danger', 'ban'],
+        \App\Enums\LinkStatus::Deleted => ['text-text-secondary', 'trash'],
     };
 @endphp
 

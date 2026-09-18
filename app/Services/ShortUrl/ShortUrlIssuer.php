@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\ShortUrl;
 
 use App\Enums\SlugType;
-use App\Models\ReservedWord;
 use App\Models\ShortUrl;
 use App\Models\User;
 use App\Support\ShortenerSettings;
@@ -27,15 +26,22 @@ final class ShortUrlIssuer
         private readonly ShortenerSettings $settings,
         private readonly IssuanceLimiter $limiter,
         private readonly SlugGenerator $slugGenerator,
+        private readonly SlugAvailability $availability,
     ) {}
 
-    /** @throws IssuanceException */
-    public function issue(ShortUrlDraft $draft, ?User $user, string $clientIp): IssuedShortUrl
+    /**
+     * @param  bool  $enforceLimits  false なら月間上限・レート制限を適用しない（管理者専用 API: requirements.md 5）
+     *
+     * @throws IssuanceException
+     */
+    public function issue(ShortUrlDraft $draft, ?User $user, string $clientIp, bool $enforceLimits = true): IssuedShortUrl
     {
         $now = CarbonImmutable::now();
         $clientIpHash = self::hashClientIp($clientIp);
 
-        $this->limiter->ensureWithinLimits($user, $clientIpHash, $now);
+        if ($enforceLimits) {
+            $this->limiter->ensureWithinLimits($user, $clientIpHash, $now);
+        }
 
         $deletionToken = $user === null ? Str::random(self::DELETION_TOKEN_LENGTH) : null;
 
@@ -53,7 +59,9 @@ final class ShortUrlIssuer
             ? $this->saveWithCustomSlug($link, $draft->customSlug, $user)
             : $this->saveWithRandomCode($link);
 
-        $this->limiter->recordIssued($user, $clientIpHash);
+        if ($enforceLimits) {
+            $this->limiter->recordIssued($user, $clientIpHash);
+        }
 
         Log::info('短縮URLを発行しました。', [
             'short_url_id' => $link->id,
@@ -71,24 +79,21 @@ final class ShortUrlIssuer
     }
 
     /** @throws IssuanceException */
-    private function saveWithCustomSlug(ShortUrl $link, string $slug, ?User $user): void
+    public function ensureCustomSlugAvailable(string $slug, ?User $user): void
     {
-        if (! ($user?->isAdmin() ?? false) && $this->isReserved($slug)) {
+        if (! ($user?->isAdmin() ?? false) && $this->availability->isReserved($slug)) {
             throw new IssuanceException('このカスタムスラッグは予約されているため使えません。', 'custom_slug');
         }
 
-        // 同じ値（削除済みを含む）と、大文字小文字だけが違うランダムコードは使えない
-        $taken = ShortUrl::withTrashed()
-            ->where(static function ($query) use ($slug): void {
-                $query->where('slug', $slug)->orWhere(static function ($query) use ($slug): void {
-                    $query->where('slug_normalized', mb_strtolower($slug))->where('slug_type', SlugType::Random->value);
-                });
-            })
-            ->exists();
-
-        if ($taken) {
+        if ($this->availability->isTakenForCustom($slug)) {
             throw new IssuanceException('このカスタムスラッグはすでに使われています。', 'custom_slug');
         }
+    }
+
+    /** @throws IssuanceException */
+    private function saveWithCustomSlug(ShortUrl $link, string $slug, ?User $user): void
+    {
+        $this->ensureCustomSlugAvailable($slug, $user);
 
         $link->slug = $slug;
         $link->slug_type = SlugType::Custom;
@@ -108,11 +113,7 @@ final class ShortUrlIssuer
         for ($attempt = 1; $attempt <= self::MAX_RANDOM_CODE_ATTEMPTS; $attempt++) {
             $code = $this->slugGenerator->generate($length);
 
-            // ランダムコードは大文字小文字を区別せずに重複を判定する（requirements.md 2-1）
-            $collides = $this->isReserved($code)
-                || ShortUrl::withTrashed()->where('slug_normalized', mb_strtolower($code))->exists();
-
-            if ($collides) {
+            if ($this->availability->isReserved($code) || $this->availability->isTakenForRandom($code)) {
                 continue;
             }
 
@@ -131,10 +132,5 @@ final class ShortUrlIssuer
         Log::error('ランダムコードの生成が規定回数内に完了しませんでした。', ['attempts' => self::MAX_RANDOM_CODE_ATTEMPTS]);
 
         throw new IssuanceException('短縮URLを発行できませんでした。時間をおいて再度お試しください。');
-    }
-
-    private function isReserved(string $slug): bool
-    {
-        return ReservedWord::query()->where('word', mb_strtolower($slug))->exists();
     }
 }

@@ -68,82 +68,15 @@
                         <p class="text-sm text-text-secondary">上のフォームから最初の短縮URLを発行してみましょう。</p>
                     </div>
                 @else
-                    {{-- スマホでは横スクロール（design.md 5）。キーボードでもスクロールできるよう tabindex を付与 --}}
-                    <div class="overflow-x-auto" role="region" aria-labelledby="history-heading" tabindex="0">
-                        <table class="w-full min-w-[760px] border-collapse text-left">
-                            <caption class="sr-only">発行した短縮URLの一覧（新しい順）</caption>
-                            <thead class="bg-table-header">
-                                <tr>
-                                    <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">短縮URL</th>
-                                    <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">元URL</th>
-                                    <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">クリック数</th>
-                                    <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">有効期限</th>
-                                    <th scope="col" class="whitespace-nowrap px-6 py-3 text-right text-xs font-medium text-text-secondary">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($page->links as $link)
-                                    @php
-                                        /** @var \App\ViewModels\LinkRowData $link */
-                                        $isExpired = $link->status === \App\Enums\LinkStatus::Expired;
-                                    @endphp
-                                    <tr class="border-t border-table-divider">
-                                        <td class="whitespace-nowrap px-6 py-3.5 text-[13px]">
-                                            <span class="inline-flex items-center gap-1.5">
-                                                <a
-                                                    href="{{ $link->shortUrl }}"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    @class([
-                                                        'font-semibold',
-                                                        'text-primary-dark hover:text-primary-darker' => ! $isExpired,
-                                                        'text-text-muted hover:text-text-secondary' => $isExpired,
-                                                    ])
-                                                >{{ $link->displayUrl }}<span class="sr-only">（新しいタブで開く）</span></a>
-                                                @if ($link->isPasswordProtected)
-                                                    <x-icon name="lock" :size="13" class="text-text-muted" />
-                                                    <span class="sr-only">パスワード保護あり</span>
-                                                @endif
-                                            </span>
-                                        </td>
-                                        <td @class(['max-w-[320px] px-6 py-3.5 text-[13px]', 'text-text-secondary' => ! $isExpired, 'text-text-muted' => $isExpired])>
-                                            {{-- 元URLは javascript: 等の混入に備えてリンクにせずテキストで表示する --}}
-                                            <span class="block truncate" title="{{ $link->originalUrl }}">{{ $link->originalUrl }}</span>
-                                        </td>
-                                        <td @class(['px-6 py-3.5 text-[13px] tabular-nums', 'text-text-muted' => $isExpired])>
-                                            {{ number_format($link->clickCount) }}
-                                        </td>
-                                        <td class="px-6 py-3.5">
-                                            <x-link-status :status="$link->status" :label="$link->expiryLabel" />
-                                        </td>
-                                        <td class="px-6 py-2 text-right">
-                                            <div class="inline-flex items-center gap-1">
-                                                <x-copy-button :text="$link->shortUrl" :label="$link->displayUrl.' をコピー'" :icon-size="16" />
-                                                <x-button variant="ghost" size="icon" :aria-label="$link->displayUrl.' のQRコード（準備中）'" title="QRコード（準備中）" disabled>
-                                                    <x-icon name="qr-code" :size="16" />
-                                                </x-button>
-                                                <form
-                                                    method="POST"
-                                                    action="{{ route('dashboard.links.destroy', ['shortUrl' => $link->id]) }}"
-                                                    data-confirm="{{ $link->displayUrl }} を削除しますか？削除したコードは再利用できません。"
-                                                >
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <x-button type="submit" variant="danger-ghost" size="icon" :aria-label="$link->displayUrl.' を削除'" :title="$link->displayUrl.' を削除'">
-                                                        <x-icon name="trash" :size="16" />
-                                                    </x-button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {{ $page->links->links('partials.pagination') }}
+                    @include('partials.link-table', [
+                        'links' => $page->links,
+                        'headingId' => 'history-heading',
+                        'caption' => '発行した短縮URLの一覧（新しい順）',
+                    ])
                 @endif
             </section>
         @endif
     </div>
+
+    @include('partials.qr-dialog')
 </x-layouts.dashboard>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\ShortUrl;
 
 use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\Result\ResultInterface;
 use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -19,13 +20,24 @@ final class QrCodeGenerator
     /** 生成に失敗した場合は null（発行自体は成功させる） */
     public function dataUri(string $url): ?string
     {
+        return $this->build($url)?->getDataUri();
+    }
+
+    /** SVG の文字列。生成に失敗した場合は null */
+    public function svg(string $url): ?string
+    {
+        return $this->build($url)?->getString();
+    }
+
+    private function build(string $url): ?ResultInterface
+    {
         try {
             return (new Builder(
                 writer: new SvgWriter,
                 data: $url,
                 size: self::SIZE,
                 margin: self::MARGIN,
-            ))->build()->getDataUri();
+            ))->build();
         } catch (Throwable $e) {
             Log::warning('QR コードを生成できませんでした。', ['exception' => $e::class, 'error' => $e->getMessage()]);
 
