@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "choko1229/url-shortener",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "自分のサーバーに置いて使える、シンプルなURL短縮サービス",
+    "keywords": ["url-shortener", "laravel"],
     "license": "MIT",
     "require": {
         "php": "^8.2",

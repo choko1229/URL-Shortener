@@ -45,6 +45,9 @@ id_ed25519*
 /public/build
 # 配布用 zip の作業ディレクトリ（scripts/build-release.sh）
 /build/
+# GitHub Pages（docs/）のビルド結果
+/docs/_site
+/docs/.jekyll-cache
 /public/hot
 /public/storage
 /storage/pail
