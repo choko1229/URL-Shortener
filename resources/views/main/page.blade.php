@@ -18,7 +18,7 @@
                 {{ $page->renderedBody() }}
             </div>
 
-            <div class="mt-10 rounded-card border border-border bg-white p-5 text-sm">
+            <div class="mt-10 rounded-card border border-border bg-surface p-5 text-sm">
                 <p>運営者: {{ $site->operator() }}</p>
                 <p class="mt-1 text-text-secondary">
                     本ページの内容についてのご質問は<a href="{{ route('main.contact') }}" class="text-primary-dark underline hover:text-primary-darker">お問い合わせ</a>からご連絡ください。

@@ -12,7 +12,7 @@
 @php
     $variants = [
         'primary' => 'bg-primary text-white hover:bg-primary-dark',
-        'secondary' => 'border-[1.5px] border-primary bg-white text-text-primary hover:bg-primary-tint',
+        'secondary' => 'border-[1.5px] border-primary bg-surface text-text-primary hover:bg-primary-tint',
         'dark' => 'bg-dark-panel-button text-white hover:bg-primary-darker data-[copied=true]:bg-primary-dark',
         'ghost' => 'text-text-secondary hover:bg-primary-tint hover:text-primary-dark data-[copied=true]:bg-primary-tint data-[copied=true]:text-primary-dark',
         'danger-ghost' => 'text-danger hover:bg-danger/10',

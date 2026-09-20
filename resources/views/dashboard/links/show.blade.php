@@ -33,22 +33,22 @@
         <section aria-labelledby="summary-heading">
             <h2 id="summary-heading" class="sr-only">概要</h2>
             <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
-                <div class="rounded-card border border-border bg-white px-6 py-[22px]">
+                <div class="rounded-card border border-border bg-surface px-6 py-[22px]">
                     <dt class="text-[13px] text-text-secondary">総クリック数</dt>
                     <dd class="mt-2.5 font-rounded text-stat font-extrabold">{{ number_format($stats->totalClicks) }}</dd>
                 </div>
-                <div class="rounded-card border border-border bg-white px-6 py-[22px]">
+                <div class="rounded-card border border-border bg-surface px-6 py-[22px]">
                     <dt class="text-[13px] text-text-secondary">直近{{ $stats->recentDays }}日のクリック数</dt>
                     <dd class="mt-2.5 font-rounded text-stat font-extrabold">{{ number_format($stats->recentClicks) }}</dd>
                 </div>
-                <div class="rounded-card border border-border bg-white px-6 py-[22px]">
+                <div class="rounded-card border border-border bg-surface px-6 py-[22px]">
                     <dt class="text-[13px] text-text-secondary">最終クリック</dt>
                     <dd class="mt-2.5 font-rounded text-xl font-bold">{{ $stats->lastClickedAt?->format('Y/m/d H:i') ?? 'まだありません' }}</dd>
                 </div>
             </dl>
         </section>
 
-        <section aria-labelledby="daily-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+        <section aria-labelledby="daily-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
             <h2 id="daily-heading" class="font-rounded text-[15px] font-bold">日別クリック数（直近{{ $stats->recentDays }}日）</h2>
 
             {{-- グラフは視覚用。数値は下の表で確認できる --}}
@@ -101,7 +101,7 @@
                 @php
                     $max = max(1, ...array_map(static fn (array $row): int => $row['count'], $breakdown['rows'] ?: [['count' => 1]]));
                 @endphp
-                <section aria-labelledby="{{ $key }}-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+                <section aria-labelledby="{{ $key }}-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
                     <h2 id="{{ $key }}-heading" class="font-rounded text-[15px] font-bold">{{ $breakdown['title'] }}</h2>
                     @if ($breakdown['rows'] === [])
                         <p class="mt-4 text-sm text-text-secondary">まだ記録がありません。</p>
@@ -135,7 +135,7 @@
             @endforeach
         </div>
 
-        <section aria-labelledby="manage-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+        <section aria-labelledby="manage-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
             <h2 id="manage-heading" class="font-rounded text-[15px] font-bold">管理</h2>
             <dl class="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
                 <div><dt class="text-xs text-text-secondary">発行者</dt><dd class="mt-0.5">{{ $stats->ownerLabel }}</dd></div>

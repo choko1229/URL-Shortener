@@ -7,7 +7,7 @@
 
 <x-layouts.base :title="$title" robots="noindex, nofollow">
     <div class="flex min-h-screen flex-col">
-        <header class="border-b border-border-strong bg-white">
+        <header class="border-b border-border-strong bg-surface">
             <div class="mx-auto flex h-[72px] max-w-[1280px] items-center justify-between gap-4 px-4 sm:px-8 lg:px-12">
                 <div class="flex min-w-0 items-center gap-6 lg:gap-10">
                     <a href="{{ route('dashboard.home') }}" class="rounded-control" aria-label="{{ $site->name() }} ダッシュボード">
@@ -18,6 +18,9 @@
                         @include('partials.dashboard-nav-items', ['items' => $navItems, 'layout' => 'desktop'])
                     </nav>
                 </div>
+
+                <div class="flex items-center gap-1">
+                    <x-theme-toggle />
 
                 <div class="relative">
                     <button
@@ -40,7 +43,7 @@
                         <x-icon name="chevron-down" :size="16" class="text-text-secondary" />
                     </button>
 
-                    <div id="user-menu" class="absolute right-0 z-20 mt-2 w-60 rounded-card border border-border bg-white p-2 shadow-card-lg" hidden>
+                    <div id="user-menu" class="absolute right-0 z-20 mt-2 w-60 rounded-card border border-border bg-surface p-2 shadow-card-lg" hidden>
                         <p class="border-b border-table-divider px-3 pb-3 pt-2 text-xs text-text-secondary">
                             ログイン中: <span class="font-medium text-text-primary">{{ $viewer->displayName }}</span>
                         </p>
@@ -68,6 +71,7 @@
                             </li>
                         </ul>
                     </div>
+                </div>
                 </div>
             </div>
 

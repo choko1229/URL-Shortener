@@ -10,7 +10,7 @@
 
             <x-flash-messages class="mt-5" />
 
-            <form method="POST" action="{{ route('main.delete.destroy') }}" class="mt-6 space-y-5 rounded-card-lg bg-white p-6 shadow-card-lg sm:p-8">
+            <form method="POST" action="{{ route('main.delete.destroy') }}" class="mt-6 space-y-5 rounded-card-lg bg-surface p-6 shadow-card-lg sm:p-8">
                 @csrf
                 <div>
                     <label for="short-url" class="block text-[13px] font-medium text-text-secondary">短縮URL</label>

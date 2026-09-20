@@ -25,7 +25,7 @@
         <div class="mx-auto max-w-[720px]">
             <x-flash-messages class="mb-4" />
 
-            <section aria-labelledby="shorten-heading" class="rounded-card-lg bg-white p-5 shadow-card-lg sm:p-8">
+            <section aria-labelledby="shorten-heading" class="rounded-card-lg bg-surface p-5 shadow-card-lg sm:p-8">
                 <h2 id="shorten-heading" class="sr-only">短縮URLを発行する</h2>
                 @include('partials.shorten-form', [
                     'form' => $page->form,
@@ -45,7 +45,7 @@
         <h2 id="features-heading" class="sr-only">{{ $site->name() }} でできること</h2>
         <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
             @foreach ($features as $feature)
-                <li class="rounded-card border border-border bg-white p-6 sm:p-[26px]">
+                <li class="rounded-card border border-border bg-surface p-6 sm:p-[26px]">
                     <div class="mb-3.5 flex size-11 items-center justify-center rounded-control bg-primary-tint text-primary-dark">
                         <x-icon :name="$feature['icon']" :size="22" />
                     </div>

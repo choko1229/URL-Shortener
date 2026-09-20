@@ -23,7 +23,7 @@
         </section>
     @endif
 
-    <section aria-labelledby="create-key-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+    <section aria-labelledby="create-key-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
         <h2 id="create-key-heading" class="font-rounded text-[15px] font-bold">API キーを発行</h2>
         <form method="POST" action="{{ route('dashboard.admin.api-keys.store') }}" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start">
             @csrf
@@ -40,7 +40,7 @@
         </form>
     </section>
 
-    <section aria-labelledby="keys-heading" class="overflow-hidden rounded-card border border-border bg-white">
+    <section aria-labelledby="keys-heading" class="overflow-hidden rounded-card border border-border bg-surface">
         <h2 id="keys-heading" class="border-b border-table-divider px-5 py-5 font-rounded text-[15px] font-bold sm:px-6">発行済みのキー</h2>
         @if ($keys->isEmpty())
             <p class="px-6 py-10 text-center text-sm text-text-secondary">まだ発行されていません。</p>
@@ -83,7 +83,7 @@
         @endif
     </section>
 
-    <section aria-labelledby="api-usage-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+    <section aria-labelledby="api-usage-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
         <h2 id="api-usage-heading" class="font-rounded text-[15px] font-bold">使い方</h2>
         <p class="mt-2 text-sm text-text-secondary">リクエストヘッダー <code class="rounded bg-primary-tint-soft px-1">Authorization: Bearer （APIキー）</code> を付けて呼び出します。</p>
         <ul class="mt-3 space-y-1.5 font-mono text-[13px]">

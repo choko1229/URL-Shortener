@@ -8,7 +8,7 @@
     <p class="text-sm leading-relaxed text-text-secondary">このリンクはパスワードで保護されています。共有された方から聞いたパスワードを入力してください。</p>
 
     @if ($lockedMinutes !== null)
-        <div class="mt-5 flex items-start gap-2.5 rounded-control border border-danger/40 bg-white px-4 py-3 text-sm text-danger" role="alert">
+        <div class="mt-5 flex items-start gap-2.5 rounded-control border border-danger/40 bg-surface px-4 py-3 text-sm text-danger" role="alert">
             <x-icon name="lock" :size="18" class="mt-0.5" />
             <p>パスワードを続けて間違えたため、入力を一時的に停止しています。約 {{ $lockedMinutes }} 分後にもう一度お試しください。</p>
         </div>

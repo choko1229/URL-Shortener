@@ -6,7 +6,7 @@
     @var string $timezone
 --}}
 <x-dashboard.admin-page :viewer="$viewer" title="ユーザー" description="Discord でログインしたユーザーの一覧です。管理者は予約語の使用・全URLの管理・APIキーの発行・アップデート管理ができます。">
-    <section aria-labelledby="users-heading" class="overflow-hidden rounded-card border border-border bg-white">
+    <section aria-labelledby="users-heading" class="overflow-hidden rounded-card border border-border bg-surface">
         <h2 id="users-heading" class="border-b border-table-divider px-5 py-5 font-rounded text-[15px] font-bold sm:px-6">ユーザー一覧</h2>
         <div class="overflow-x-auto" role="region" aria-labelledby="users-heading" tabindex="0">
             <table class="w-full min-w-[760px] border-collapse text-left text-[13px]">

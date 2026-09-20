@@ -24,7 +24,9 @@ use App\Services\Update\UpdateStrategy;
 use App\Support\ExternalServiceKeys;
 use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
+use App\Support\SiteIcon;
 use App\Support\SiteIdentity;
+use App\Support\Theme;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Contracts\Foundation\Application;
@@ -43,6 +45,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(ShortenerSettings::class);
         $this->app->scoped(ExternalServiceKeys::class);
         $this->app->scoped(SiteIdentity::class);
+        $this->app->scoped(Theme::class);
+        $this->app->scoped(
+            SiteIcon::class,
+            static fn (Application $app): SiteIcon => new SiteIcon($app->storagePath('app/private/branding')),
+        );
         $this->app->singleton(ShortUrlBuilder::class);
 
         $this->app->bind(GeoIpDatabase::class, static fn (Application $app): GeoIpDatabase => new GeoIpDatabase(
@@ -87,6 +94,8 @@ class AppServiceProvider extends ServiceProvider
         // サイト名などは設置した人が変更できるため、すべての画面から参照できるようにする
         View::composer('*', static function (ViewContract $view): void {
             $view->with('site', app(SiteIdentity::class));
+            $view->with('theme', app(Theme::class));
+            $view->with('siteIcon', app(SiteIcon::class));
         });
 
         // フッターには、用意されている固定ページだけを並べる

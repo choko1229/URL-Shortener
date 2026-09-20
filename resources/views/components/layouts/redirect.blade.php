@@ -7,7 +7,7 @@
             <a href="{{ route('main.home') }}" class="mb-6 inline-block rounded-control" aria-label="{{ $site->name() }} トップページ">
                 <x-logo size="sm" />
             </a>
-            <section aria-labelledby="redirect-heading" class="rounded-card-lg bg-white p-6 shadow-card-lg sm:p-8">
+            <section aria-labelledby="redirect-heading" class="rounded-card-lg bg-surface p-6 shadow-card-lg sm:p-8">
                 <h1 id="redirect-heading" class="font-rounded text-section font-bold">{{ $title }}</h1>
                 <div class="mt-4">
                     {{ $slot }}

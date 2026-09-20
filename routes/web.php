@@ -26,6 +26,7 @@ use App\Http\Controllers\Main\QrCodeController;
 use App\Http\Controllers\Redirect\RedirectController;
 use App\Http\Controllers\Redirect\ShortLinkController;
 use App\Http\Controllers\ShortUrlController;
+use App\Http\Controllers\SiteIconController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -38,6 +39,9 @@ use Illuminate\Support\Facades\Route;
 if (app()->environment('local')) {
     require __DIR__.'/preview.php';
 }
+
+// サービスアイコン（どのサブドメインからも同じ画像を参照する。/{code} より先に登録する）
+Route::get('/_icon', SiteIconController::class)->name('site-icon');
 
 // 初期セットアップ（未インストール時のみ有効。ドメイン未確定でも使えるようドメインを限定しない）
 Route::prefix('install')
@@ -147,6 +151,8 @@ Route::domain(config('shortener.domains.dashboard'))
 
                 Route::get('/site', [SiteController::class, 'index'])->name('site');
                 Route::put('/site', [SiteController::class, 'updateIdentity'])->name('site.update');
+                Route::put('/site/theme', [SiteController::class, 'updateTheme'])->name('site.theme');
+                Route::post('/site/icon', [SiteController::class, 'updateIcon'])->name('site.icon');
                 Route::put('/site/pages/{slug}', [SiteController::class, 'updatePage'])->name('site.pages.update');
                 Route::post('/site/pages/{slug}/template', [SiteController::class, 'loadTemplate'])->name('site.pages.template');
                 Route::delete('/site/pages/{slug}', [SiteController::class, 'destroyPage'])->name('site.pages.destroy');

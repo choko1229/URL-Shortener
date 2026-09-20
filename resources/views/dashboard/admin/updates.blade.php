@@ -16,7 +16,7 @@
     @var bool $hasPhpCli
 --}}
 <x-dashboard.admin-page :viewer="$viewer" title="アップデート" description="1日1回（午前4時以降の最初のアクセス時）GitHub Releases を確認し、新しいリリースがあればバックアップを取ってから自動で更新します。失敗した場合は自動で元に戻し、Discord に通知します。">
-    <section aria-labelledby="status-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+    <section aria-labelledby="status-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
         <h2 id="status-heading" class="font-rounded text-[15px] font-bold">現在の状態</h2>
         <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div><dt class="text-xs text-text-secondary">バージョン</dt><dd class="mt-0.5 font-medium">{{ $currentVersion ?? '不明（開発中のコード）' }}</dd></div>
@@ -65,7 +65,7 @@
         </p>
     </section>
 
-    <section aria-labelledby="settings-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+    <section aria-labelledby="settings-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
         <h2 id="settings-heading" class="font-rounded text-[15px] font-bold">設定</h2>
         <p class="mt-2 text-xs leading-relaxed text-text-secondary">
             更新元は <code class="rounded bg-primary-tint-soft px-1">{{ $repository }}</code> です。フォークして自分のリリースから更新する場合だけ、<code class="rounded bg-primary-tint-soft px-1">.env</code> の <code class="rounded bg-primary-tint-soft px-1">SHORTENER_UPDATE_REPOSITORY</code> で変更してください。
@@ -108,7 +108,7 @@
         </form>
     </section>
 
-    <section aria-labelledby="runs-heading" class="overflow-hidden rounded-card border border-border bg-white">
+    <section aria-labelledby="runs-heading" class="overflow-hidden rounded-card border border-border bg-surface">
         <h2 id="runs-heading" class="border-b border-table-divider px-5 py-5 font-rounded text-[15px] font-bold sm:px-6">実行履歴（直近10件）</h2>
         @if ($runs->isEmpty())
             <p class="px-6 py-10 text-center text-sm text-text-secondary">まだ更新は行われていません。</p>
@@ -146,7 +146,7 @@
         @endif
     </section>
 
-    <section aria-labelledby="backups-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+    <section aria-labelledby="backups-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
         <h2 id="backups-heading" class="font-rounded text-[15px] font-bold">バックアップ（直近3世代）</h2>
         @if ($backups === [])
             <p class="mt-3 text-sm text-text-secondary">まだありません。</p>

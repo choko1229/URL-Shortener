@@ -24,7 +24,7 @@
             <form
                 method="POST"
                 action="{{ route('main.contact.store') }}"
-                class="mt-6 space-y-5 rounded-card-lg bg-white p-6 shadow-card-lg sm:p-8"
+                class="mt-6 space-y-5 rounded-card-lg bg-surface p-6 shadow-card-lg sm:p-8"
                 @if ($recaptchaSiteKey) data-recaptcha-site-key="{{ $recaptchaSiteKey }}" data-recaptcha-action="{{ \App\Services\Security\RecaptchaVerifier::ACTION_CONTACT }}" @endif
             >
                 @csrf

@@ -5,7 +5,7 @@
     @var array{owner: string, state: string, q: string} $filters
 --}}
 <x-dashboard.admin-page :viewer="$viewer" title="全URL" description="すべての短縮URLを確認・削除できます。ログインせずに発行されたURLの統計も確認できます。">
-    <form method="GET" action="{{ route('dashboard.admin.links') }}" class="flex flex-col gap-3 rounded-card border border-border bg-white p-4 sm:flex-row sm:items-end sm:p-5">
+    <form method="GET" action="{{ route('dashboard.admin.links') }}" class="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 sm:flex-row sm:items-end sm:p-5">
         <div class="min-w-0 flex-1">
             <label for="filter-q" class="block text-[13px] font-medium text-text-secondary">コード・元URLで検索</label>
             <input id="filter-q" name="q" type="search" value="{{ $filters['q'] }}" class="form-control mt-2" autocomplete="off">
@@ -29,7 +29,7 @@
         <x-button type="submit" variant="secondary" size="sm" class="min-h-[52px]">絞り込む</x-button>
     </form>
 
-    <section aria-labelledby="all-links-heading" class="overflow-hidden rounded-card border border-border bg-white">
+    <section aria-labelledby="all-links-heading" class="overflow-hidden rounded-card border border-border bg-surface">
         <div class="flex items-center justify-between gap-4 border-b border-table-divider px-5 py-5 sm:px-6">
             <h2 id="all-links-heading" class="font-rounded text-[15px] font-bold">短縮URL一覧</h2>
             <p class="text-xs text-text-secondary">全 {{ number_format($links->total()) }} 件</p>

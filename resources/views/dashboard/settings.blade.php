@@ -7,7 +7,7 @@
     @var string $timezone
 --}}
 <x-dashboard.page :viewer="$viewer" title="設定">
-    <section aria-labelledby="account-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+    <section aria-labelledby="account-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
         <h2 id="account-heading" class="font-rounded text-[15px] font-bold">アカウント</h2>
         <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
             <div><dt class="text-xs text-text-secondary">表示名</dt><dd class="mt-0.5">{{ $user->displayName() }}</dd></div>
@@ -18,7 +18,7 @@
         <p class="mt-4 text-xs text-text-secondary">表示名とアイコンは Discord の設定に合わせて、ログインのたびに更新されます。</p>
     </section>
 
-    <section aria-labelledby="withdraw-heading" class="rounded-card border border-danger/30 bg-white p-5 sm:p-6">
+    <section aria-labelledby="withdraw-heading" class="rounded-card border border-danger/30 bg-surface p-5 sm:p-6">
         <h2 id="withdraw-heading" class="font-rounded text-[15px] font-bold text-danger">退会</h2>
         @if ($isLastAdmin)
             <p class="mt-3 text-sm leading-relaxed text-text-secondary">

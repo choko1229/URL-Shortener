@@ -7,7 +7,7 @@
     @var string $timezone
 --}}
 <x-dashboard.admin-page :viewer="$viewer" title="お問い合わせ" description="お問い合わせページから届いた内容です。Discord の Webhook を設定していると、届いたときに通知します。">
-    <section aria-labelledby="contact-setting-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+    <section aria-labelledby="contact-setting-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
         <h2 id="contact-setting-heading" class="font-rounded text-[15px] font-bold">お問い合わせページに載せる Discord の連絡先</h2>
         <form method="POST" action="{{ route('dashboard.admin.inquiries.contact') }}" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start">
             @csrf
@@ -34,7 +34,7 @@
         </form>
     </section>
 
-    <section aria-labelledby="inquiries-heading" class="overflow-hidden rounded-card border border-border bg-white">
+    <section aria-labelledby="inquiries-heading" class="overflow-hidden rounded-card border border-border bg-surface">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-table-divider px-5 py-5 sm:px-6">
             <h2 id="inquiries-heading" class="font-rounded text-[15px] font-bold">届いたお問い合わせ</h2>
             <p class="text-[13px] text-text-secondary">未対応 {{ number_format($unhandledCount) }} 件</p>

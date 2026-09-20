@@ -20,7 +20,7 @@
         @csrf
         @method('PUT')
 
-        <section aria-labelledby="discord-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+        <section aria-labelledby="discord-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
             <h2 id="discord-heading" class="font-rounded text-[15px] font-bold">Discord ログイン</h2>
             <p class="mt-1 text-[13px] leading-relaxed text-text-secondary">
                 Discord Developer Portal のアプリケーションの「OAuth2」→「Redirects」に、次の URL を登録してください。
@@ -43,7 +43,7 @@
             </div>
         </section>
 
-        <section aria-labelledby="safe-browsing-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+        <section aria-labelledby="safe-browsing-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
             <h2 id="safe-browsing-heading" class="font-rounded text-[15px] font-bold">悪意URLチェック（Google Safe Browsing）</h2>
             <p class="mt-1 text-[13px] leading-relaxed text-text-secondary">
                 未設定の場合、リダイレクト時に「安全性を確認できませんでした」と表示し、利用者の判断で移動します。
@@ -61,7 +61,7 @@
             </div>
         </section>
 
-        <section aria-labelledby="recaptcha-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+        <section aria-labelledby="recaptcha-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
             <h2 id="recaptcha-heading" class="font-rounded text-[15px] font-bold">スパム対策（reCAPTCHA）</h2>
             <p class="mt-1 text-[13px] leading-relaxed text-text-secondary">
                 未ログインでの発行に適用します（ボタンを押したときに自動で判定し、利用者の操作は不要です）。未設定の場合は、レート制限と月間上限のみで制限します。
@@ -102,7 +102,7 @@
         </div>
     </form>
 
-    <section aria-labelledby="geoip-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+    <section aria-labelledby="geoip-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
         <h2 id="geoip-heading" class="font-rounded text-[15px] font-bold">国の判定</h2>
         <p class="mt-1 text-[13px] leading-relaxed text-text-secondary">
             クリック元の IP アドレスから国を判定します。判定に使うデータベースは自動で取得し、毎月更新します（設定は不要です）。訪問者の IP は外部に送りません。

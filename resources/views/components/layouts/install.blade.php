@@ -9,7 +9,7 @@
                 <span class="rounded-full bg-primary-tint px-3 py-1 text-xs font-bold text-primary-dark">初期セットアップ</span>
             </div>
 
-            <section aria-labelledby="install-heading" class="rounded-card-lg bg-white p-6 shadow-card-lg sm:p-8">
+            <section aria-labelledby="install-heading" class="rounded-card-lg bg-surface p-6 shadow-card-lg sm:p-8">
                 <h1 id="install-heading" class="font-rounded text-section font-bold">{{ $title }}</h1>
                 <x-flash-messages class="mt-4" />
                 <div class="mt-5">

@@ -12,17 +12,38 @@
     @if ($robots)
         <meta name="robots" content="{{ $robots }}">
     @endif
-    <meta name="theme-color" content="#2EC5E0">
+    <meta name="theme-color" content="{{ $theme->themeColor() }}">
+    @if ($theme->scheme()->isSwitchable())
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="{{ $theme->themeColor(dark: true) }}">
+    @endif
     <title>{{ $title ? $title.' | '.$site->name() : $site->titleWithTagline() }}</title>
+
+    @include('partials.favicon')
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+    <link rel="stylesheet" href="{{ $theme->font()->stylesheetUrl() }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    {{-- 管理画面で選んだ配色・書体でデザイントークンを上書きする（ビルドし直さずに変えられる） --}}
+    <style>{!! $theme->css() !!}</style>
+    @if ($theme->scheme()->isSwitchable())
+        {{-- 画面が描かれる前に、訪問者が選んだ表示に切り替える --}}
+        <script>
+            (function () {
+                try {
+                    var saved = localStorage.getItem('{{ \App\Support\Theme::STORAGE_KEY }}');
+                    if (saved === 'dark' || saved === 'light') {
+                        document.documentElement.dataset.theme = saved;
+                    }
+                } catch (error) {}
+            })();
+        </script>
+    @endif
 </head>
 <body {{ $attributes->class('min-h-screen') }}>
-    <a href="#main-content" class="sr-only rounded-control bg-white px-4 py-2 font-medium text-primary-dark shadow-card focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50">
+    <a href="#main-content" class="sr-only rounded-control bg-surface px-4 py-2 font-medium text-primary-dark shadow-card focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50">
         メインコンテンツへスキップ
     </a>
 

@@ -31,7 +31,7 @@
             <x-button size="sm" href="#" data-destination-link rel="noopener">すぐに移動する</x-button>
         </div>
 
-        <div data-state="unsafe" class="rounded-control border border-danger/40 bg-white px-4 py-4 text-sm" role="alert" hidden>
+        <div data-state="unsafe" class="rounded-control border border-danger/40 bg-surface px-4 py-4 text-sm" role="alert" hidden>
             <p class="flex items-center gap-2 font-bold text-danger">
                 <x-icon name="ban" :size="18" />
                 危険なサイトの可能性があるため、移動を中止しました。
@@ -41,7 +41,7 @@
         </div>
 
         <div data-state="unknown" class="space-y-4" hidden>
-            <div class="flex items-start gap-2.5 rounded-control border border-warning/50 bg-white px-4 py-3 text-sm" role="alert">
+            <div class="flex items-start gap-2.5 rounded-control border border-warning/50 bg-surface px-4 py-3 text-sm" role="alert">
                 <x-icon name="alert-circle" :size="18" class="mt-0.5 text-warning" />
                 <div>
                     <p class="font-bold">安全性を確認できませんでした。</p>

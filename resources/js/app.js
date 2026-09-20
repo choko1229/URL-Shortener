@@ -4,6 +4,8 @@
  * - 有効期限の選択（data-expiry-group）
  * - ダイアログ（data-dialog-open）
  * - クリップボードへのコピー（data-copy-text）
+ * - メインカラーの入力（data-color-group）
+ * - ライト／ダークの切り替え（data-theme-toggle）
  * - 横スクロールするタブの現在地表示（data-scroll-tabs）
  * - ユーザーメニュー（data-menu-button）
  * - 送信前の確認（form[data-confirm]）
@@ -152,6 +154,82 @@ function initCopyButtons() {
             announce('コピーできませんでした。テキストを選択してコピーしてください。');
         }
     });
+}
+
+/** サイト設定のメインカラー: プリセット・色見本・カラーコードの入力を揃える */
+function initColorGroups() {
+    document.querySelectorAll('[data-color-group]').forEach((group) => {
+        const text = group.querySelector('[data-color-text]');
+        const picker = group.querySelector('[data-color-picker]');
+        const presets = Array.from(group.querySelectorAll('[data-color-preset]'));
+        if (!(text instanceof HTMLInputElement)) {
+            return;
+        }
+
+        const sync = (value) => {
+            const color = value.trim().toLowerCase();
+            text.value = color;
+            if (picker instanceof HTMLInputElement && /^#[0-9a-f]{6}$/.test(color)) {
+                picker.value = color;
+            }
+            presets.forEach((preset) => {
+                preset.setAttribute('aria-pressed', String(preset.dataset.colorPreset === color));
+            });
+        };
+
+        presets.forEach((preset) => {
+            preset.addEventListener('click', () => sync(preset.dataset.colorPreset ?? ''));
+        });
+        picker?.addEventListener('input', () => sync(picker.value));
+        text.addEventListener('input', () => sync(text.value));
+    });
+}
+
+/** ライト／ダークの切り替え（選択はこのブラウザにだけ記憶する） */
+function initThemeToggle() {
+    const buttons = document.querySelectorAll('[data-theme-toggle]');
+    if (buttons.length === 0) {
+        return;
+    }
+
+    const root = document.documentElement;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const currentTheme = () => root.dataset.theme
+        ?? (root.style.colorScheme === 'dark' || getComputedStyle(root).colorScheme === 'dark' ? 'dark' : 'light');
+
+    const sync = () => {
+        const dark = currentTheme() === 'dark';
+        buttons.forEach((button) => {
+            button.setAttribute('aria-label', dark ? 'ライト表示に切り替える' : 'ダーク表示に切り替える');
+            button.querySelectorAll('[data-theme-icon]').forEach((icon) => {
+                icon.hidden = icon.dataset.themeIcon === (dark ? 'to-dark' : 'to-light');
+            });
+        });
+    };
+
+    buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const next = currentTheme() === 'dark' ? 'light' : 'dark';
+            root.dataset.theme = next;
+            try {
+                localStorage.setItem('color-theme', next);
+            } catch (error) {
+                console.warn('[theme] 表示の設定を保存できませんでした。', error);
+            }
+            sync();
+            announce(next === 'dark' ? 'ダーク表示に切り替えました。' : 'ライト表示に切り替えました。');
+        });
+    });
+
+    // 端末の設定に合わせている間は、その変化にも追従する
+    prefersDark.addEventListener('change', () => {
+        if (!root.dataset.theme) {
+            sync();
+        }
+    });
+
+    sync();
 }
 
 /** 横スクロールするタブで、開いているタブを見える位置に寄せる（項目が多い管理画面向け） */
@@ -414,6 +492,8 @@ initDialogs();
 initPreviewGroups();
 initQrDialogs();
 initCopyButtons();
+initColorGroups();
+initThemeToggle();
 initScrollingTabs();
 initMenus();
 initConfirmForms();

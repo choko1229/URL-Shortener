@@ -5,16 +5,21 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SiteIconRequest;
 use App\Http\Requests\Admin\SiteIdentityRequest;
 use App\Http\Requests\Admin\SitePageRequest;
+use App\Http\Requests\Admin\SiteThemeRequest;
 use App\Models\SitePage;
 use App\Services\Site\LegalTemplates;
 use App\Support\ShortenerSettings;
+use App\Support\SiteIcon;
 use App\Support\SiteIdentity;
+use App\Support\Theme;
 use App\ViewModels\ViewerData;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -23,7 +28,7 @@ use Illuminate\Support\Facades\Log;
  */
 final class SiteController extends Controller
 {
-    public function index(Request $request, SiteIdentity $site, ShortenerSettings $settings): View
+    public function index(Request $request, SiteIdentity $site, Theme $theme, SiteIcon $icon, ShortenerSettings $settings): View
     {
         return view('dashboard.admin.site', [
             'viewer' => ViewerData::fromUser($request->user()),
@@ -32,6 +37,13 @@ final class SiteController extends Controller
                 'tagline' => $site->tagline(),
                 'operator' => $site->operator(),
             ],
+            'themeValues' => [
+                'color' => $theme->color(),
+                'color_scheme' => $theme->scheme()->value,
+                'font' => $theme->font()->value,
+            ],
+            'selectedIcon' => $icon->selected(),
+            'hasUploadedIcon' => $icon->path() !== null,
             'pages' => SitePage::query()->whereIn('slug', array_keys(SitePage::AVAILABLE))->get()->keyBy('slug'),
             'timezone' => $settings->displayTimezone(),
         ]);
@@ -44,6 +56,30 @@ final class SiteController extends Controller
         Log::notice('サイト設定を変更しました。', ['user_id' => $request->user()?->getAuthIdentifier()]);
 
         return back()->with('notice', 'サイトの表示を保存しました。');
+    }
+
+    public function updateTheme(SiteThemeRequest $request, Theme $theme): RedirectResponse
+    {
+        $theme->save($request->theme());
+
+        Log::notice('サイトの見た目を変更しました。', ['user_id' => $request->user()?->getAuthIdentifier()]);
+
+        return back()->with('notice', '見た目を保存しました。');
+    }
+
+    public function updateIcon(SiteIconRequest $request, SiteIcon $icon): RedirectResponse
+    {
+        $file = $request->file('file');
+
+        if ($request->string('icon')->toString() !== SiteIcon::UPLOADED) {
+            $icon->useBuiltIn($request->string('icon')->toString());
+        } elseif ($file instanceof UploadedFile) {
+            $icon->store($file);
+        }
+
+        Log::notice('サービスアイコンを変更しました。', ['user_id' => $request->user()?->getAuthIdentifier()]);
+
+        return back()->with('notice', 'サービスアイコンを保存しました。ファビコンにも同じものを使います。');
     }
 
     public function updatePage(SitePageRequest $request, string $slug): RedirectResponse

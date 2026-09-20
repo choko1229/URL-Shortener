@@ -2,12 +2,15 @@
     サイト設定（表示名と固定ページ）
     @var \App\ViewModels\ViewerData $viewer
     @var array{name: string, tagline: string, operator: string} $identity
+    @var array{color: string, color_scheme: string, font: string} $themeValues
+    @var string $selectedIcon
+    @var bool $hasUploadedIcon
     @var \Illuminate\Support\Collection<string, \App\Models\SitePage> $pages
     @var string $timezone
     @var \App\Support\SiteIdentity $site
 --}}
 <x-dashboard.admin-page :viewer="$viewer" title="サイト設定" description="サイト名や運営者名、利用規約・プライバシーポリシーをここで設定します。画面に表示される名前はすべてこの設定に従います。">
-    <section aria-labelledby="identity-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+    <section aria-labelledby="identity-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
         <h2 id="identity-heading" class="font-rounded text-[15px] font-bold">サイトの表示</h2>
         <form method="POST" action="{{ route('dashboard.admin.site.update') }}" class="mt-4 max-w-2xl space-y-5">
             @csrf
@@ -44,6 +47,150 @@
         </form>
     </section>
 
+    <section aria-labelledby="theme-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
+        <h2 id="theme-heading" class="font-rounded text-[15px] font-bold">見た目</h2>
+        <p class="mt-1 text-[13px] text-text-secondary">ボタンや見出しの色、書体を変えられます。薄い色・濃い色・枠線の色は、メインカラーから自動で作ります。</p>
+
+        <form method="POST" action="{{ route('dashboard.admin.site.theme') }}" class="mt-4 max-w-2xl space-y-6">
+            @csrf
+            @method('PUT')
+
+            @php $currentColor = old('color', $themeValues['color']); @endphp
+            <div data-color-group>
+                <span class="block text-[13px] font-medium text-text-secondary">メインカラー</span>
+
+                <div class="mt-2 flex flex-wrap gap-2">
+                    @foreach (\App\Support\ColorPalette::PRESETS as $hex => $label)
+                        <button
+                            type="button"
+                            data-color-preset="{{ $hex }}"
+                            aria-pressed="{{ $currentColor === $hex ? 'true' : 'false' }}"
+                            class="flex min-h-10 items-center gap-2 rounded-full border-[1.5px] border-border-input px-3 text-[13px] font-medium text-text-secondary transition-colors hover:border-primary aria-pressed:border-primary aria-pressed:bg-primary-tint aria-pressed:text-primary-dark"
+                        >
+                            <span class="size-4 rounded-full border border-text-primary/10" style="background-color: {{ $hex }}"></span>
+                            {{ $label }}
+                        </button>
+                    @endforeach
+                </div>
+
+                <div class="mt-3 flex flex-wrap items-center gap-3">
+                    <label for="theme-color" class="text-[13px] text-text-secondary">カラーコード</label>
+                    <input
+                        id="theme-color"
+                        name="color"
+                        type="text"
+                        required
+                        maxlength="7"
+                        spellcheck="false"
+                        value="{{ $currentColor }}"
+                        class="form-control w-36 font-mono"
+                        data-color-text
+                        aria-describedby="theme-color-hint{{ $errors->has('color') ? ' theme-color-error' : '' }}"
+                        @error('color') aria-invalid="true" @enderror
+                    >
+                    <input
+                        type="color"
+                        value="{{ \App\Support\ColorPalette::isValid($currentColor) ? $currentColor : \App\Support\ColorPalette::DEFAULT_COLOR }}"
+                        class="size-11 cursor-pointer rounded-control border-[1.5px] border-border-input bg-surface p-1"
+                        data-color-picker
+                        aria-label="メインカラーを色見本から選ぶ"
+                    >
+                </div>
+                <p id="theme-color-hint" class="mt-1.5 text-xs text-text-secondary">#2ec5e0 の形式（16進数6桁）。文字が読みにくくならないよう、濃さは自動で調整します。</p>
+                <x-field-error name="color" id="theme-color-error" />
+            </div>
+
+            <fieldset>
+                <legend class="text-[13px] font-medium text-text-secondary">ダークモード</legend>
+                <div class="mt-2 space-y-2">
+                    @foreach (\App\Enums\ColorScheme::cases() as $scheme)
+                        <label class="flex cursor-pointer items-start gap-3 text-sm">
+                            <input type="radio" name="color_scheme" value="{{ $scheme->value }}" @checked(old('color_scheme', $themeValues['color_scheme']) === $scheme->value) class="mt-1 size-4 shrink-0 accent-primary-dark">
+                            <span>
+                                {{ $scheme->label() }}
+                                <span class="block text-xs text-text-secondary">{{ $scheme->description() }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <x-field-error name="color_scheme" />
+            </fieldset>
+
+            <fieldset>
+                <legend class="text-[13px] font-medium text-text-secondary">書体</legend>
+                <div class="mt-2 space-y-2">
+                    @foreach (\App\Enums\FontTheme::cases() as $font)
+                        <label class="flex cursor-pointer items-start gap-3 text-sm">
+                            <input type="radio" name="font" value="{{ $font->value }}" @checked(old('font', $themeValues['font']) === $font->value) class="mt-1 size-4 shrink-0 accent-primary-dark">
+                            <span>
+                                <span style="font-family: {{ $font->headingStack() }}">{{ $font->label() }}</span>
+                                <span class="block text-xs text-text-secondary">{{ $font->description() }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <x-field-error name="font" />
+            </fieldset>
+
+            <x-button type="submit" size="sm">保存する</x-button>
+        </form>
+    </section>
+
+    <section aria-labelledby="icon-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
+        <h2 id="icon-heading" class="font-rounded text-[15px] font-bold">サービスアイコン</h2>
+        <p class="mt-1 text-[13px] text-text-secondary">ヘッダーのロゴマークに使います。ブラウザのタブに出るファビコンにも同じものを使います。</p>
+
+        <form method="POST" action="{{ route('dashboard.admin.site.icon') }}" enctype="multipart/form-data" class="mt-4 max-w-2xl space-y-5">
+            @csrf
+
+            <fieldset>
+                <legend class="sr-only">アイコンの種類</legend>
+                <div class="flex flex-wrap gap-2">
+                    @foreach (\App\Support\SiteIcon::BUILT_IN as $name => $label)
+                        <label class="cursor-pointer">
+                            <input type="radio" name="icon" value="{{ $name }}" @checked(old('icon', $selectedIcon) === $name) class="peer sr-only">
+                            <span class="flex min-h-10 items-center gap-2 rounded-full border-[1.5px] border-border-input px-3 text-[13px] font-medium text-text-secondary peer-checked:border-primary peer-checked:bg-primary-tint peer-checked:text-primary-dark peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary-dark">
+                                <span class="flex size-6 items-center justify-center rounded-[7px] bg-primary text-white">
+                                    <x-icon :name="$name" :size="14" :stroke-width="2.2" />
+                                </span>
+                                {{ $label }}
+                            </span>
+                        </label>
+                    @endforeach
+
+                    <label class="cursor-pointer">
+                        <input type="radio" name="icon" value="{{ \App\Support\SiteIcon::UPLOADED }}" @checked(old('icon', $selectedIcon) === \App\Support\SiteIcon::UPLOADED) class="peer sr-only">
+                        <span class="flex min-h-10 items-center gap-2 rounded-full border-[1.5px] border-border-input px-3 text-[13px] font-medium text-text-secondary peer-checked:border-primary peer-checked:bg-primary-tint peer-checked:text-primary-dark peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary-dark">
+                            @if ($hasUploadedIcon)
+                                <img src="{{ route('site-icon') }}?v={{ $siteIcon->version() }}" alt="" width="24" height="24" class="size-6 rounded-[7px] object-contain">
+                            @endif
+                            画像を使う
+                        </span>
+                    </label>
+                </div>
+                <x-field-error name="icon" />
+            </fieldset>
+
+            <div>
+                <label for="icon-file" class="block text-[13px] font-medium text-text-secondary">画像を選ぶ{{ $hasUploadedIcon ? '（変更する場合のみ）' : '' }}</label>
+                <input
+                    id="icon-file"
+                    name="file"
+                    type="file"
+                    accept="{{ collect(\App\Support\SiteIcon::ALLOWED_EXTENSIONS)->map(fn (string $extension): string => '.'.$extension)->implode(',') }}"
+                    class="mt-2 block w-full text-sm text-text-secondary file:mr-3 file:min-h-10 file:cursor-pointer file:rounded-control file:border-[1.5px] file:border-primary file:bg-surface file:px-4 file:text-[13px] file:font-medium file:text-text-primary hover:file:bg-primary-tint"
+                    aria-describedby="icon-file-hint{{ $errors->has('file') ? ' icon-file-error' : '' }}"
+                >
+                <p id="icon-file-hint" class="mt-1.5 text-xs text-text-secondary">
+                    {{ implode(' / ', \App\Support\SiteIcon::ALLOWED_EXTENSIONS) }}、{{ \App\Support\SiteIcon::MAX_KILOBYTES }}KB まで。正方形（512×512 程度）がきれいに表示されます。SVG は中にスクリプトを書けるため受け付けません。
+                </p>
+                <x-field-error name="file" id="icon-file-error" />
+            </div>
+
+            <x-button type="submit" size="sm">保存する</x-button>
+        </form>
+    </section>
+
     @foreach (\App\Models\SitePage::AVAILABLE as $slug => $defaultTitle)
         @php
             $page = $pages->get($slug);
@@ -52,7 +199,7 @@
             $title = $isActive ? old('title') : ($page?->title ?? $defaultTitle);
             $body = $isActive ? old('body') : ($page?->body ?? '');
         @endphp
-        <section aria-labelledby="{{ $slug }}-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
+        <section aria-labelledby="{{ $slug }}-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 id="{{ $slug }}-heading" class="font-rounded text-[15px] font-bold">{{ $defaultTitle }}</h2>
                 <p class="text-[13px] text-text-secondary">

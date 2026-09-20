@@ -1,6 +1,6 @@
 {{-- 管理画面のタブ @var list<\App\ViewModels\NavItemData> $items --}}
 <nav aria-label="管理メニュー" data-scroll-tabs class="-mx-4 overflow-x-auto px-4 sm:-mx-1 sm:px-1">
-    <ul class="flex w-max gap-1 rounded-card border border-border bg-white p-1.5">
+    <ul class="flex w-max gap-1 rounded-card border border-border bg-surface p-1.5">
         @foreach ($items as $item)
             <li>
                 <a href="{{ $item->url }}"@if ($item->isCurrent) aria-current="page"@endif

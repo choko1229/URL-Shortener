@@ -57,6 +57,15 @@ class AppSetting extends Model
 
     public const SITE_OPERATOR = 'site.operator';
 
+    // 見た目（管理画面「サイト設定」で変更する）
+    public const SITE_THEME_COLOR = 'site.theme_color';
+
+    public const SITE_COLOR_SCHEME = 'site.color_scheme';
+
+    public const SITE_FONT = 'site.font';
+
+    public const SITE_ICON = 'site.icon';
+
     /** @var list<string> */
     protected $fillable = [
         'key',

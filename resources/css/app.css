@@ -19,6 +19,8 @@
     --color-primary-darker: #067a98;
     --color-primary-tint: #e3f7fc;
     --color-primary-tint-soft: #f4fbff;
+    /* カード・ヘッダーなどの面（ダークモードでは暗い色に置き換わる） */
+    --color-surface: #ffffff;
     --color-border: #e7f5fa;
     --color-border-strong: #dff3fb;
     --color-border-input: #d7eff7;
@@ -71,7 +73,7 @@
 @layer components {
     /* 入力フィールド: 枠線 1.5px / 角丸 12〜14px / フォーカス時 primary（design.md 4） */
     .form-control {
-        @apply block w-full min-w-0 rounded-control border-[1.5px] border-border-input bg-white px-[18px] py-[14px] text-[15px] text-text-primary transition-colors placeholder:text-text-muted focus:border-primary focus:ring-4 focus:ring-primary/20 focus:outline-none disabled:cursor-not-allowed disabled:bg-primary-tint-soft disabled:text-text-muted;
+        @apply block w-full min-w-0 rounded-control border-[1.5px] border-border-input bg-surface px-[18px] py-[14px] text-[15px] text-text-primary transition-colors placeholder:text-text-muted focus:border-primary focus:ring-4 focus:ring-primary/20 focus:outline-none disabled:cursor-not-allowed disabled:bg-primary-tint-soft disabled:text-text-muted;
     }
 
     .form-control[aria-invalid='true'] {
@@ -85,11 +87,11 @@
 
     /* ラジオボタンをピル型で表示（input は sr-only で残し、キーボード・支援技術で操作可能にする） */
     .radio-pill {
-        @apply inline-flex min-h-10 items-center gap-1.5 rounded-full border-[1.5px] border-border-input bg-white px-4 text-[13px] font-medium text-text-secondary transition-colors peer-checked:border-primary peer-checked:bg-primary-tint peer-checked:text-primary-dark peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary-dark hover:border-primary;
+        @apply inline-flex min-h-10 items-center gap-1.5 rounded-full border-[1.5px] border-border-input bg-surface px-4 text-[13px] font-medium text-text-secondary transition-colors peer-checked:border-primary peer-checked:bg-primary-tint peer-checked:text-primary-dark peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary-dark hover:border-primary;
     }
 
     .dialog {
-        @apply m-auto w-[calc(100%-32px)] max-w-md rounded-card-lg bg-white p-0 text-text-primary shadow-card-lg backdrop:bg-text-primary/45;
+        @apply m-auto w-[calc(100%-32px)] max-w-md rounded-card-lg bg-surface p-0 text-text-primary shadow-card-lg backdrop:bg-text-primary/45;
     }
 
     /* 処理中の表示（リダイレクト時の安全性確認など） */
