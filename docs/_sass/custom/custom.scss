@@ -1,0 +1,5 @@
+// サイドバー下部に出るテーマの宣伝文（This site uses Just the Docs...）は表示しない。
+// ライセンス表記は本文下のフッター（_includes/footer_custom.html）に出している。
+.site-footer {
+  display: none;
+}
