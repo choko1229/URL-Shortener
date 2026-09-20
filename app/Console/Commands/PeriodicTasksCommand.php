@@ -16,21 +16,21 @@ final class PeriodicTasksCommand extends Command
 {
     protected $signature = 'app:periodic-tasks';
 
-    protected $description = '1日1回の定期処理（自動アップデートの確認）を、実行時刻を過ぎていれば実行します';
+    protected $description = '定期処理（自動アップデートの確認・国判定のデータベースの更新）を、実行時刻を過ぎていれば実行します';
 
     public function handle(PeriodicTasks $tasks): int
     {
         $now = CarbonImmutable::now();
         $tasks->recordCronHeartbeat($now);
 
-        $outcome = $tasks->runDue('cron', $now);
+        $report = $tasks->runDue('cron', $now);
 
-        if ($outcome !== null) {
-            $outcome->isFailure()
-                ? $this->components->error($outcome->message)
-                : $this->components->info($outcome->message);
+        foreach ($report?->messages() ?? [] as $result) {
+            $result['failed']
+                ? $this->components->error($result['message'])
+                : $this->components->info($result['message']);
         }
 
-        return $outcome?->isFailure() ? self::FAILURE : self::SUCCESS;
+        return $report?->hasFailure() ? self::FAILURE : self::SUCCESS;
     }
 }

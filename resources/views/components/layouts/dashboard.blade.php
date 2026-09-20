@@ -10,7 +10,7 @@
         <header class="border-b border-border-strong bg-white">
             <div class="mx-auto flex h-[72px] max-w-[1280px] items-center justify-between gap-4 px-4 sm:px-8 lg:px-12">
                 <div class="flex min-w-0 items-center gap-6 lg:gap-10">
-                    <a href="{{ route('dashboard.home') }}" class="rounded-control" aria-label="chok.ooo ダッシュボード">
+                    <a href="{{ route('dashboard.home') }}" class="rounded-control" aria-label="{{ $site->name() }} ダッシュボード">
                         <x-logo size="sm" />
                     </a>
 

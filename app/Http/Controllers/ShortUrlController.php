@@ -32,7 +32,7 @@ final class ShortUrlController extends Controller
         $clientIp = (string) $request->ip();
 
         // スパム対策は未ログインの発行のみ（requirements.md 4-4）
-        if ($user === null && ! $recaptcha->verify($request->validated('recaptcha_token'), $clientIp)) {
+        if ($user === null && ! $recaptcha->verify(RecaptchaVerifier::ACTION_SHORTEN, $request->validated('recaptcha_token'), $clientIp, $request->userAgent())) {
             return back()
                 ->withInput($request->safe()->except(['password', 'recaptcha_token']))
                 ->with('error', 'スパム対策の確認に失敗しました。ページを再読み込みして、もう一度お試しください。');

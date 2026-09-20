@@ -20,6 +20,7 @@ use App\Services\Update\Updater;
 use App\Services\Update\UpdateSettings;
 use App\Support\ExternalServiceKeys;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -145,15 +146,22 @@ final class AutoUpdateTest extends TestCase
         $this->assertSame(UpdateRunStatus::Succeeded, $this->updater()->run(manual: true)->status);
     }
 
-    public function test_skips_without_token_or_known_version(): void
+    public function test_updates_a_public_repository_without_a_token(): void
     {
         AppSetting::query()->where('key', AppSetting::UPDATE_GITHUB_TOKEN)->delete();
         app(ExternalServiceKeys::class)->forget();
-        $this->assertStringContainsString('トークン', $this->updater()->run()->message);
+        $this->fakeGitHub('v26.9.1');
 
-        AppSetting::store(AppSetting::UPDATE_GITHUB_TOKEN, 'github-token-value', encrypt: true);
-        app(ExternalServiceKeys::class)->forget();
+        $this->assertSame(UpdateRunStatus::Succeeded, $this->updater()->run()->status);
+
+        // トークンが無いときは Authorization ヘッダーを付けない
+        Http::assertSent(static fn (Request $request): bool => ! $request->hasHeader('Authorization'));
+    }
+
+    public function test_skips_when_the_current_version_is_unknown(): void
+    {
         File::delete($this->basePath.'/VERSION');
+
         $this->assertStringContainsString('バージョンを判定できない', $this->updater()->run()->message);
     }
 

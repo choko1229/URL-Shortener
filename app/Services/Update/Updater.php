@@ -38,10 +38,6 @@ final class Updater
         $current = $this->version->current();
         $token = $this->settings->githubToken();
 
-        if ($token === null) {
-            return new UpdateCheckResult($current, null, 'GitHub のトークンが設定されていません。');
-        }
-
         try {
             return new UpdateCheckResult($current, $this->github->latest($this->settings->repository(), $token), null);
         } catch (UpdateException $e) {
@@ -57,10 +53,6 @@ final class Updater
         }
 
         $token = $this->settings->githubToken();
-        if ($token === null) {
-            return UpdateOutcome::skipped('GitHub のトークンが設定されていないため、更新を確認できません。');
-        }
-
         $current = $this->version->current();
         if ($current === null) {
             return UpdateOutcome::skipped('現在のバージョンを判定できないため、更新しません（開発中のコードなど）。');
@@ -90,7 +82,7 @@ final class Updater
         }
     }
 
-    private function update(Version $current, ReleaseInfo $release, string $token): UpdateOutcome
+    private function update(Version $current, ReleaseInfo $release, ?string $token): UpdateOutcome
     {
         $from = $current->toString();
         $run = UpdateRun::query()->create([
@@ -166,7 +158,7 @@ final class Updater
             ? Log::notice('自動アップデートが完了しました。', ['message' => $message])
             : Log::error('自動アップデートが失敗しました。', ['status' => $status->value, 'message' => $message]);
 
-        $this->notifier->send("[chok.ooo] 自動アップデート {$status->label()}: {$message}");
+        $this->notifier->send($this->notifier->prefix()."自動アップデート {$status->label()}: {$message}");
 
         return UpdateOutcome::finished($status, $message);
     }

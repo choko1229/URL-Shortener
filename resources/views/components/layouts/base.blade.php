@@ -1,6 +1,6 @@
 @props([
     'title' => null,
-    'description' => 'chok.ooo はログイン不要で使えるシンプルなURL短縮サービスです。',
+    'description' => null,
     'robots' => null,
 ])
 <!DOCTYPE html>
@@ -8,12 +8,12 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="{{ $description }}">
+    <meta name="description" content="{{ $description ?? $site->name().' はログイン不要で使えるシンプルなURL短縮サービスです。' }}">
     @if ($robots)
         <meta name="robots" content="{{ $robots }}">
     @endif
     <meta name="theme-color" content="#2EC5E0">
-    <title>{{ $title ? $title.' | chok.ooo' : 'chok.ooo - シンプルなURL短縮サービス' }}</title>
+    <title>{{ $title ? $title.' | '.$site->name() : $site->titleWithTagline() }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

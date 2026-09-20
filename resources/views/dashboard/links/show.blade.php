@@ -5,6 +5,7 @@
     @var bool $canEdit
     @var int $slugMinLength
     @var int $slugMaxLength
+    @var bool $showGeoIpAttribution
 --}}
 @php
     $link = $stats->link;
@@ -125,6 +126,11 @@
                             </tbody>
                         </table>
                     @endif
+                    @if ($key === 'countries' && $showGeoIpAttribution)
+                        <p class="mt-4 text-[11px] text-text-secondary">
+                            <a href="https://db-ip.com" target="_blank" rel="noopener noreferrer" class="underline hover:text-primary-dark">IP Geolocation by DB-IP</a>
+                        </p>
+                    @endif
                 </section>
             @endforeach
         </div>
@@ -140,12 +146,77 @@
             @unless ($link->isDeleted())
                 <div class="mt-5 flex flex-wrap gap-2.5">
                     <x-copy-button :text="$link->shortUrl" :label="$link->displayUrl.' をコピー'" variant="ghost" />
-                    <x-button variant="secondary" size="sm" aria-haspopup="dialog" data-qr-open :data-qr-src="route('dashboard.links.qr', ['shortUrl' => $link->id])" :data-qr-label="$link->displayUrl">
+                    <x-button
+                        variant="secondary"
+                        size="sm"
+                        aria-haspopup="dialog"
+                        data-qr-open
+                        :data-qr-src="route('main.short-link.qr', ['code' => $link->slug, 'format' => 'svg'])"
+                        :data-qr-png="route('main.short-link.qr', ['code' => $link->slug, 'format' => 'png'])"
+                        :data-qr-label="$link->displayUrl"
+                    >
                         <x-icon name="qr-code" :size="16" />
                         QRコード
                     </x-button>
                 </div>
             @endunless
+
+            @if ($canEdit && ! $link->isDeleted())
+                <div class="mt-6 max-w-xl" data-preview-group data-preview-summary="link-preview-summary">
+                    <p class="text-[13px] font-medium text-text-secondary">
+                        共有時のカード（Discord や X に貼ったときの表示）: <span id="link-preview-summary" class="font-normal"></span>
+                    </p>
+                    <form method="POST" action="{{ route('dashboard.links.preview', ['shortUrl' => $link->id]) }}" class="mt-2 space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        <div class="space-y-2">
+                            @foreach (\App\Enums\PreviewMode::cases() as $mode)
+                                <label class="flex cursor-pointer items-start gap-2.5 text-sm">
+                                    <input
+                                        type="radio"
+                                        name="preview_mode"
+                                        value="{{ $mode->value }}"
+                                        @checked(old('preview_mode', $stats->previewMode->value) === $mode->value)
+                                        data-preview-mode
+                                        data-label="{{ $mode->label() }}"
+                                        class="mt-1 size-4 shrink-0 accent-primary-dark"
+                                    >
+                                    <span>
+                                        <span class="font-medium">{{ $mode->label() }}</span>
+                                        <span class="block text-xs text-text-secondary">{{ $mode->description() }}</span>
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <x-field-error name="preview_mode" id="preview-mode-error" />
+
+                        <div class="space-y-4" data-preview-custom @unless (old('preview_mode', $stats->previewMode->value) === \App\Enums\PreviewMode::Custom->value) hidden @endunless>
+                            <div>
+                                <label for="preview-title" class="block text-[13px] font-medium text-text-secondary">カードのタイトル</label>
+                                <input id="preview-title" name="preview_title" type="text" maxlength="120" value="{{ old('preview_title', $stats->previewTitle) }}" class="form-control mt-2" @error('preview_title') aria-invalid="true" aria-describedby="preview-title-error" @enderror>
+                                <x-field-error name="preview_title" id="preview-title-error" />
+                            </div>
+                            <div>
+                                <label for="preview-description" class="block text-[13px] font-medium text-text-secondary">カードの説明（任意）</label>
+                                <input id="preview-description" name="preview_description" type="text" maxlength="300" value="{{ old('preview_description', $stats->previewDescription) }}" class="form-control mt-2" @error('preview_description') aria-invalid="true" aria-describedby="preview-description-error" @enderror>
+                                <x-field-error name="preview_description" id="preview-description-error" />
+                            </div>
+                            <div>
+                                <label for="preview-image" class="block text-[13px] font-medium text-text-secondary">カードの画像URL（任意）</label>
+                                <input id="preview-image" name="preview_image_url" type="url" maxlength="2048" value="{{ old('preview_image_url', $stats->previewImageUrl) }}" class="form-control mt-2" @error('preview_image_url') aria-invalid="true" aria-describedby="preview-image-error" @enderror>
+                                <x-field-error name="preview_image_url" id="preview-image-error" />
+                            </div>
+                        </div>
+
+                        @if ($link->isPasswordProtected)
+                            <p class="text-xs leading-relaxed text-text-secondary">パスワード保護つきのため、設定にかかわらず転送先は表示されません（サービス名のカードになります）。</p>
+                        @endif
+
+                        <x-button type="submit" size="sm" variant="secondary">カードの設定を保存</x-button>
+                    </form>
+                </div>
+            @endif
 
             @if ($canEdit)
                 <form method="POST" action="{{ route('dashboard.links.slug', ['shortUrl' => $link->id]) }}" class="mt-6 max-w-xl space-y-2" data-confirm="カスタムスラッグを変更しますか？以前の短縮URLは使えなくなり、再利用もできません。">

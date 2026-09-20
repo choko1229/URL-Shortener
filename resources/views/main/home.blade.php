@@ -42,7 +42,7 @@
     </div>
 
     <section id="features" aria-labelledby="features-heading" class="mx-auto max-w-[1280px] scroll-mt-6 px-4 pt-16 sm:px-8 lg:px-16 lg:pt-24">
-        <h2 id="features-heading" class="sr-only">chok.ooo でできること</h2>
+        <h2 id="features-heading" class="sr-only">{{ $site->name() }} でできること</h2>
         <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
             @foreach ($features as $feature)
                 <li class="rounded-card border border-border bg-white p-6 sm:p-[26px]">

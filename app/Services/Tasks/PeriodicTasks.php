@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Tasks;
 
 use App\Models\AppSetting;
+use App\Services\GeoIp\GeoIpDatabaseUpdater;
+use App\Services\GeoIp\GeoIpUpdateResult;
 use App\Services\Update\UpdateOutcome;
 use App\Services\Update\Updater;
 use Carbon\CarbonImmutable;
@@ -13,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * 1 日 1 回の定期処理（requirements.md 7-1: 自動アップデートの確認）。
+ * 定期処理（requirements.md 7-1: 1 日 1 回の自動アップデートの確認、2-6: 国判定のデータベースの取得・毎月の更新）。
  * サーバーの cron が無くても動くよう、WordPress の WP-Cron と同じくサイトへのアクセスをきっかけに実行する。
  * cron（php artisan schedule:run）が設定されていればそちらから実行する。どちらから呼ばれても 1 日 1 回だけ動く。
  */
@@ -37,21 +39,23 @@ class PeriodicTasks
 
     private const LOCK_SECONDS = 3600;
 
-    public function __construct(private readonly Updater $updater) {}
+    public function __construct(
+        private readonly Updater $updater,
+        private readonly GeoIpDatabaseUpdater $geoIp,
+    ) {}
 
+    /** 実行する処理が 1 つでもあるか（アクセスのたびに呼ばれるため、DB の読み出しとファイルの確認だけで判定する） */
     public function isDue(CarbonImmutable $now): bool
     {
-        $lastRun = $this->timestamp(self::LAST_RUN_KEY);
-
-        return $lastRun === null || $lastRun->lessThan($this->latestBoundary($now));
+        return $this->updateIsDue($now) || $this->geoIp->isDue($now);
     }
 
     /**
-     * 実行する時刻を過ぎていれば実行する。実行しなかった場合は null
+     * 実行する時刻を過ぎた処理を実行する。何も実行しなかった場合は null
      *
      * @param  'cron'|'web'  $trigger
      */
-    public function runDue(string $trigger, CarbonImmutable $now): ?UpdateOutcome
+    public function runDue(string $trigger, CarbonImmutable $now): ?PeriodicTaskReport
     {
         if (! $this->isDue($now)) {
             return null;
@@ -63,22 +67,11 @@ class PeriodicTasks
         }
 
         try {
-            // ロック取得までに別のプロセスが実行済みでないか確認する
-            if (! $this->isDue($now)) {
-                return null;
-            }
+            // ロック取得までに別のプロセスが実行済みでないか確認する（それぞれの処理は失敗しても他方を止めない）
+            $geoIp = $this->geoIp->isDue($now) ? $this->runGeoIpUpdate($now) : null;
+            $update = $this->updateIsDue($now) ? $this->runUpdate($trigger, $now) : null;
 
-            // 失敗してもアクセスのたびに再実行しないよう、先に実行時刻を記録する（次は翌日）
-            AppSetting::store(self::LAST_RUN_KEY, $now->toIso8601String());
-            AppSetting::store(self::LAST_TRIGGER_KEY, $trigger);
-
-            Log::info('定期処理を実行します。', ['trigger' => $trigger]);
-
-            return $this->updater->run();
-        } catch (Throwable $e) {
-            Log::error('定期処理でエラーが発生しました。', ['exception' => $e::class, 'error' => $e->getMessage()]);
-
-            return null;
+            return $geoIp === null && $update === null ? null : new PeriodicTaskReport($update, $geoIp);
         } finally {
             $lock->release();
         }
@@ -106,6 +99,43 @@ class PeriodicTasks
         $value = AppSetting::valueFor(self::LAST_TRIGGER_KEY);
 
         return is_string($value) ? $value : null;
+    }
+
+    /** 自動アップデートの確認は 1 日 1 回（日本時間 4:00 以降） */
+    private function updateIsDue(CarbonImmutable $now): bool
+    {
+        $lastRun = $this->timestamp(self::LAST_RUN_KEY);
+
+        return $lastRun === null || $lastRun->lessThan($this->latestBoundary($now));
+    }
+
+    /** @param  'cron'|'web'  $trigger */
+    private function runUpdate(string $trigger, CarbonImmutable $now): ?UpdateOutcome
+    {
+        try {
+            // 失敗してもアクセスのたびに再実行しないよう、先に実行時刻を記録する（次は翌日）
+            AppSetting::store(self::LAST_RUN_KEY, $now->toIso8601String());
+            AppSetting::store(self::LAST_TRIGGER_KEY, $trigger);
+
+            Log::info('定期処理を実行します。', ['trigger' => $trigger]);
+
+            return $this->updater->run();
+        } catch (Throwable $e) {
+            Log::error('定期処理（自動アップデート）でエラーが発生しました。', ['exception' => $e::class, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    private function runGeoIpUpdate(CarbonImmutable $now): ?GeoIpUpdateResult
+    {
+        try {
+            return $this->geoIp->update($now);
+        } catch (Throwable $e) {
+            Log::error('定期処理（国判定のデータベースの更新）でエラーが発生しました。', ['exception' => $e::class, 'error' => $e->getMessage()]);
+
+            return null;
+        }
     }
 
     /** 現在時刻以前で最も新しい「日本時間 4:00」 */

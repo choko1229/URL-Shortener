@@ -5,12 +5,12 @@
     <div class="flex min-h-screen flex-col">
         <header class="border-b border-border-strong bg-white">
             <div class="mx-auto flex h-[72px] max-w-[1280px] items-center justify-between gap-4 px-4 sm:h-[88px] sm:px-8 lg:px-16">
-                <a href="{{ route('main.home') }}" class="rounded-control" aria-label="chok.ooo トップページ">
+                <a href="{{ route('main.home') }}" class="rounded-control" aria-label="{{ $site->name() }} トップページ">
                     <x-logo />
                 </a>
 
                 <nav aria-label="メインメニュー" class="flex items-center gap-2 sm:gap-4">
-                    <a href="#features" class="hidden rounded-control px-2 py-2 text-sm font-medium text-primary-dark hover:text-primary-darker sm:inline-block">
+                    <a href="{{ route('main.home') }}#features" class="hidden rounded-control px-2 py-2 text-sm font-medium text-primary-dark hover:text-primary-darker sm:inline-block">
                         使い方
                     </a>
                     @if ($viewer->isAuthenticated)
@@ -37,11 +37,12 @@
                 <x-logo size="sm" />
                 <nav aria-label="フッターメニュー">
                     <ul class="flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
-                        <li><a href="#features" class="text-text-secondary hover:text-primary-dark">使い方</a></li>
-                        {{-- 以下のページは未作成のためリンクにしない --}}
-                        @foreach (['利用規約', 'プライバシーポリシー', 'お問い合わせ'] as $label)
-                            <li class="text-text-muted">{{ $label }}<span class="sr-only">（準備中）</span></li>
+                        <li><a href="{{ route('main.home') }}#features" class="text-text-secondary hover:text-primary-dark">使い方</a></li>
+                        {{-- 用意されている固定ページのみ（管理画面の「サイト設定」で作る） --}}
+                        @foreach ($footerPages as $slug => $pageTitle)
+                            <li><a href="{{ route('main.'.$slug) }}" class="text-text-secondary hover:text-primary-dark">{{ $pageTitle }}</a></li>
                         @endforeach
+                        <li><a href="{{ route('main.contact') }}" class="text-text-secondary hover:text-primary-dark">お問い合わせ</a></li>
                     </ul>
                 </nav>
             </div>

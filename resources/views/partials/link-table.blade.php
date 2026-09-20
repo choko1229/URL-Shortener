@@ -78,7 +78,8 @@
                                     :title="$link->displayUrl.' のQRコードを表示'"
                                     aria-haspopup="dialog"
                                     data-qr-open
-                                    :data-qr-src="route('dashboard.links.qr', ['shortUrl' => $link->id])"
+                                    :data-qr-src="route('main.short-link.qr', ['code' => $link->slug, 'format' => 'svg'])"
+                                    :data-qr-png="route('main.short-link.qr', ['code' => $link->slug, 'format' => 'png'])"
                                     :data-qr-label="$link->displayUrl"
                                 >
                                     <x-icon name="qr-code" :size="16" />

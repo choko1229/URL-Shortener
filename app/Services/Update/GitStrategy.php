@@ -34,12 +34,16 @@ final class GitStrategy implements UpdateStrategy
         return $result->successful() ? trim($result->output()) : null;
     }
 
-    public function apply(ReleaseInfo $release, string $token): void
+    public function apply(ReleaseInfo $release, ?string $token): void
     {
-        // プライベートリポジトリのため、HTTPS のリモートにはトークンをヘッダーで渡す（URL やログに残さない）
-        $auth = 'http.extraHeader=Authorization: Basic '.base64_encode('x-access-token:'.$token);
+        // 非公開リポジトリの場合、HTTPS のリモートにはトークンをヘッダーで渡す（URL やログに残さない）
+        $fetch = [$this->gitBinary];
+        if ($token !== null) {
+            $fetch[] = '-c';
+            $fetch[] = 'http.extraHeader=Authorization: Basic '.base64_encode('x-access-token:'.$token);
+        }
 
-        $this->run([$this->gitBinary, '-c', $auth, 'fetch', '--tags', '--force', 'origin'], 'リポジトリを取得できませんでした。');
+        $this->run([...$fetch, 'fetch', '--tags', '--force', 'origin'], 'リポジトリを取得できませんでした。');
         $this->run([$this->gitBinary, 'checkout', '--force', 'tags/'.$release->tag], "{$release->tag} に切り替えられませんでした。");
         $this->composerInstall();
     }

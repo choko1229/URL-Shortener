@@ -17,18 +17,25 @@
         'expiryPanel' => "{$idPrefix}-expiry-panel",
         'expirySummary' => "{$idPrefix}-expiry-summary",
         'expiresAt' => "{$idPrefix}-expires-at",
+        'previewPanel' => "{$idPrefix}-preview-panel",
+        'previewSummary' => "{$idPrefix}-preview-summary",
+        'previewTitle' => "{$idPrefix}-preview-title",
+        'previewDescription' => "{$idPrefix}-preview-description",
+        'previewImage' => "{$idPrefix}-preview-image",
         'loginDialog' => 'login-dialog',
     ];
     $selectedExpiry = \App\Enums\ExpiryOption::tryFrom((string) old('expiry', $form->defaultExpiry->value)) ?? $form->defaultExpiry;
+    $selectedPreviewMode = \App\Enums\PreviewMode::tryFrom((string) old('preview_mode', \App\Enums\PreviewMode::Destination->value)) ?? \App\Enums\PreviewMode::Destination;
     $showPasswordPanel = $errors->has('password');
     $showExpiryPanel = $errors->hasAny(['expiry', 'expires_at']);
+    $showPreviewPanel = $errors->hasAny(['preview_mode', 'preview_title', 'preview_description', 'preview_image_url']);
 @endphp
 
 <form
     method="POST"
     action="{{ $action }}"
     class="space-y-4"
-    @if ($form->recaptchaSiteKey) data-recaptcha-site-key="{{ $form->recaptchaSiteKey }}" data-recaptcha-action="{{ \App\Services\Security\RecaptchaVerifier::ACTION }}" @endif
+    @if ($form->recaptchaSiteKey) data-recaptcha-site-key="{{ $form->recaptchaSiteKey }}" data-recaptcha-action="{{ \App\Services\Security\RecaptchaVerifier::ACTION_SHORTEN }}" @endif
 >
     @csrf
     @if ($form->recaptchaSiteKey)
@@ -96,12 +103,69 @@
             <x-icon name="clock" :size="14" />
             有効期限: <span id="{{ $ids['expirySummary'] }}">{{ $selectedExpiry->label() }}</span>
         </button>
+        <button type="button" class="chip" aria-controls="{{ $ids['previewPanel'] }}" aria-expanded="{{ $showPreviewPanel ? 'true' : 'false' }}" data-disclosure>
+            <x-icon name="share" :size="14" />
+            共有時のカード: <span id="{{ $ids['previewSummary'] }}">{{ $selectedPreviewMode->label() }}</span>
+        </button>
         @unless ($form->isMember)
             <a href="{{ route('auth.login') }}" class="chip">
                 <x-icon name="pencil" :size="14" />
                 カスタムスラッグ（ログインで利用可）
             </a>
         @endunless
+    </div>
+
+    <div
+        id="{{ $ids['previewPanel'] }}"
+        class="rounded-card border border-border bg-primary-tint-soft p-4 sm:p-5"
+        data-preview-group
+        data-preview-summary="{{ $ids['previewSummary'] }}"
+        @unless ($showPreviewPanel) hidden @endunless
+    >
+        <fieldset>
+            <legend class="text-[13px] font-medium text-text-secondary">Discord や X に貼ったときの表示</legend>
+            <div class="mt-2 space-y-2">
+                @foreach (\App\Enums\PreviewMode::cases() as $mode)
+                    <label class="flex cursor-pointer items-start gap-2.5 text-sm">
+                        <input
+                            type="radio"
+                            name="preview_mode"
+                            value="{{ $mode->value }}"
+                            @checked($selectedPreviewMode === $mode)
+                            data-preview-mode
+                            data-label="{{ $mode->label() }}"
+                            class="mt-1 size-4 shrink-0 accent-primary-dark"
+                        >
+                        <span>
+                            <span class="font-medium">{{ $mode->label() }}</span>
+                            <span class="block text-xs text-text-secondary">{{ $mode->description() }}</span>
+                        </span>
+                    </label>
+                @endforeach
+            </div>
+        </fieldset>
+
+        <div class="mt-4 space-y-4" data-preview-custom @unless ($selectedPreviewMode === \App\Enums\PreviewMode::Custom) hidden @endunless>
+            <div>
+                <label for="{{ $ids['previewTitle'] }}" class="block text-[13px] font-medium text-text-secondary">カードのタイトル</label>
+                <input id="{{ $ids['previewTitle'] }}" name="preview_title" type="text" maxlength="120" value="{{ old('preview_title') }}" class="form-control mt-2" @error('preview_title') aria-invalid="true" aria-describedby="{{ $ids['previewTitle'] }}-error" @enderror>
+                <x-field-error name="preview_title" :id="$ids['previewTitle'].'-error'" />
+            </div>
+            <div>
+                <label for="{{ $ids['previewDescription'] }}" class="block text-[13px] font-medium text-text-secondary">カードの説明（任意）</label>
+                <input id="{{ $ids['previewDescription'] }}" name="preview_description" type="text" maxlength="300" value="{{ old('preview_description') }}" class="form-control mt-2" @error('preview_description') aria-invalid="true" aria-describedby="{{ $ids['previewDescription'] }}-error" @enderror>
+                <x-field-error name="preview_description" :id="$ids['previewDescription'].'-error'" />
+            </div>
+            <div>
+                <label for="{{ $ids['previewImage'] }}" class="block text-[13px] font-medium text-text-secondary">カードの画像URL（任意）</label>
+                <input id="{{ $ids['previewImage'] }}" name="preview_image_url" type="url" maxlength="2048" value="{{ old('preview_image_url') }}" class="form-control mt-2" @error('preview_image_url') aria-invalid="true" aria-describedby="{{ $ids['previewImage'] }}-error" @enderror>
+                <x-field-error name="preview_image_url" :id="$ids['previewImage'].'-error'" />
+            </div>
+        </div>
+
+        <p class="mt-4 text-xs leading-relaxed text-text-secondary">
+            パスワード保護をつけたリンクは、転送先が分からないよう常に「カードを隠す」になります。
+        </p>
     </div>
 
     <div id="{{ $ids['passwordPanel'] }}" class="rounded-card border border-border bg-primary-tint-soft p-4 sm:p-5" @unless ($showPasswordPanel) hidden @endunless>

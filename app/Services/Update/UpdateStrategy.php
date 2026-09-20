@@ -12,8 +12,12 @@ interface UpdateStrategy
     /** 現在のコードの識別子（Git ならコミット）。ロールバックに使う */
     public function currentRevision(): ?string;
 
-    /** @throws UpdateException */
-    public function apply(ReleaseInfo $release, string $token): void;
+    /**
+     * @param  string|null  $token  非公開リポジトリから取得する場合のトークン
+     *
+     * @throws UpdateException
+     */
+    public function apply(ReleaseInfo $release, ?string $token): void;
 
     /** @throws UpdateException */
     public function rollback(Backup $backup): void;

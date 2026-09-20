@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\ShortUrl;
 
 use App\Enums\ExpiryOption;
+use App\Enums\PreviewMode;
 use App\ViewModels\ShortUrlFormData;
 use Carbon\CarbonImmutable;
 use InvalidArgumentException;
@@ -21,6 +22,11 @@ final readonly class ShortUrlDraft
         public ?string $password,
         // API など、日時をタイムゾーン付きで受け取った場合の有効期限
         public ?CarbonImmutable $explicitExpiresAt = null,
+        // SNS に貼ったときのカード（既定は転送先のカードを見せる）
+        public PreviewMode $previewMode = PreviewMode::Destination,
+        public ?string $previewTitle = null,
+        public ?string $previewDescription = null,
+        public ?string $previewImageUrl = null,
     ) {}
 
     /** API 用: 有効期限を日時で直接指定する（null なら無期限） */

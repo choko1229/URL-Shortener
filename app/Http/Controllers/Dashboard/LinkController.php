@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdatePreviewRequest;
 use App\Http\Requests\UpdateSlugRequest;
 use App\Models\ShortUrl;
 use App\Models\User;
 use App\Services\Dashboard\LinkStatisticsBuilder;
+use App\Services\GeoIp\GeoIpDatabase;
 use App\Services\ShortUrl\IssuanceException;
-use App\Services\ShortUrl\QrCodeGenerator;
 use App\Services\ShortUrl\SlugEditor;
 use App\Support\ShortenerSettings;
-use App\Support\ShortUrlBuilder;
 use App\ViewModels\ViewerData;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Gate;
 /** 短縮URLごとの詳細（統計・カスタムスラッグの編集・QRコード） */
 final class LinkController extends Controller
 {
-    public function show(Request $request, ShortUrl $shortUrl, LinkStatisticsBuilder $statistics, ShortenerSettings $settings): View
+    public function show(Request $request, ShortUrl $shortUrl, LinkStatisticsBuilder $statistics, ShortenerSettings $settings, GeoIpDatabase $geoIp): View
     {
         Gate::authorize('view', $shortUrl);
         $shortUrl->loadMissing('user');
@@ -36,6 +36,8 @@ final class LinkController extends Controller
             'canEdit' => Gate::allows('update', $shortUrl),
             'slugMinLength' => $settings->customSlugMinLength(),
             'slugMaxLength' => $settings->customSlugMaxLength(),
+            // DB-IP のデータ（CC BY 4.0）で判定した国を表示する場合は出典のリンクが必要
+            'showGeoIpAttribution' => $geoIp->source()?->requiresAttribution() ?? false,
         ]);
     }
 
@@ -54,21 +56,14 @@ final class LinkController extends Controller
             ->with('notice', 'カスタムスラッグを変更しました。以前の短縮URLは使えなくなりました。');
     }
 
-    /** QR コード画像（SVG） */
-    public function qr(ShortUrl $shortUrl, QrCodeGenerator $qrCodes, ShortUrlBuilder $urls): Response
+    /** 共有時のカード（OGP）の設定を変更する */
+    public function updatePreview(UpdatePreviewRequest $request, ShortUrl $shortUrl): RedirectResponse
     {
-        Gate::authorize('view', $shortUrl);
-        abort_if($shortUrl->trashed(), Response::HTTP_NOT_FOUND);
+        Gate::authorize('update', $shortUrl);
 
-        $svg = $qrCodes->svg($urls->url($shortUrl->slug));
-        abort_if($svg === null, Response::HTTP_INTERNAL_SERVER_ERROR);
+        $shortUrl->fill($request->previewAttributes())->save();
 
-        return response($svg, Response::HTTP_OK, [
-            'Content-Type' => 'image/svg+xml',
-            // 画像として表示する前提。直接開かれてもスクリプト等を実行させない
-            'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'",
-            'Cache-Control' => 'private, max-age=3600',
-        ]);
+        return back()->with('notice', '共有時のカードの設定を保存しました。');
     }
 
     private static function user(Request $request): User

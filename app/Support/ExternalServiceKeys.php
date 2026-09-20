@@ -27,9 +27,14 @@ final class ExternalServiceKeys
         return $this->string(AppSetting::RECAPTCHA_SITE_KEY);
     }
 
-    public function recaptchaSecretKey(): ?string
+    public function recaptchaProjectId(): ?string
     {
-        return $this->string(AppSetting::RECAPTCHA_SECRET_KEY);
+        return $this->string(AppSetting::RECAPTCHA_PROJECT_ID);
+    }
+
+    public function recaptchaApiKey(): ?string
+    {
+        return $this->string(AppSetting::RECAPTCHA_API_KEY);
     }
 
     public function discordClientId(): ?string

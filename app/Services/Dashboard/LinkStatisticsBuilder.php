@@ -45,6 +45,10 @@ final class LinkStatisticsBuilder
             referrers: $this->grouped($link, 'referrer_host', static fn (?string $host): string => $host ?? '直接アクセス・不明'),
             countries: $this->grouped($link, 'country_code', self::countryName(...)),
             devices: $this->grouped($link, 'device_type', static fn (?string $type): string => DeviceType::tryFrom((string) $type)?->label() ?? '不明'),
+            previewMode: $link->preview_mode,
+            previewTitle: $link->preview_title,
+            previewDescription: $link->preview_description,
+            previewImageUrl: $link->preview_image_url,
         );
     }
 

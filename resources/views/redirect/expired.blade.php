@@ -15,6 +15,6 @@
         </div>
     </div>
     <div class="mt-6">
-        <x-button variant="secondary" size="sm" :href="route('main.home')">chok.ooo で短縮URLを作る</x-button>
+        <x-button variant="secondary" size="sm" :href="route('main.home')">{{ $site->name() }} で短縮URLを作る</x-button>
     </div>
 </x-layouts.redirect>

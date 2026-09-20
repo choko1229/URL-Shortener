@@ -6,7 +6,9 @@ namespace App\Providers;
 
 use App\Installer\EnvironmentFile;
 use App\Installer\InstallationState;
+use App\Models\SitePage;
 use App\Models\User;
+use App\Services\GeoIp\GeoIpDatabase;
 use App\Services\Redirect\CountryResolver;
 use App\Services\Update\AppVersion;
 use App\Services\Update\ArtisanProcess;
@@ -21,12 +23,15 @@ use App\Services\Update\UpdateStrategy;
 use App\Support\ExternalServiceKeys;
 use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
+use App\Support\SiteIdentity;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\View as ViewContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,11 +41,16 @@ class AppServiceProvider extends ServiceProvider
         // 設定値・外部サービスのキーはリクエスト単位でキャッシュする
         $this->app->scoped(ShortenerSettings::class);
         $this->app->scoped(ExternalServiceKeys::class);
+        $this->app->scoped(SiteIdentity::class);
         $this->app->singleton(ShortUrlBuilder::class);
 
+        $this->app->bind(GeoIpDatabase::class, static fn (Application $app): GeoIpDatabase => new GeoIpDatabase(
+            self::config($app, 'shortener.geoip.manual_database'),
+            self::config($app, 'shortener.geoip.auto_database'),
+        ));
         $this->app->scoped(
             CountryResolver::class,
-            static fn (Application $app): CountryResolver => new CountryResolver(self::config($app, 'shortener.geoip_database')),
+            static fn (Application $app): CountryResolver => new CountryResolver($app->make(GeoIpDatabase::class)->activePath()),
         );
 
         $this->app->singleton(
@@ -65,6 +75,16 @@ class AppServiceProvider extends ServiceProvider
 
         // 管理者のみの機能（requirements.md 4-2）
         Gate::define('admin', static fn (User $user): bool => $user->isAdmin());
+
+        // サイト名などは設置した人が変更できるため、すべての画面から参照できるようにする
+        View::composer('*', static function (ViewContract $view): void {
+            $view->with('site', app(SiteIdentity::class));
+        });
+
+        // フッターには、用意されている固定ページだけを並べる
+        View::composer('components.layouts.main', static function (ViewContract $view): void {
+            $view->with('footerPages', SitePage::menu());
+        });
     }
 
     /** 自動アップデート（requirements.md 7 章） */

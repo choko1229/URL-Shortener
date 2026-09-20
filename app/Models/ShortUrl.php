@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\LinkStatus;
+use App\Enums\PreviewMode;
 use App\Enums\SlugType;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -25,6 +26,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property SlugType $slug_type
  * @property string $original_url
  * @property string|null $password_hash
+ * @property PreviewMode $preview_mode
+ * @property string|null $preview_title
+ * @property string|null $preview_description
+ * @property string|null $preview_image_url
  * @property string|null $deletion_token_hash
  * @property CarbonImmutable|null $expires_at
  * @property int $click_count
@@ -44,6 +49,10 @@ class ShortUrl extends Model
         'slug_type',
         'original_url',
         'expires_at',
+        'preview_mode',
+        'preview_title',
+        'preview_description',
+        'preview_image_url',
     ];
 
     /** @var list<string> */
@@ -59,6 +68,7 @@ class ShortUrl extends Model
         return [
             'user_id' => 'integer',
             'slug_type' => SlugType::class,
+            'preview_mode' => PreviewMode::class,
             'expires_at' => 'immutable_datetime',
             'click_count' => 'integer',
             'last_clicked_at' => 'immutable_datetime',
@@ -112,6 +122,15 @@ class ShortUrl extends Model
     public function isPasswordProtected(): bool
     {
         return $this->password_hash !== null;
+    }
+
+    /**
+     * 実際に使うカードの出し方。
+     * パスワード保護つきのリンクは、貼り付けただけで転送先が分からないよう常にサービス名のカードにする。
+     */
+    public function previewMode(): PreviewMode
+    {
+        return $this->isPasswordProtected() ? PreviewMode::Service : $this->preview_mode;
     }
 
     public function isCustomSlug(): bool

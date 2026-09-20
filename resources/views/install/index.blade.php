@@ -23,7 +23,7 @@
     $domainHasError = $errors->hasAny(array_keys($domainFields));
 @endphp
 
-<x-layouts.install title="chok.ooo のセットアップ">
+<x-layouts.install :title="$site->name().' のセットアップ'">
     <p class="text-sm leading-relaxed text-text-secondary">
         データベースの接続情報を入力するだけでセットアップが完了します。cron の登録などは必要ありません。
     </p>

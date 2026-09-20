@@ -21,7 +21,7 @@
         <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div><dt class="text-xs text-text-secondary">バージョン</dt><dd class="mt-0.5 font-medium">{{ $currentVersion ?? '不明（開発中のコード）' }}</dd></div>
             <div><dt class="text-xs text-text-secondary">更新方法</dt><dd class="mt-0.5">{{ $strategy === 'git' ? 'Git（git checkout と composer install）' : '配布用 zip の入れ替え' }}</dd></div>
-            <div><dt class="text-xs text-text-secondary">自動アップデート</dt><dd class="mt-0.5">{{ $enabled && $hasToken ? '有効' : ($enabled ? '有効（トークン未設定のため停止中）' : '無効') }}</dd></div>
+            <div><dt class="text-xs text-text-secondary">自動アップデート</dt><dd class="mt-0.5">{{ $enabled ? '有効' : '無効' }}</dd></div>
             <div>
                 <dt class="text-xs text-text-secondary">前回の定期処理</dt>
                 <dd class="mt-0.5">
@@ -78,9 +78,9 @@
             </div>
 
             <div>
-                <label for="github-token" class="block text-[13px] font-medium text-text-secondary">GitHub のトークン（{{ $hasToken ? '設定済み。変更する場合のみ入力' : '未設定' }}）</label>
+                <label for="github-token" class="block text-[13px] font-medium text-text-secondary">GitHub のトークン（任意・{{ $hasToken ? '設定済み。変更する場合のみ入力' : '未設定' }}）</label>
                 <input id="github-token" name="github_token" type="password" autocomplete="new-password" spellcheck="false" class="form-control mt-2" aria-describedby="github-token-hint{{ $errors->has('github_token') ? ' github-token-error' : '' }}" @error('github_token') aria-invalid="true" @enderror>
-                <p id="github-token-hint" class="mt-1.5 text-xs text-text-secondary">プライベートリポジトリの Contents を読み取れる Fine-grained トークン。APP_KEY で暗号化してデータベースに保存します。</p>
+                <p id="github-token-hint" class="mt-1.5 text-xs text-text-secondary">公開リポジトリから更新する場合は不要です。非公開リポジトリのときは、Contents を読み取れる Fine-grained トークンを設定してください（APP_KEY で暗号化して保存します）。</p>
                 <x-field-error name="github_token" id="github-token-error" />
                 @if ($hasToken)
                     <label class="mt-2 flex cursor-pointer items-center gap-2 text-xs text-text-secondary">

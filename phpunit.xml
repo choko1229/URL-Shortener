@@ -35,6 +35,7 @@
         <env name="SHORTENER_API_DOMAIN" value="api.localhost"/>
         <env name="SHORTENER_SHORT_URL_BASE" value="https://localhost"/>
         <env name="SHORTENER_WEB_CRON" value="false"/>
+        <env name="SHORTENER_GEOIP_AUTO_UPDATE" value="false"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

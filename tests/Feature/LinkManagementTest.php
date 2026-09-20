@@ -118,16 +118,46 @@ final class LinkManagementTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_qr_code_is_served_as_svg_with_restrictive_headers(): void
+    public function test_qr_code_can_be_downloaded_as_svg_or_png(): void
+    {
+        $link = ShortUrl::factory()->custom('qr-target')->create();
+
+        $svg = $this->get($this->mainUrl('/qr-target/qr.svg'));
+        $svg->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
+        $this->assertStringContainsString("default-src 'none'", (string) $svg->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString('attachment; filename=qr-target-qr.svg', (string) $svg->headers->get('Content-Disposition'));
+        $this->assertStringContainsString('<svg', (string) $svg->getContent());
+
+        $png = $this->get($this->mainUrl('/qr-target/qr.png'));
+        $png->assertOk()->assertHeader('Content-Type', 'image/png');
+        $this->assertStringContainsString('attachment; filename=qr-target-qr.png', (string) $png->headers->get('Content-Disposition'));
+        $this->assertStringStartsWith("\x89PNG", (string) $png->getContent());
+
+        // ランダムコードは大文字小文字を無視して照合する
+        $this->get($this->mainUrl('/QR-TARGET/qr.svg'))->assertNotFound();
+        $this->get($this->mainUrl('/'.$link->slug.'/qr.gif'))->assertNotFound();
+        $this->get($this->mainUrl('/missing-code/qr.svg'))->assertNotFound();
+    }
+
+    public function test_qr_code_is_not_available_for_deleted_links(): void
+    {
+        $link = ShortUrl::factory()->custom('gone-soon')->create();
+        $link->delete();
+
+        $this->get($this->mainUrl('/gone-soon/qr.svg'))->assertNotFound();
+    }
+
+    public function test_dashboard_offers_both_qr_formats(): void
     {
         $user = User::factory()->create();
-        $link = ShortUrl::factory()->for($user)->create();
+        ShortUrl::factory()->for($user)->custom('my-link')->create();
 
-        $response = $this->actingAs($user)->get($this->dashboardUrl("/links/{$link->id}/qr.svg"));
-
-        $response->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
-        $this->assertStringContainsString("default-src 'none'", (string) $response->headers->get('Content-Security-Policy'));
-        $this->assertStringContainsString('<svg', (string) $response->getContent());
+        $this->actingAs($user)->get($this->dashboardUrl())
+            ->assertOk()
+            ->assertSee($this->mainUrl('/my-link/qr.svg'))
+            ->assertSee($this->mainUrl('/my-link/qr.png'))
+            ->assertSee('data-qr-download="svg"', false)
+            ->assertSee('data-qr-download="png"', false);
     }
 
     public function test_guest_can_delete_link_with_deletion_token(): void

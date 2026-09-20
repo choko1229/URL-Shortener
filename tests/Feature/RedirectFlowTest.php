@@ -11,8 +11,11 @@ use App\Models\ShortUrl;
 use App\Services\Redirect\RedirectTicketCodec;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\MmdbFixture;
 use Tests\TestCase;
 
 final class RedirectFlowTest extends TestCase
@@ -116,6 +119,30 @@ final class RedirectFlowTest extends TestCase
         $this->assertSame('twitter.com', $click->referrer_host);
         $this->assertSame(DeviceType::Desktop, $click->device_type);
         $this->assertNull($click->country_code);
+    }
+
+    public function test_click_records_country_from_the_automatically_downloaded_database(): void
+    {
+        $directory = storage_path('framework/testing/geoip-'.Str::random(8));
+        File::ensureDirectoryExists($directory);
+        File::put($directory.'/dbip-country-lite.mmdb', MmdbFixture::build('8.8.8.0/24', 'US'));
+        config([
+            'shortener.geoip.manual_database' => $directory.'/GeoLite2-Country.mmdb',
+            'shortener.geoip.auto_database' => $directory.'/dbip-country-lite.mmdb',
+        ]);
+
+        try {
+            $link = ShortUrl::factory()->custom('from-us')->create();
+            $ticket = $this->ticketFrom($this->get($this->mainUrl('/from-us')));
+
+            $this->withServerVariables(['REMOTE_ADDR' => '8.8.8.8'])
+                ->post($this->redirectUrl('/go'), ['ticket' => $ticket])
+                ->assertOk();
+
+            $this->assertSame('US', $link->clicks()->sole()->country_code);
+        } finally {
+            File::deleteDirectory($directory);
+        }
     }
 
     public function test_invalid_or_expired_ticket_is_rejected(): void

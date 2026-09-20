@@ -20,6 +20,8 @@ final readonly class IssuedLinkData
     public function __construct(
         public string $shortUrl,
         public string $displayUrl,
+        // QR コードのダウンロード URL の組み立てに使う短縮コード
+        public string $code,
         public string $originalUrl,
         public ?CarbonImmutable $expiresAt,
         public bool $isPasswordProtected,
@@ -34,6 +36,7 @@ final readonly class IssuedLinkData
         return new self(
             shortUrl: $urls->url($link->slug),
             displayUrl: $urls->display($link->slug),
+            code: $link->slug,
             originalUrl: $link->original_url,
             expiresAt: $link->expires_at,
             isPasswordProtected: $link->isPasswordProtected(),

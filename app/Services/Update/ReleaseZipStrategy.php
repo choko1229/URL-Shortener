@@ -31,7 +31,7 @@ final class ReleaseZipStrategy implements UpdateStrategy
         return null;
     }
 
-    public function apply(ReleaseInfo $release, string $token): void
+    public function apply(ReleaseInfo $release, ?string $token): void
     {
         if ($release->packageAssetUrl === null) {
             throw new UpdateException("リリース {$release->tag} に配布用 zip が添付されていません。");

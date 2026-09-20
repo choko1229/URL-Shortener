@@ -1,5 +1,7 @@
 @props(['size' => 'md'])
 
+{{-- サイト名は設置した人が管理画面で変更できる（$site はビューコンポーザーで渡している） --}}
+
 @php
     $isSmall = $size === 'sm';
 @endphp
@@ -16,5 +18,5 @@
         'font-rounded font-extrabold text-text-primary',
         'text-lg' => $isSmall,
         'text-[22px]' => ! $isSmall,
-    ])>chok.ooo</span>
+    ])>{{ $site->name() }}</span>
 </span>

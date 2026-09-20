@@ -29,8 +29,21 @@ return [
     // 画面表示・月間集計に使うタイムゾーン（DB保存は UTC）
     'display_timezone' => 'Asia/Tokyo',
 
-    // 国判定に使う MaxMind GeoLite2 Country のデータベース（無ければ国は記録しない）
-    'geoip_database' => storage_path('app/private/geoip/GeoLite2-Country.mmdb'),
+    // サイトの表示名・キャッチコピー・運営者名。管理画面の「サイト設定」で変更する。
+    // 未設定なら、名前はメインドメイン、運営者名は名前と同じものを使う（配布先ごとに変えられるよう直書きしない）
+    'site' => [
+        'name' => env('SHORTENER_SITE_NAME'),
+        'tagline' => env('SHORTENER_SITE_TAGLINE', 'シンプルなURL短縮サービス'),
+        'operator' => env('SHORTENER_OPERATOR_NAME'),
+    ],
+
+    // 国判定（requirements.md 2-6）。DB-IP の無料データベース（IP to Country Lite）を定期処理で自動取得し、毎月更新する。
+    // MaxMind GeoLite2 Country を手動で置いた場合はそちらを優先する。どちらも無ければ国は記録しない
+    'geoip' => [
+        'manual_database' => storage_path('app/private/geoip/GeoLite2-Country.mmdb'),
+        'auto_database' => storage_path('app/private/geoip/dbip-country-lite.mmdb'),
+        'auto_update' => (bool) env('SHORTENER_GEOIP_AUTO_UPDATE', true),
+    ],
 
     // 自動アップデート（requirements.md 7 章）。リポジトリ・トークン・通知先は管理画面で設定する
     // アクセスをきっかけに定期処理を起動する（WP-Cron 方式）。cron だけで動かしたい場合は false

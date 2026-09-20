@@ -54,7 +54,7 @@ final class Preflight
             try {
                 $environment->write($this->installTimeValues($secureRequest), $this->template());
             } catch (Throwable $e) {
-                error_log('[chok.ooo] .env を作成できませんでした: '.$e->getMessage());
+                error_log('[url-shortener] .env を作成できませんでした: '.$e->getMessage());
                 $problems[] = '設定ファイル（.env）を作成できません。設置フォルダの書き込み権限を確認してください。';
             }
         }
@@ -91,7 +91,7 @@ final class Preflight
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <meta name="robots" content="noindex">
-            <title>セットアップを開始できません | chok.ooo</title>
+            <title>セットアップを開始できません</title>
             <style>
             body{margin:0;padding:40px 16px;background:#F4FBFF;color:#0F2A3D;font-family:'Noto Sans JP',system-ui,sans-serif;line-height:1.7}
             main{max-width:640px;margin:0 auto;background:#fff;border-radius:24px;padding:32px;box-shadow:0 12px 32px rgba(15,42,61,.08)}

@@ -36,10 +36,14 @@ enum IconName: string
     case Refresh = 'refresh';
     case Plus = 'plus';
     case Plug = 'plug';
+    case Mail = 'mail';
+    case Share = 'share';
 
     public function svgContent(): string
     {
         return match ($this) {
+            self::Share => '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',
+            self::Mail => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
             self::Plug => '<path d="M9 2v6M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0Z"/><path d="M12 17v5"/>',
             self::Refresh => '<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/>',
             self::Plus => '<path d="M12 5v14M5 12h14"/>',

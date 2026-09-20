@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Update;
 
 use App\Support\ExternalServiceKeys;
+use App\Support\SiteIdentity;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +17,16 @@ final class DiscordWebhookNotifier
 
     private const MAX_LENGTH = 1900;
 
-    public function __construct(private readonly ExternalServiceKeys $keys) {}
+    public function __construct(
+        private readonly ExternalServiceKeys $keys,
+        private readonly SiteIdentity $site,
+    ) {}
+
+    /** 通知の先頭に付けるサイト名 */
+    public function prefix(): string
+    {
+        return '['.$this->site->name().'] ';
+    }
 
     public function send(string $message): bool
     {

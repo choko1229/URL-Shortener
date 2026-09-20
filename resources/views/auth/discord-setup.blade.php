@@ -5,7 +5,7 @@
 --}}
 <x-layouts.install title="Discord ログインの設定">
     <p class="text-sm leading-relaxed text-text-secondary">
-        chok.ooo のログインには Discord を使います。Discord 側でアプリケーションを作成し、発行された値を入力してください。
+        {{ $site->name() }} のログインには Discord を使います。Discord 側でアプリケーションを作成し、発行された値を入力してください。
         保存するとそのまま Discord のログイン画面へ進み、<strong class="font-medium text-text-primary">最初にログインした人が管理者</strong>になります。
     </p>
 

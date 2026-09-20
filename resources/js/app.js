@@ -210,7 +210,8 @@ function initAutoSubmitForms() {
     });
 }
 
-const RECAPTCHA_SCRIPT_URL = 'https://www.google.com/recaptcha/api.js';
+// Google Cloud の reCAPTCHA（スコアベースのキー）用の JavaScript API
+const RECAPTCHA_SCRIPT_URL = 'https://www.google.com/recaptcha/enterprise.js';
 let recaptchaLoading = null;
 
 function loadRecaptcha(siteKey) {
@@ -219,15 +220,21 @@ function loadRecaptcha(siteKey) {
             const script = document.createElement('script');
             script.src = `${RECAPTCHA_SCRIPT_URL}?render=${encodeURIComponent(siteKey)}`;
             script.async = true;
-            script.onload = () => window.grecaptcha.ready(() => resolve(window.grecaptcha));
-            script.onerror = () => reject(new Error('reCAPTCHA のスクリプトを読み込めませんでした。'));
+            script.onload = () => window.grecaptcha.enterprise.ready(() => resolve(window.grecaptcha.enterprise));
+            script.onerror = () => {
+                recaptchaLoading = null;
+                reject(new Error('reCAPTCHA のスクリプトを読み込めませんでした。'));
+            };
             document.head.append(script);
         });
     }
     return recaptchaLoading;
 }
 
-/** reCAPTCHA v3: 送信直前にトークンを取得してから送信する（未ログインの発行フォームのみ） */
+/**
+ * reCAPTCHA: 送信ボタンを押した時点でトークンを取得してから送信する（未ログインの発行フォームのみ）。
+ * トークンは 2 分で無効になり、1 回しか使えないため、送信のたびに取り直す。
+ */
 function initRecaptchaForms() {
     document.querySelectorAll('form[data-recaptcha-site-key]').forEach((form) => {
         const siteKey = form.dataset.recaptchaSiteKey ?? '';
@@ -240,10 +247,13 @@ function initRecaptchaForms() {
         form.addEventListener('focusin', () => loadRecaptcha(siteKey).catch(() => {}), { once: true });
 
         form.addEventListener('submit', async (event) => {
+            // トークンを取得した直後の送信だけを通し、次の送信では取り直す
             if (form.dataset.recaptchaReady === 'true') {
+                delete form.dataset.recaptchaReady;
                 return;
             }
             event.preventDefault();
+            tokenInput.value = '';
 
             try {
                 const grecaptcha = await loadRecaptcha(siteKey);
@@ -329,6 +339,28 @@ function initSafetyCheck() {
         .finally(() => window.clearTimeout(timer));
 }
 
+/** 共有時のカード: 「内容を指定する」を選んだときだけ入力欄を表示する */
+function initPreviewGroups() {
+    document.querySelectorAll('[data-preview-group]').forEach((group) => {
+        const radios = Array.from(group.querySelectorAll('[data-preview-mode]'));
+        const custom = group.querySelector('[data-preview-custom]');
+        const summary = document.getElementById(group.dataset.previewSummary ?? '');
+
+        const sync = () => {
+            const selected = radios.find((radio) => radio.checked) ?? null;
+            if (custom) {
+                custom.hidden = selected?.value !== 'custom';
+            }
+            if (summary && selected) {
+                summary.textContent = selected.dataset.label ?? selected.value;
+            }
+        };
+
+        radios.forEach((radio) => radio.addEventListener('change', sync));
+        sync();
+    });
+}
+
 /** 一覧の QR ボタン: 共通ダイアログの画像を差し替えて開く */
 function initQrDialogs() {
     const dialog = document.getElementById('link-qr-dialog');
@@ -338,13 +370,25 @@ function initQrDialogs() {
         return;
     }
 
+    const downloads = {
+        svg: dialog.querySelector('[data-qr-download="svg"]'),
+        png: dialog.querySelector('[data-qr-download="png"]'),
+    };
+
     document.querySelectorAll('[data-qr-open]').forEach((button) => {
         button.addEventListener('click', () => {
             const label = button.dataset.qrLabel ?? '';
-            image.src = button.dataset.qrSrc ?? '';
+            const svgUrl = button.dataset.qrSrc ?? '';
+            image.src = svgUrl;
             image.alt = `${label} のQRコード`;
             if (caption) {
                 caption.textContent = label;
+            }
+            if (downloads.svg instanceof HTMLAnchorElement) {
+                downloads.svg.href = svgUrl;
+            }
+            if (downloads.png instanceof HTMLAnchorElement) {
+                downloads.png.href = button.dataset.qrPng ?? '';
             }
             openDialog(dialog);
         });
@@ -354,6 +398,7 @@ function initQrDialogs() {
 initDisclosures();
 initExpiryGroups();
 initDialogs();
+initPreviewGroups();
 initQrDialogs();
 initCopyButtons();
 initMenus();

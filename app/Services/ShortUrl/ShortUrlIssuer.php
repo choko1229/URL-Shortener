@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ShortUrl;
 
+use App\Enums\PreviewMode;
 use App\Enums\SlugType;
 use App\Models\ShortUrl;
 use App\Models\User;
@@ -54,6 +55,10 @@ final class ShortUrlIssuer
         $link->creator_ip_hash = $user === null ? $clientIpHash : null;
         $link->deletion_token_hash = $deletionToken !== null ? hash('sha256', $deletionToken) : null;
         $link->click_count = 0;
+        $link->preview_mode = $draft->previewMode;
+        $link->preview_title = $draft->previewMode === PreviewMode::Custom ? $draft->previewTitle : null;
+        $link->preview_description = $draft->previewMode === PreviewMode::Custom ? $draft->previewDescription : null;
+        $link->preview_image_url = $draft->previewMode === PreviewMode::Custom ? $draft->previewImageUrl : null;
 
         $draft->customSlug !== null
             ? $this->saveWithCustomSlug($link, $draft->customSlug, $user)

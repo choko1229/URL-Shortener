@@ -9,7 +9,10 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-/** GitHub Releases（プライベートリポジトリ。requirements.md 7-2） */
+/**
+ * GitHub Releases から最新リリースを取得する（requirements.md 7-2）。
+ * 公開リポジトリならトークンなしで動く。非公開リポジトリや API の回数制限を避けたい場合はトークンを設定する。
+ */
 final class GitHubReleaseClient
 {
     private const API_BASE = 'https://api.github.com';
@@ -19,7 +22,8 @@ final class GitHubReleaseClient
     private const DOWNLOAD_TIMEOUT_SECONDS = 300;
 
     /** @throws UpdateException */
-    public function latest(string $repository, string $token): ReleaseInfo
+    /** @param  string|null  $token  非公開リポジトリの場合に必要 */
+    public function latest(string $repository, ?string $token): ReleaseInfo
     {
         try {
             $response = $this->request($token)->timeout(15)->get(self::API_BASE."/repos/{$repository}/releases/latest");
@@ -30,7 +34,9 @@ final class GitHubReleaseClient
         }
 
         if ($response->status() === 404) {
-            throw new UpdateException("リリースが見つかりません（リポジトリ {$repository} とトークンの権限を確認してください）。");
+            throw new UpdateException($token === null
+                ? "リリースが見つかりません（リポジトリ {$repository} を確認してください。非公開リポジトリの場合はトークンが必要です）。"
+                : "リリースが見つかりません（リポジトリ {$repository} とトークンの権限を確認してください）。");
         }
 
         if (! $response->successful()) {
@@ -58,7 +64,7 @@ final class GitHubReleaseClient
     }
 
     /** @throws UpdateException */
-    public function downloadAsset(string $assetUrl, string $token, string $destination): void
+    public function downloadAsset(string $assetUrl, ?string $token, string $destination): void
     {
         try {
             // リダイレクト先（ストレージ）には Authorization ヘッダーを送らない（Guzzle が別ホストでは除去する）
@@ -78,12 +84,14 @@ final class GitHubReleaseClient
         }
     }
 
-    private function request(string $token): PendingRequest
+    private function request(?string $token): PendingRequest
     {
-        return Http::withToken($token)->withHeaders([
+        $request = Http::withHeaders([
             'Accept' => 'application/vnd.github+json',
             'X-GitHub-Api-Version' => '2022-11-28',
             'User-Agent' => 'chok-ooo-updater',
         ]);
+
+        return $token === null ? $request : $request->withToken($token);
     }
 }

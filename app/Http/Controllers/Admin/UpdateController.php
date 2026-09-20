@@ -91,7 +91,7 @@ final class UpdateController extends Controller
 
     public function testNotification(DiscordWebhookNotifier $notifier): RedirectResponse
     {
-        return $notifier->send('[chok.ooo] 通知のテストです。')
+        return $notifier->send($notifier->prefix().'通知のテストです。')
             ? back()->with('notice', 'Discord にテスト通知を送りました。')
             : back()->with('error', 'Discord に通知できませんでした。Webhook URL を確認してください。');
     }

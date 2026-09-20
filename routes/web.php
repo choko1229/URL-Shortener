@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Enums\QrFormat;
 use App\Http\Controllers\Admin\ApiKeyController;
+use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\Admin\LinkController as AdminLinkController;
 use App\Http\Controllers\Admin\ReservedWordController;
 use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\SiteController;
 use App\Http\Controllers\Admin\UpdateController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\DiscordAuthController;
@@ -15,8 +18,11 @@ use App\Http\Controllers\Dashboard\LinkController;
 use App\Http\Controllers\Dashboard\LogoutController;
 use App\Http\Controllers\Dashboard\SettingsController;
 use App\Http\Controllers\Install\InstallController;
+use App\Http\Controllers\Main\ContactController;
 use App\Http\Controllers\Main\GuestDeletionController;
 use App\Http\Controllers\Main\HomeController;
+use App\Http\Controllers\Main\LegalController;
+use App\Http\Controllers\Main\QrCodeController;
 use App\Http\Controllers\Redirect\RedirectController;
 use App\Http\Controllers\Redirect\ShortLinkController;
 use App\Http\Controllers\ShortUrlController;
@@ -50,11 +56,26 @@ Route::domain(config('shortener.domains.main'))
         Route::get('/', HomeController::class)->name('home');
         Route::post('/shorten', [ShortUrlController::class, 'store'])->name('short-urls.store');
 
+        Route::get('/terms', [LegalController::class, 'terms'])->name('terms');
+        Route::get('/privacy', [LegalController::class, 'privacy'])->name('privacy');
+
+        Route::get('/contact', [ContactController::class, 'show'])->name('contact');
+        Route::post('/contact', [ContactController::class, 'store'])
+            ->middleware('throttle:5,10')
+            ->name('contact.store');
+
         // 削除用トークンによる削除（未ログインで発行したもの）
         Route::get('/delete', [GuestDeletionController::class, 'show'])->name('delete');
         Route::post('/delete', [GuestDeletionController::class, 'destroy'])
             ->middleware('throttle:10,1')
             ->name('delete.destroy');
+
+        // QR コード（SVG / PNG を選んでダウンロード。中身は短縮URLそのもののため誰でも取得できる）
+        Route::get('/{code}/qr.{format}', QrCodeController::class)
+            ->where('code', ShortLinkController::CODE_PATTERN)
+            ->where('format', QrFormat::PATTERN)
+            ->middleware('throttle:30,1')
+            ->name('short-link.qr');
 
         // 固定のパスより後に登録する（固定パスと同じ語は予約語で発行できないようにしている）
         Route::get('/{code}', [ShortLinkController::class, 'show'])
@@ -90,12 +111,12 @@ Route::domain(config('shortener.domains.dashboard'))
             ->whereNumber('shortUrl')
             ->withTrashed()
             ->name('links.show');
-        Route::get('/links/{shortUrl}/qr.svg', [LinkController::class, 'qr'])
-            ->whereNumber('shortUrl')
-            ->name('links.qr');
         Route::patch('/links/{shortUrl}/slug', [LinkController::class, 'updateSlug'])
             ->whereNumber('shortUrl')
             ->name('links.slug');
+        Route::patch('/links/{shortUrl}/preview', [LinkController::class, 'updatePreview'])
+            ->whereNumber('shortUrl')
+            ->name('links.preview');
         Route::delete('/links/{shortUrl}', [ShortUrlController::class, 'destroy'])
             ->whereNumber('shortUrl')
             ->name('links.destroy');
@@ -124,8 +145,19 @@ Route::domain(config('shortener.domains.dashboard'))
                 Route::post('/api-keys', [ApiKeyController::class, 'store'])->name('api-keys.store');
                 Route::delete('/api-keys/{apiKey}', [ApiKeyController::class, 'revoke'])->whereNumber('apiKey')->name('api-keys.revoke');
 
+                Route::get('/site', [SiteController::class, 'index'])->name('site');
+                Route::put('/site', [SiteController::class, 'updateIdentity'])->name('site.update');
+                Route::put('/site/pages/{slug}', [SiteController::class, 'updatePage'])->name('site.pages.update');
+                Route::post('/site/pages/{slug}/template', [SiteController::class, 'loadTemplate'])->name('site.pages.template');
+                Route::delete('/site/pages/{slug}', [SiteController::class, 'destroyPage'])->name('site.pages.destroy');
+
+                Route::get('/inquiries', [InquiryController::class, 'index'])->name('inquiries');
+                Route::patch('/inquiries/{inquiry}', [InquiryController::class, 'updateStatus'])->whereNumber('inquiry')->name('inquiries.status');
+                Route::put('/inquiries/contact', [InquiryController::class, 'updateContact'])->name('inquiries.contact');
+
                 Route::get('/services', [ServiceController::class, 'index'])->name('services');
                 Route::put('/services', [ServiceController::class, 'update'])->name('services.update');
+                Route::post('/services/geoip', [ServiceController::class, 'updateGeoIp'])->middleware('throttle:5,1')->name('services.geoip');
 
                 Route::get('/updates', [UpdateController::class, 'index'])->name('updates');
                 Route::put('/updates/settings', [UpdateController::class, 'updateSettings'])->name('updates.settings');

@@ -35,9 +35,7 @@ class ReservedWordSeeder extends Seeder
             'null', 'undefined', 'none', 'delete', 'remove', 'error', '404', '500',
             'favicon', 'robots', 'sitemap', 'index', 'home',
         ],
-        'custom' => [
-            'choko1229', 'choko', '1229', 'choco', 'tyoko',
-        ],
+        // 運営者ごとの語（自分のハンドル名など）は、設置後に管理画面の「予約語」で追加する
     ];
 
     public function run(): void

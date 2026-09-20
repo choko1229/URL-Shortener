@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\ExpiryOption;
+use App\Enums\PreviewMode;
 use App\Rules\NotOwnDomain;
 use App\Services\ShortUrl\ShortUrlDraft;
 use App\Support\ShortenerSettings;
@@ -57,6 +58,10 @@ final class StoreShortUrlRequest extends FormRequest
                 $this->expiresAtRule($isMember, $settings),
             ],
             'password' => ['nullable', 'string', 'min:'.self::PASSWORD_MIN_LENGTH, 'max:'.self::PASSWORD_MAX_LENGTH],
+            'preview_mode' => ['nullable', Rule::enum(PreviewMode::class)],
+            'preview_title' => ['exclude_unless:preview_mode,'.PreviewMode::Custom->value, 'required', 'string', 'max:120'],
+            'preview_description' => ['exclude_unless:preview_mode,'.PreviewMode::Custom->value, 'nullable', 'string', 'max:300'],
+            'preview_image_url' => ['exclude_unless:preview_mode,'.PreviewMode::Custom->value, 'nullable', 'string', 'max:2048', 'url:http,https'],
             // reCAPTCHA v3 のトークン（検証はコントローラで行う）
             'recaptcha_token' => ['nullable', 'string', 'max:4096'],
         ];
@@ -74,13 +79,28 @@ final class StoreShortUrlRequest extends FormRequest
             expiry: ExpiryOption::from((string) $this->validated('expiry')),
             expiresAtLocal: is_string($expiresAt) ? $expiresAt : null,
             password: is_string($password) && $password !== '' ? $password : null,
+            previewMode: PreviewMode::tryFrom((string) $this->validated('preview_mode')) ?? PreviewMode::Destination,
+            previewTitle: $this->previewValue('preview_title'),
+            previewDescription: $this->previewValue('preview_description'),
+            previewImageUrl: $this->previewValue('preview_image_url'),
         );
+    }
+
+    private function previewValue(string $key): ?string
+    {
+        $value = $this->validated($key);
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 
     /** @return array<string, string> */
     public function messages(): array
     {
         return [
+            'preview_title.required' => 'カードのタイトルを入力してください。',
+            'preview_title.max' => 'カードのタイトルは:max文字以内で入力してください。',
+            'preview_description.max' => 'カードの説明は:max文字以内で入力してください。',
+            'preview_image_url.url' => 'カードの画像URLは http:// または https:// から始まるURLを入力してください。',
             'original_url.required' => '短縮したいURLを入力してください。',
             'original_url.url' => 'http:// または https:// から始まるURLを入力してください。',
             'original_url.max' => 'URLは'.self::ORIGINAL_URL_MAX_LENGTH.'文字以内で入力してください。',

@@ -105,7 +105,7 @@ class DatabaseBackup
         }
 
         try {
-            fwrite($handle, '-- chok.ooo database backup '.gmdate(DATE_ATOM)."\n");
+            fwrite($handle, '-- database backup '.gmdate(DATE_ATOM)."\n");
 
             foreach ($this->tables($connection) as $table => $createSql) {
                 $quoted = $this->quoteIdentifier($connection, $table);

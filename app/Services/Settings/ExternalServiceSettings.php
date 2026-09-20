@@ -22,7 +22,8 @@ final class ExternalServiceSettings
         AppSetting::SAFE_BROWSING_API_KEY => true,
         // サイトキーはページに埋め込む公開値のため平文
         AppSetting::RECAPTCHA_SITE_KEY => false,
-        AppSetting::RECAPTCHA_SECRET_KEY => true,
+        AppSetting::RECAPTCHA_PROJECT_ID => false,
+        AppSetting::RECAPTCHA_API_KEY => true,
     ];
 
     public function __construct(private readonly ExternalServiceKeys $keys) {}

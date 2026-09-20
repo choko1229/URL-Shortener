@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Redirect;
 
+use App\Enums\PreviewMode;
 use App\Http\Controllers\Controller;
 use App\Models\ShortUrl;
+use App\Services\Redirect\CrawlerDetector;
 use App\Services\Redirect\PasswordAttemptGuard;
 use App\Services\Redirect\RedirectTicketCodec;
 use App\Services\ShortUrl\ShortUrlResolver;
 use App\Support\ShortenerSettings;
+use App\Support\ShortUrlBuilder;
+use App\Support\SiteIdentity;
+use App\ViewModels\SharePreviewData;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -30,15 +35,23 @@ final class ShortLinkController extends Controller
         private readonly RedirectTicketCodec $tickets,
         private readonly PasswordAttemptGuard $passwordGuard,
         private readonly ShortenerSettings $settings,
+        private readonly CrawlerDetector $crawlers,
+        private readonly SiteIdentity $site,
+        private readonly ShortUrlBuilder $urls,
     ) {}
 
-    public function show(Request $request, string $code): Response
+    public function show(Request $request, string $code): HttpStatus
     {
         $now = CarbonImmutable::now();
         $link = $this->resolveActive($code);
 
         if ($link->isExpiredAt($now)) {
             return $this->expired($link);
+        }
+
+        // SNS のカード生成（requirements.md には無い補助機能）。発行者の設定に従う
+        if ($this->crawlers->isCrawler($request->userAgent())) {
+            return $this->forCrawler($link);
         }
 
         if ($link->isPasswordProtected()) {
@@ -83,6 +96,21 @@ final class ShortLinkController extends Controller
         $this->passwordGuard->clear($link, $clientIp);
 
         return $this->intermediate($request, $link, passwordVerified: true, now: $now);
+    }
+
+    /**
+     * カードを作りにきたクローラーへの応答。
+     * 「転送先のカードを見せる」なら転送先へ通し、それ以外はカードの内容だけを返す（クリックは数えない）。
+     */
+    private function forCrawler(ShortUrl $link): HttpStatus
+    {
+        if ($link->previewMode() === PreviewMode::Destination) {
+            return $this->noStore(redirect()->away($link->original_url, HttpStatus::HTTP_FOUND));
+        }
+
+        return $this->noStore(response()->view('redirect.preview', [
+            'preview' => SharePreviewData::forLink($link, $this->site, $this->urls->url($link->slug)),
+        ]));
     }
 
     /** 存在しない・削除済みのコードは 404（削除済みは欠番のまま再利用しない） */
@@ -135,7 +163,7 @@ final class ShortLinkController extends Controller
         return is_string($host) && $host !== '' ? mb_substr(strtolower($host), 0, 255) : null;
     }
 
-    private function noStore(Response $response): Response
+    private function noStore(HttpStatus $response): HttpStatus
     {
         return $response->header('Cache-Control', 'no-store, private')->header('X-Robots-Tag', 'noindex');
     }

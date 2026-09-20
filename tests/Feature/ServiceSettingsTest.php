@@ -8,6 +8,9 @@ use App\Models\AppSetting;
 use App\Models\User;
 use App\Support\ExternalServiceKeys;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /** Discord ログインの初回設定と、管理画面「外部サービス」 */
@@ -18,6 +21,18 @@ final class ServiceSettingsTest extends TestCase
     private const CLIENT_ID = '123456789012345678';
 
     private const CLIENT_SECRET = 'discord_client_secret_value_0123';
+
+    private const RECAPTCHA_INPUT = [
+        'recaptcha_site_key' => '6Lc-site-key-abcdefghijklmn',
+        'recaptcha_project_id' => 'chok-ooo-test',
+        'recaptcha_api_key' => 'AIzaSy-recaptcha-api-key_0123',
+    ];
+
+    // 設定確認用のトークンは形式が不正なため、評価自体は作成でき（HTTP 200）、トークンは無効と判定される
+    private const INVALID_TOKEN_ASSESSMENT = [
+        'tokenProperties' => ['valid' => false, 'invalidReason' => 'MALFORMED'],
+        'riskAnalysis' => ['score' => 0],
+    ];
 
     public function test_first_run_setup_shows_redirect_uri(): void
     {
@@ -91,6 +106,7 @@ final class ServiceSettingsTest extends TestCase
         $admin = User::factory()->admin()->create();
         AppSetting::store(AppSetting::DISCORD_CLIENT_ID, self::CLIENT_ID);
         AppSetting::store(AppSetting::DISCORD_CLIENT_SECRET, self::CLIENT_SECRET, encrypt: true);
+        Http::fake(['recaptchaenterprise.googleapis.com/*' => Http::response(self::INVALID_TOKEN_ASSESSMENT)]);
 
         $this->actingAs($admin)->get($this->dashboardUrl('/admin/services'))
             ->assertOk()
@@ -101,8 +117,7 @@ final class ServiceSettingsTest extends TestCase
         $this->actingAs($admin)->from($this->dashboardUrl('/admin/services'))->put($this->dashboardUrl('/admin/services'), [
             'discord_client_id' => self::CLIENT_ID,
             'safe_browsing_api_key' => 'AIzaSy-safe-browsing-key_0123',
-            'recaptcha_site_key' => '6Lc-site-key-abcdefghijklmn',
-            'recaptcha_secret_key' => '6Lc-secret-key-abcdefghijklmn',
+            ...self::RECAPTCHA_INPUT,
         ])->assertRedirect($this->dashboardUrl('/admin/services'))->assertSessionHas('notice');
 
         // 空欄の Secret は変更しない
@@ -111,7 +126,18 @@ final class ServiceSettingsTest extends TestCase
         $this->assertTrue(AppSetting::query()->where('key', AppSetting::SAFE_BROWSING_API_KEY)->value('is_encrypted'));
         $this->assertSame('6Lc-site-key-abcdefghijklmn', AppSetting::valueFor(AppSetting::RECAPTCHA_SITE_KEY));
         $this->assertFalse(AppSetting::query()->where('key', AppSetting::RECAPTCHA_SITE_KEY)->value('is_encrypted'));
-        $this->assertTrue(AppSetting::query()->where('key', AppSetting::RECAPTCHA_SECRET_KEY)->value('is_encrypted'));
+        $this->assertSame('chok-ooo-test', AppSetting::valueFor(AppSetting::RECAPTCHA_PROJECT_ID));
+        $this->assertSame('AIzaSy-recaptcha-api-key_0123', AppSetting::valueFor(AppSetting::RECAPTCHA_API_KEY));
+        $this->assertTrue(AppSetting::query()->where('key', AppSetting::RECAPTCHA_API_KEY)->value('is_encrypted'));
+
+        // 保存前に、入力されたプロジェクトと API キーで評価を作成できるか確かめている
+        Http::assertSent(static fn (Request $request): bool => str_contains($request->url(), '/v1/projects/chok-ooo-test/assessments')
+            && $request->hasHeader('X-Goog-Api-Key', 'AIzaSy-recaptcha-api-key_0123')
+            && $request['event']['siteKey'] === '6Lc-site-key-abcdefghijklmn');
+
+        $this->actingAs($admin)->get($this->dashboardUrl('/admin/services'))
+            ->assertSee('value="chok-ooo-test"', false)
+            ->assertDontSee('AIzaSy-recaptcha-api-key_0123');
 
         $this->actingAs($admin)->put($this->dashboardUrl('/admin/services'), [
             'discord_client_id' => self::CLIENT_ID,
@@ -121,25 +147,60 @@ final class ServiceSettingsTest extends TestCase
 
         $this->assertNull(AppSetting::valueFor(AppSetting::SAFE_BROWSING_API_KEY));
         $this->assertNull(AppSetting::valueFor(AppSetting::RECAPTCHA_SITE_KEY));
-        $this->assertNull(AppSetting::valueFor(AppSetting::RECAPTCHA_SECRET_KEY));
+        $this->assertNull(AppSetting::valueFor(AppSetting::RECAPTCHA_PROJECT_ID));
+        $this->assertNull(AppSetting::valueFor(AppSetting::RECAPTCHA_API_KEY));
     }
 
-    public function test_recaptcha_keys_must_be_set_as_a_pair(): void
+    public function test_recaptcha_needs_key_id_project_and_api_key_together(): void
     {
         $admin = User::factory()->admin()->create();
         AppSetting::store(AppSetting::DISCORD_CLIENT_SECRET, self::CLIENT_SECRET, encrypt: true);
+        Http::fake();
 
         $this->actingAs($admin)->put($this->dashboardUrl('/admin/services'), [
             'discord_client_id' => self::CLIENT_ID,
             'recaptcha_site_key' => '6Lc-site-key-abcdefghijklmn',
-        ])->assertSessionHasErrors('recaptcha_secret_key');
+        ])->assertSessionHasErrors(['recaptcha_project_id', 'recaptcha_api_key']);
 
         $this->actingAs($admin)->put($this->dashboardUrl('/admin/services'), [
             'discord_client_id' => self::CLIENT_ID,
-            'recaptcha_secret_key' => '6Lc-secret-key-abcdefghijklmn',
-        ])->assertSessionHasErrors('recaptcha_site_key');
+            'recaptcha_project_id' => 'Not_A_Project',
+            'recaptcha_api_key' => 'AIzaSy-recaptcha-api-key_0123',
+        ])->assertSessionHasErrors('recaptcha_project_id');
 
         $this->assertNull(AppSetting::valueFor(AppSetting::RECAPTCHA_SITE_KEY));
+        Http::assertNothingSent();
+    }
+
+    public function test_recaptcha_settings_are_rejected_when_google_refuses_the_api_key(): void
+    {
+        $admin = User::factory()->admin()->create();
+        AppSetting::store(AppSetting::DISCORD_CLIENT_SECRET, self::CLIENT_SECRET, encrypt: true);
+        Http::fake(['recaptchaenterprise.googleapis.com/*' => Http::response([
+            'error' => ['code' => 403, 'message' => 'reCAPTCHA Enterprise API has not been used in project 123 before or it is disabled.', 'status' => 'PERMISSION_DENIED'],
+        ], 403)]);
+
+        $this->actingAs($admin)->put($this->dashboardUrl('/admin/services'), [
+            'discord_client_id' => self::CLIENT_ID,
+            ...self::RECAPTCHA_INPUT,
+        ])->assertSessionHasErrors('recaptcha_api_key');
+
+        $this->assertStringContainsString('HTTP 403', (string) session('errors')->first('recaptcha_api_key'));
+        $this->assertNull(AppSetting::valueFor(AppSetting::RECAPTCHA_API_KEY));
+    }
+
+    public function test_recaptcha_settings_are_saved_when_google_cannot_be_reached(): void
+    {
+        $admin = User::factory()->admin()->create();
+        AppSetting::store(AppSetting::DISCORD_CLIENT_SECRET, self::CLIENT_SECRET, encrypt: true);
+        Http::fake(fn () => throw new ConnectionException('timeout'));
+
+        $this->actingAs($admin)->put($this->dashboardUrl('/admin/services'), [
+            'discord_client_id' => self::CLIENT_ID,
+            ...self::RECAPTCHA_INPUT,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('chok-ooo-test', AppSetting::valueFor(AppSetting::RECAPTCHA_PROJECT_ID));
     }
 
     public function test_members_cannot_update_service_keys(): void

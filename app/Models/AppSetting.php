@@ -30,8 +30,11 @@ class AppSetting extends Model
     // サイトキーはページに埋め込む公開値のため平文で保存する
     public const RECAPTCHA_SITE_KEY = 'recaptcha.site_key';
 
-    // 暗号化して保存する
-    public const RECAPTCHA_SECRET_KEY = 'recaptcha.secret_key';
+    // reCAPTCHA のキーがある Google Cloud のプロジェクト ID（評価の作成先）
+    public const RECAPTCHA_PROJECT_ID = 'recaptcha.project_id';
+
+    // 評価の作成に使う Google Cloud の API キー。暗号化して保存する
+    public const RECAPTCHA_API_KEY = 'recaptcha.api_key';
 
     // 自動アップデート（requirements.md 7 章）
     public const UPDATE_ENABLED = 'update.enabled';
@@ -43,6 +46,16 @@ class AppSetting extends Model
 
     // 管理者への通知先。URL 自体が投稿権限を持つため暗号化して保存する
     public const DISCORD_WEBHOOK_URL = 'notifications.discord_webhook_url';
+
+    // お問い合わせページに公開する Discord の連絡先（ユーザー名や招待リンク）
+    public const CONTACT_DISCORD = 'contact.discord';
+
+    // サイトの表示（管理画面「サイト設定」で変更する）
+    public const SITE_NAME = 'site.name';
+
+    public const SITE_TAGLINE = 'site.tagline';
+
+    public const SITE_OPERATOR = 'site.operator';
 
     /** @var list<string> */
     protected $fillable = [

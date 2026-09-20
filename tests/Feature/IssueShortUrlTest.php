@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\ShortUrl\ShortUrlIssuer;
 use App\ViewModels\IssuedLinkData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -162,31 +163,81 @@ final class IssueShortUrlTest extends TestCase
     {
         $this->from($this->mainUrl())
             ->post($this->mainUrl('/shorten'), ['original_url' => 'https://localhost/abc1234', 'expiry' => '1d'])
-            ->assertSessionHasErrors(['original_url' => 'chok.ooo 自身の URL は短縮できません。']);
+            // 既定のサイト名はメインドメイン（設置した人が管理画面で変更できる）
+            ->assertSessionHasErrors(['original_url' => 'localhost 自身の URL は短縮できません。']);
     }
 
     public function test_recaptcha_is_required_for_guests_when_configured(): void
     {
-        AppSetting::store(AppSetting::RECAPTCHA_SITE_KEY, 'site-key-abcdefghijklmnop');
-        AppSetting::store(AppSetting::RECAPTCHA_SECRET_KEY, 'secret-key-abcdefghijklmnop', encrypt: true);
+        $this->configureRecaptcha();
 
         $this->get($this->mainUrl())
             ->assertSee('data-recaptcha-site-key="site-key-abcdefghijklmnop"', false)
-            ->assertDontSee('secret-key-abcdefghijklmnop');
+            ->assertDontSee('api-key-abcdefghijklmnopqrst');
 
-        Http::fake(['www.google.com/recaptcha/*' => Http::sequence()
-            ->push(['success' => true, 'score' => 0.1, 'action' => 'shorten'])
-            ->push(['success' => true, 'score' => 0.9, 'action' => 'shorten']),
+        Http::fake(['recaptchaenterprise.googleapis.com/*' => Http::sequence()
+            ->push(self::assessment(valid: true, action: 'shorten', score: 0.1))
+            ->push(self::assessment(valid: false, action: '', score: 0.0, invalidReason: 'EXPIRED'))
+            ->push(self::assessment(valid: true, action: 'login', score: 0.9))
+            ->push(self::assessment(valid: true, action: 'shorten', score: 0.9)),
         ]);
         $input = ['original_url' => 'https://example.com/', 'expiry' => '1d', 'recaptcha_token' => 'token'];
 
-        $this->from($this->mainUrl())->post($this->mainUrl('/shorten'), $input)
-            ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'スパム対策'));
+        // スコアが低い・トークンが無効・アクションが違う場合は発行しない
+        foreach (range(1, 3) as $attempt) {
+            $this->from($this->mainUrl())->post($this->mainUrl('/shorten'), $input)
+                ->assertSessionHas('error', fn (string $message): bool => str_contains($message, 'スパム対策'));
+        }
         $this->assertSame(0, ShortUrl::query()->count());
 
         $this->from($this->mainUrl())->post($this->mainUrl('/shorten'), $input)->assertSessionHasNoErrors();
         $this->assertSame(1, ShortUrl::query()->count());
 
-        Http::assertSent(fn ($request): bool => $request['secret'] === 'secret-key-abcdefghijklmnop' && $request['response'] === 'token');
+        Http::assertSent(fn (Request $request): bool => $request->url() === 'https://recaptchaenterprise.googleapis.com/v1/projects/chok-ooo-test/assessments'
+            && $request->hasHeader('X-Goog-Api-Key', 'api-key-abcdefghijklmnopqrst')
+            && $request['event']['token'] === 'token'
+            && $request['event']['siteKey'] === 'site-key-abcdefghijklmnop'
+            && $request['event']['expectedAction'] === 'shorten');
+    }
+
+    public function test_recaptcha_does_not_block_issuance_when_google_is_unavailable(): void
+    {
+        $this->configureRecaptcha();
+        Http::fake(['recaptchaenterprise.googleapis.com/*' => Http::response(['error' => ['message' => 'Internal error']], 503)]);
+
+        $this->from($this->mainUrl())
+            ->post($this->mainUrl('/shorten'), ['original_url' => 'https://example.com/', 'expiry' => '1d', 'recaptcha_token' => 'token'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, ShortUrl::query()->count());
+    }
+
+    public function test_recaptcha_rejects_guest_submission_without_token(): void
+    {
+        $this->configureRecaptcha();
+        Http::fake();
+
+        $this->from($this->mainUrl())
+            ->post($this->mainUrl('/shorten'), ['original_url' => 'https://example.com/', 'expiry' => '1d'])
+            ->assertSessionHas('error');
+
+        $this->assertSame(0, ShortUrl::query()->count());
+        Http::assertNothingSent();
+    }
+
+    private function configureRecaptcha(): void
+    {
+        AppSetting::store(AppSetting::RECAPTCHA_SITE_KEY, 'site-key-abcdefghijklmnop');
+        AppSetting::store(AppSetting::RECAPTCHA_PROJECT_ID, 'chok-ooo-test');
+        AppSetting::store(AppSetting::RECAPTCHA_API_KEY, 'api-key-abcdefghijklmnopqrst', encrypt: true);
+    }
+
+    /** @return array<string, mixed> Google Cloud の reCAPTCHA API が返す評価（必要な項目のみ） */
+    private static function assessment(bool $valid, string $action, float $score, ?string $invalidReason = null): array
+    {
+        return [
+            'tokenProperties' => array_filter(['valid' => $valid, 'action' => $action, 'invalidReason' => $invalidReason], static fn ($value): bool => $value !== null),
+            'riskAnalysis' => ['score' => $score, 'reasons' => []],
+        ];
     }
 }

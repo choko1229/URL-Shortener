@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Rules;
 
+use App\Support\SiteIdentity;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
-/** 自サービス（chok.ooo 各サブドメイン）の URL を短縮するとリダイレクトが循環するため拒否する */
+/** 自サービス（各サブドメイン）の URL を短縮するとリダイレクトが循環するため拒否する */
 final class NotOwnDomain implements ValidationRule
 {
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -16,7 +17,7 @@ final class NotOwnDomain implements ValidationRule
         $ownHosts = array_map('strtolower', array_filter((array) config('shortener.domains'), 'is_string'));
 
         if (is_string($host) && in_array(strtolower($host), $ownHosts, true)) {
-            $fail('chok.ooo 自身の URL は短縮できません。');
+            $fail(app(SiteIdentity::class)->name().' 自身の URL は短縮できません。');
         }
     }
 }

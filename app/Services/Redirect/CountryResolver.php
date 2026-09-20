@@ -9,7 +9,7 @@ use MaxMind\Db\Reader;
 use Throwable;
 
 /**
- * IP アドレスから国コードを判定する（MaxMind GeoLite2 Country）。
+ * IP アドレスから国コードを判定する（DB-IP IP to Country Lite、または手動で置いた MaxMind GeoLite2 Country）。
  * データベースファイルが無い・読めない場合は null を返し、アクセス記録自体は続ける。
  * 訪問者の IP は外部に送らず、保存もしない。
  */
@@ -19,7 +19,8 @@ final class CountryResolver
 
     private bool $unavailable = false;
 
-    public function __construct(private readonly string $databasePath) {}
+    /** @param  string|null  $databasePath  使えるデータベースが無ければ null（GeoIpDatabase::activePath()） */
+    public function __construct(private readonly ?string $databasePath) {}
 
     public function countryCode(?string $ip): ?string
     {
@@ -51,7 +52,7 @@ final class CountryResolver
             return $this->reader;
         }
 
-        if (! is_file($this->databasePath)) {
+        if ($this->databasePath === null || ! is_file($this->databasePath)) {
             $this->unavailable = true;
 
             return null;

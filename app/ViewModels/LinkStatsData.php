@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ViewModels;
 
+use App\Enums\PreviewMode;
 use Carbon\CarbonImmutable;
 
 /** リンクごとの統計（requirements.md 2-6: クリック数・リファラ・国・デバイス種別） */
@@ -28,6 +29,11 @@ final readonly class LinkStatsData
         public array $referrers,
         public array $countries,
         public array $devices,
+        // 共有時のカード（詳細画面の編集フォームの初期値）
+        public PreviewMode $previewMode = PreviewMode::Destination,
+        public ?string $previewTitle = null,
+        public ?string $previewDescription = null,
+        public ?string $previewImageUrl = null,
     ) {}
 
     public function dailyMax(): int
