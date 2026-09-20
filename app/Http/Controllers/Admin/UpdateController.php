@@ -61,20 +61,17 @@ final class UpdateController extends Controller
     {
         $validated = $request->validate([
             'enabled' => ['nullable', 'boolean'],
-            'repository' => ['required', 'string', 'max:140', 'regex:'.UpdateSettings::REPOSITORY_PATTERN],
             'github_token' => ['nullable', 'string', 'max:255', 'regex:/\A[A-Za-z0-9_\-]+\z/'],
             'clear_github_token' => ['nullable', 'boolean'],
             'discord_webhook_url' => ['nullable', 'string', 'max:255', 'regex:'.DiscordWebhookNotifier::URL_PATTERN],
             'clear_discord_webhook_url' => ['nullable', 'boolean'],
         ], [
-            'repository.regex' => 'リポジトリは「所有者/リポジトリ名」の形式で入力してください。',
             'github_token.regex' => 'GitHub のトークンの形式が正しくありません。',
             'discord_webhook_url.regex' => 'Discord の Webhook URL（https://discord.com/api/webhooks/...）を入力してください。',
         ]);
 
         $settings->save(
             enabled: $request->boolean('enabled'),
-            repository: $validated['repository'],
             githubToken: $request->boolean('clear_github_token') ? '' : ($validated['github_token'] ?? null),
             webhookUrl: $request->boolean('clear_discord_webhook_url') ? '' : ($validated['discord_webhook_url'] ?? null),
         );

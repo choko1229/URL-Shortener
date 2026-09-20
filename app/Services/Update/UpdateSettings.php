@@ -29,13 +29,12 @@ final class UpdateSettings
         return is_bool($value) ? $value : true;
     }
 
+    /** 更新元。画面では変更せず、フォークした場合だけ .env（SHORTENER_UPDATE_REPOSITORY）で差し替える */
     public function repository(): string
     {
-        $value = AppSetting::valueFor(AppSetting::UPDATE_REPOSITORY);
+        $value = (string) $this->config->get('shortener.update.repository');
 
-        return is_string($value) && preg_match(self::REPOSITORY_PATTERN, $value) === 1
-            ? $value
-            : (string) $this->config->get('shortener.update.repository');
+        return preg_match(self::REPOSITORY_PATTERN, $value) === 1 ? $value : 'choko1229/URL-Shortener';
     }
 
     public function githubToken(): ?string
@@ -52,11 +51,10 @@ final class UpdateSettings
      * @param  string|null  $githubToken  null なら変更しない、空文字なら削除
      * @param  string|null  $webhookUrl  null なら変更しない、空文字なら削除
      */
-    public function save(bool $enabled, string $repository, ?string $githubToken, ?string $webhookUrl): void
+    public function save(bool $enabled, ?string $githubToken, ?string $webhookUrl): void
     {
-        DB::transaction(static function () use ($enabled, $repository, $githubToken, $webhookUrl): void {
+        DB::transaction(static function () use ($enabled, $githubToken, $webhookUrl): void {
             AppSetting::store(AppSetting::UPDATE_ENABLED, $enabled);
-            AppSetting::store(AppSetting::UPDATE_REPOSITORY, $repository);
 
             foreach ([AppSetting::UPDATE_GITHUB_TOKEN => $githubToken, AppSetting::DISCORD_WEBHOOK_URL => $webhookUrl] as $key => $value) {
                 if ($value === null) {

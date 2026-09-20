@@ -100,7 +100,6 @@ final class UpdateSupportTest extends TestCase
         $this->actingAs($admin)->from($this->dashboardUrl('/admin/updates'))
             ->put($this->dashboardUrl('/admin/updates/settings'), [
                 'enabled' => '1',
-                'repository' => 'choko1229/URL-Shortener',
                 'github_token' => 'github_pat_abcdefghijklmnop',
                 'discord_webhook_url' => 'https://discord.com/api/webhooks/123456/abc-DEF_123',
             ])
@@ -112,13 +111,13 @@ final class UpdateSupportTest extends TestCase
 
         // 空欄なら変更しない
         $this->actingAs($admin)->from($this->dashboardUrl('/admin/updates'))
-            ->put($this->dashboardUrl('/admin/updates/settings'), ['repository' => 'choko1229/URL-Shortener']);
+            ->put($this->dashboardUrl('/admin/updates/settings'), []);
         $this->assertSame('github_pat_abcdefghijklmnop', AppSetting::valueFor(AppSetting::UPDATE_GITHUB_TOKEN));
         $this->assertFalse(AppSetting::valueFor(AppSetting::UPDATE_ENABLED));
 
         $this->actingAs($admin)->from($this->dashboardUrl('/admin/updates'))
-            ->put($this->dashboardUrl('/admin/updates/settings'), ['repository' => 'not a repo', 'discord_webhook_url' => 'https://evil.example/hook'])
-            ->assertSessionHasErrors(['repository', 'discord_webhook_url']);
+            ->put($this->dashboardUrl('/admin/updates/settings'), ['discord_webhook_url' => 'https://evil.example/hook'])
+            ->assertSessionHasErrors('discord_webhook_url');
     }
 
     public function test_admin_can_check_latest_release(): void

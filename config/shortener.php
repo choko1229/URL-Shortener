@@ -45,12 +45,16 @@ return [
         'auto_update' => (bool) env('SHORTENER_GEOIP_AUTO_UPDATE', true),
     ],
 
-    // 自動アップデート（requirements.md 7 章）。リポジトリ・トークン・通知先は管理画面で設定する
+    // オンラインドキュメント（GitHub Pages）。フォークした場合は .env で差し替える
+    'docs_url' => rtrim((string) env('SHORTENER_DOCS_URL', 'https://choko1229.github.io/URL-Shortener'), '/'),
+
+    // 自動アップデート（requirements.md 7 章）。トークン・通知先は管理画面で設定する
     // アクセスをきっかけに定期処理を起動する（WP-Cron 方式）。cron だけで動かしたい場合は false
     'web_cron' => (bool) env('SHORTENER_WEB_CRON', true),
 
     'update' => [
-        'repository' => 'choko1229/URL-Shortener',
+        // 更新元。フォークして自分のリリースから更新する場合だけ .env で変更する
+        'repository' => (string) env('SHORTENER_UPDATE_REPOSITORY', 'choko1229/URL-Shortener'),
         'backup_path' => storage_path('app/private/backups'),
         'work_path' => storage_path('app/private/update-work'),
         'backup_generations' => 3,

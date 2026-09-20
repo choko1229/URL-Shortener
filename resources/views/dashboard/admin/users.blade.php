@@ -27,8 +27,17 @@
                         @endphp
                         <tr class="border-t border-table-divider">
                             <td class="px-6 py-3.5">
-                                <span class="block font-medium">{{ $user->displayName() }}</span>
-                                <span class="block text-xs text-text-secondary">{{ '@'.$user->username }}（ID: {{ $user->discord_id }}）</span>
+                                <span class="flex items-center gap-3">
+                                    @if ($user->avatarUrl())
+                                        <img src="{{ $user->avatarUrl() }}" alt="" width="36" height="36" class="size-9 shrink-0 rounded-full object-cover" referrerpolicy="no-referrer" loading="lazy">
+                                    @else
+                                        <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-warm font-rounded text-[13px] font-bold text-text-primary" aria-hidden="true">{{ mb_substr($user->displayName(), 0, 1) }}</span>
+                                    @endif
+                                    <span class="min-w-0">
+                                        <span class="block font-medium">{{ $user->displayName() }}</span>
+                                        <span class="block text-xs text-text-secondary">{{ '@'.$user->username }}（ID: {{ $user->discord_id }}）</span>
+                                    </span>
+                                </span>
                             </td>
                             <td class="px-6 py-3.5">
                                 <span @class([

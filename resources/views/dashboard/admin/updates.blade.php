@@ -67,6 +67,9 @@
 
     <section aria-labelledby="settings-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
         <h2 id="settings-heading" class="font-rounded text-[15px] font-bold">設定</h2>
+        <p class="mt-2 text-xs leading-relaxed text-text-secondary">
+            更新元は <code class="rounded bg-primary-tint-soft px-1">{{ $repository }}</code> です。フォークして自分のリリースから更新する場合だけ、<code class="rounded bg-primary-tint-soft px-1">.env</code> の <code class="rounded bg-primary-tint-soft px-1">SHORTENER_UPDATE_REPOSITORY</code> で変更してください。
+        </p>
         <form method="POST" action="{{ route('dashboard.admin.updates.settings') }}" class="mt-4 max-w-2xl space-y-5">
             @csrf
             @method('PUT')
@@ -75,12 +78,6 @@
                 <input type="checkbox" name="enabled" value="1" @checked(old('enabled', $enabled)) class="mt-1 size-4 shrink-0 accent-primary-dark">
                 <span>自動アップデートを有効にする</span>
             </label>
-
-            <div>
-                <label for="repository" class="block text-[13px] font-medium text-text-secondary">GitHub リポジトリ（所有者/リポジトリ名）</label>
-                <input id="repository" name="repository" type="text" required value="{{ old('repository', $repository) }}" autocomplete="off" spellcheck="false" class="form-control mt-2" @error('repository') aria-invalid="true" aria-describedby="repository-error" @enderror>
-                <x-field-error name="repository" id="repository-error" />
-            </div>
 
             <div>
                 <label for="github-token" class="block text-[13px] font-medium text-text-secondary">GitHub のトークン（任意・{{ $hasToken ? '設定済み。変更する場合のみ入力' : '未設定' }}）</label>

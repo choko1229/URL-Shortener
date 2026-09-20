@@ -4,6 +4,8 @@
     @var \Illuminate\Support\Collection<int, \App\Models\ApiKey> $keys
     @var string|null $newToken
     @var string $apiBaseUrl
+    @var list<string> $nameExamples
+    @var string $docsUrl
     @var string $timezone
 --}}
 <x-dashboard.admin-page :viewer="$viewer" title="APIキー" description="管理者専用の API（自分が管理する他プロジェクトからの発行用）で使うキーです。第三者には公開しないでください。">
@@ -27,7 +29,8 @@
             @csrf
             <div class="min-w-0 flex-1">
                 <label for="key-name" class="block text-[13px] font-medium text-text-secondary">名前（用途）</label>
-                <input id="key-name" name="name" type="text" required maxlength="64" placeholder="例: BOOTH まとめサイト" value="{{ old('name') }}" class="form-control mt-2" @error('name') aria-invalid="true" aria-describedby="key-name-error" @enderror>
+                <input id="key-name" name="name" type="text" required maxlength="64" placeholder="例: {{ $nameExamples[0] }}" value="{{ old('name') }}" class="form-control mt-2" aria-describedby="key-name-hint{{ $errors->has('name') ? ' key-name-error' : '' }}" @error('name') aria-invalid="true" @enderror>
+                <p id="key-name-hint" class="mt-1.5 text-xs text-text-secondary">どこから使うキーかが後で分かる名前にします（例: {{ implode('、', $nameExamples) }}）。</p>
                 <x-field-error name="name" id="key-name-error" />
             </div>
             <x-button type="submit" size="sm" class="min-h-[52px] sm:mt-[30px]">
@@ -89,6 +92,13 @@
             <li>GET {{ $apiBaseUrl }}/links/{コード}</li>
             <li>DELETE {{ $apiBaseUrl }}/links/{コード}</li>
         </ul>
-        <p class="mt-3 text-xs text-text-secondary">詳しくは README の「API」を参照してください。</p>
+        <p class="mt-3 text-xs text-text-secondary">
+            詳しくは
+            <a href="{{ $docsUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 font-medium text-primary-dark hover:underline">
+                ドキュメントの「API」
+                <x-icon name="external-link" :size="13" />
+            </a>
+            を参照してください。
+        </p>
     </section>
 </x-dashboard.admin-page>

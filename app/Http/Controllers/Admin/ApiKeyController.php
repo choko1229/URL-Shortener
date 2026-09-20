@@ -20,6 +20,22 @@ final class ApiKeyController extends Controller
 {
     public const NEW_TOKEN_SESSION_KEY = 'new_api_token';
 
+    /** 名前（用途）の書き方が伝わるように、開くたびに違う例を出す */
+    private const NAME_EXAMPLES = [
+        '社内ツール',
+        'お知らせ配信 BOT',
+        'ブログの記事投稿',
+        'イベント受付フォーム',
+        'Discord BOT',
+        '販売ページ',
+        '定期レポート',
+        'ポートフォリオサイト',
+        '在庫連携バッチ',
+        'スマホアプリ',
+    ];
+
+    private const SHOWN_EXAMPLES = 3;
+
     public function index(Request $request, ShortenerSettings $settings): View
     {
         $token = $request->session()->get(self::NEW_TOKEN_SESSION_KEY);
@@ -29,8 +45,19 @@ final class ApiKeyController extends Controller
             'keys' => ApiKey::query()->with('user')->latest('id')->get(),
             'newToken' => is_string($token) ? $token : null,
             'apiBaseUrl' => 'https://'.config('shortener.domains.api').'/v1',
+            'nameExamples' => self::nameExamples(),
+            'docsUrl' => config('shortener.docs_url').'/api.html',
             'timezone' => $settings->displayTimezone(),
         ]);
+    }
+
+    /** @return list<string> */
+    private static function nameExamples(): array
+    {
+        $examples = self::NAME_EXAMPLES;
+        shuffle($examples);
+
+        return array_slice($examples, 0, self::SHOWN_EXAMPLES);
     }
 
     public function store(Request $request): RedirectResponse

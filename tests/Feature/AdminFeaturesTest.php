@@ -54,6 +54,39 @@ final class AdminFeaturesTest extends TestCase
             ->assertSee('href="'.$this->dashboardUrl('/admin/services').'" aria-current="page"', false);
     }
 
+    public function test_user_list_shows_discord_icons(): void
+    {
+        $withIcon = User::factory()->admin()->create(['avatar_hash' => str_repeat('a1', 16)]);
+        $withoutIcon = User::factory()->create(['global_name' => 'ともだち', 'avatar_hash' => null]);
+
+        $response = $this->actingAs($withIcon)->get($this->dashboardUrl('/admin/users'))->assertOk();
+
+        $response->assertSee($withIcon->avatarUrl(), false);
+        // 画像が無いユーザーは頭文字で代用する
+        $this->assertNull($withoutIcon->avatarUrl());
+        $response->assertSee('>と</span>', false);
+    }
+
+    public function test_api_key_page_shows_random_examples_and_links_to_the_docs(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->get($this->dashboardUrl('/admin/api-keys'))
+            ->assertOk()
+            ->assertSee(config('shortener.docs_url').'/api.html', false)
+            ->assertDontSee('README');
+
+        // 開くたびに違う例を出す
+        $placeholders = [];
+        foreach (range(1, 8) as $attempt) {
+            $html = $this->actingAs($admin)->get($this->dashboardUrl('/admin/api-keys'))->getContent();
+            preg_match('/placeholder="例: ([^"]+)"/u', (string) $html, $matches);
+            $placeholders[] = $matches[1] ?? '';
+        }
+
+        $this->assertGreaterThan(1, count(array_unique($placeholders)));
+    }
+
     public function test_admin_sees_all_links_including_guest_links_and_can_filter(): void
     {
         $member = User::factory()->create(['global_name' => 'メンバー']);
