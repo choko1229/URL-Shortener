@@ -43,12 +43,14 @@ final class DashboardPageTest extends TestCase
 
     public function test_admin_sees_admin_navigation(): void
     {
+        // 管理者向けの画面はヘッダーに並べず、「管理」1 つにまとめている
         $this->actingAs(User::factory()->admin()->create())
             ->get($this->dashboardUrl())
             ->assertOk()
-            ->assertSee('APIキー')
-            ->assertSee('予約語')
-            ->assertSee('管理者');
+            ->assertSee('href="'.$this->dashboardUrl('/admin/links').'"', false)
+            ->assertSee('管理者')
+            ->assertDontSee('APIキー')
+            ->assertDontSee('予約語');
     }
 
     public function test_member_cannot_delete_others_link(): void

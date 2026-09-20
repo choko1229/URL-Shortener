@@ -4,7 +4,7 @@
     @var \Illuminate\Contracts\Pagination\LengthAwarePaginator $links
     @var array{owner: string, state: string, q: string} $filters
 --}}
-<x-dashboard.page :viewer="$viewer" title="全URL" description="すべての短縮URLを確認・削除できます。ログインせずに発行されたURLの統計も確認できます。">
+<x-dashboard.admin-page :viewer="$viewer" title="全URL" description="すべての短縮URLを確認・削除できます。ログインせずに発行されたURLの統計も確認できます。">
     <form method="GET" action="{{ route('dashboard.admin.links') }}" class="flex flex-col gap-3 rounded-card border border-border bg-white p-4 sm:flex-row sm:items-end sm:p-5">
         <div class="min-w-0 flex-1">
             <label for="filter-q" class="block text-[13px] font-medium text-text-secondary">コード・元URLで検索</label>
@@ -48,4 +48,4 @@
     </section>
 
     @include('partials.qr-dialog')
-</x-dashboard.page>
+</x-dashboard.admin-page>

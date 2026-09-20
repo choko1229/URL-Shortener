@@ -4,7 +4,7 @@
     @var \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<int, \App\Models\ReservedWord>> $groups
     @var list<\App\Enums\ReservedWordCategory> $categories
 --}}
-<x-dashboard.page :viewer="$viewer" title="予約語" description="カスタムスラッグとして使えない語です。大文字小文字を区別せずに判定します。管理者は予約語でも使えます。">
+<x-dashboard.admin-page :viewer="$viewer" title="予約語" description="カスタムスラッグとして使えない語です。大文字小文字を区別せずに判定します。管理者は予約語でも使えます。">
     <section aria-labelledby="add-word-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
         <h2 id="add-word-heading" class="font-rounded text-[15px] font-bold">予約語を追加</h2>
         <form method="POST" action="{{ route('dashboard.admin.reserved-words.store') }}" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -72,4 +72,4 @@
             </section>
         @endforeach
     </div>
-</x-dashboard.page>
+</x-dashboard.admin-page>

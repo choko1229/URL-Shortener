@@ -6,7 +6,7 @@
     @var string $timezone
     @var \App\Support\SiteIdentity $site
 --}}
-<x-dashboard.page :viewer="$viewer" title="サイト設定" description="サイト名や運営者名、利用規約・プライバシーポリシーをここで設定します。画面に表示される名前はすべてこの設定に従います。">
+<x-dashboard.admin-page :viewer="$viewer" title="サイト設定" description="サイト名や運営者名、利用規約・プライバシーポリシーをここで設定します。画面に表示される名前はすべてこの設定に従います。">
     <section aria-labelledby="identity-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
         <h2 id="identity-heading" class="font-rounded text-[15px] font-bold">サイトの表示</h2>
         <form method="POST" action="{{ route('dashboard.admin.site.update') }}" class="mt-4 max-w-2xl space-y-5">
@@ -133,4 +133,4 @@
     <p class="text-[13px] leading-relaxed text-text-secondary">
         テンプレートは、このソフトウェアが実際に行っている処理（保存する情報・外部への送信・削除の扱いなど）に沿った下書きです。そのまま使えることを保証するものではないため、内容を確認し、運営の実態に合わせて修正してから公開してください。
     </p>
-</x-dashboard.page>
+</x-dashboard.admin-page>

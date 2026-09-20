@@ -4,6 +4,7 @@
  * - 有効期限の選択（data-expiry-group）
  * - ダイアログ（data-dialog-open）
  * - クリップボードへのコピー（data-copy-text）
+ * - 横スクロールするタブの現在地表示（data-scroll-tabs）
  * - ユーザーメニュー（data-menu-button）
  * - 送信前の確認（form[data-confirm]）
  */
@@ -150,6 +151,18 @@ function initCopyButtons() {
             console.error('[copy] コピーに失敗しました。', error);
             announce('コピーできませんでした。テキストを選択してコピーしてください。');
         }
+    });
+}
+
+/** 横スクロールするタブで、開いているタブを見える位置に寄せる（項目が多い管理画面向け） */
+function initScrollingTabs() {
+    document.querySelectorAll('[data-scroll-tabs]').forEach((container) => {
+        const current = container.querySelector('[aria-current="page"]');
+        if (!(current instanceof HTMLElement) || container.scrollWidth <= container.clientWidth) {
+            return;
+        }
+        // ページ全体は動かさず、この要素の横スクロールだけを変える
+        container.scrollLeft = current.offsetLeft - (container.clientWidth - current.offsetWidth) / 2;
     });
 }
 
@@ -401,6 +414,7 @@ initDialogs();
 initPreviewGroups();
 initQrDialogs();
 initCopyButtons();
+initScrollingTabs();
 initMenus();
 initConfirmForms();
 initRecaptchaForms();

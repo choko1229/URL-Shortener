@@ -6,7 +6,7 @@
     @var string $apiBaseUrl
     @var string $timezone
 --}}
-<x-dashboard.page :viewer="$viewer" title="APIキー" description="管理者専用の API（自分が管理する他プロジェクトからの発行用）で使うキーです。第三者には公開しないでください。">
+<x-dashboard.admin-page :viewer="$viewer" title="APIキー" description="管理者専用の API（自分が管理する他プロジェクトからの発行用）で使うキーです。第三者には公開しないでください。">
     @if ($newToken)
         <section aria-labelledby="new-key-heading" class="rounded-card bg-dark-panel p-5 text-white sm:p-6" role="status">
             <h2 id="new-key-heading" class="flex items-center gap-1.5 font-rounded text-[15px] font-bold text-accent-warm">
@@ -91,4 +91,4 @@
         </ul>
         <p class="mt-3 text-xs text-text-secondary">詳しくは README の「API」を参照してください。</p>
     </section>
-</x-dashboard.page>
+</x-dashboard.admin-page>

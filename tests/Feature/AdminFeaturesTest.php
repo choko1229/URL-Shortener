@@ -35,6 +35,25 @@ final class AdminFeaturesTest extends TestCase
         }
     }
 
+    public function test_admin_pages_share_one_screen_with_tabs(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $labels = ['全URL', 'ユーザー', 'お問い合わせ', 'サイト設定', '外部サービス', '予約語', 'APIキー', 'アップデート'];
+
+        // どの管理画面からでも、同じタブで他の画面へ移動できる
+        foreach (['/admin/links', '/admin/users', '/admin/inquiries', '/admin/site', '/admin/services', '/admin/reserved-words', '/admin/api-keys', '/admin/updates'] as $path) {
+            $response = $this->actingAs($admin)->get($this->dashboardUrl($path))->assertOk();
+
+            foreach ($labels as $label) {
+                $response->assertSee($label);
+            }
+        }
+
+        // 開いているタブを現在地として示す
+        $this->actingAs($admin)->get($this->dashboardUrl('/admin/services'))
+            ->assertSee('href="'.$this->dashboardUrl('/admin/services').'" aria-current="page"', false);
+    }
+
     public function test_admin_sees_all_links_including_guest_links_and_can_filter(): void
     {
         $member = User::factory()->create(['global_name' => 'メンバー']);

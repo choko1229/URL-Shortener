@@ -15,7 +15,7 @@
     @var bool $cronActive
     @var bool $hasPhpCli
 --}}
-<x-dashboard.page :viewer="$viewer" title="アップデート" description="1日1回（午前4時以降の最初のアクセス時）GitHub Releases を確認し、新しいリリースがあればバックアップを取ってから自動で更新します。失敗した場合は自動で元に戻し、Discord に通知します。">
+<x-dashboard.admin-page :viewer="$viewer" title="アップデート" description="1日1回（午前4時以降の最初のアクセス時）GitHub Releases を確認し、新しいリリースがあればバックアップを取ってから自動で更新します。失敗した場合は自動で元に戻し、Discord に通知します。">
     <section aria-labelledby="status-heading" class="rounded-card border border-border bg-white p-5 sm:p-6">
         <h2 id="status-heading" class="font-rounded text-[15px] font-bold">現在の状態</h2>
         <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
@@ -161,4 +161,4 @@
             </ul>
         @endif
     </section>
-</x-dashboard.page>
+</x-dashboard.admin-page>

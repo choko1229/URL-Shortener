@@ -3,6 +3,11 @@
 
 <x-layouts.dashboard :viewer="$viewer" :title="$title">
     <div class="mx-auto flex max-w-[1280px] flex-col gap-6 px-4 pb-12 pt-6 sm:gap-7 sm:px-8 sm:pt-8 lg:px-12">
+        {{-- 画面内のタブ（管理画面のみ） --}}
+        @isset($tabs)
+            {{ $tabs }}
+        @endisset
+
         <div>
             <h1 class="font-rounded text-section font-bold">{{ $title }}</h1>
             @if ($description)

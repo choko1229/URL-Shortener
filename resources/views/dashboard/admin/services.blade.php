@@ -15,7 +15,7 @@
     @var bool $geoIpAutoUpdate
     @var string $geoIpManualPath
 --}}
-<x-dashboard.page :viewer="$viewer" title="外部サービス" description="ログインや安全確認に使う外部サービスのキーを設定します。機密値は APP_KEY で暗号化してデータベースに保存し、画面には表示しません。">
+<x-dashboard.admin-page :viewer="$viewer" title="外部サービス" description="ログインや安全確認に使う外部サービスのキーを設定します。機密値は APP_KEY で暗号化してデータベースに保存し、画面には表示しません。">
     <form method="POST" action="{{ route('dashboard.admin.services.update') }}" class="space-y-6">
         @csrf
         @method('PUT')
@@ -138,4 +138,4 @@
             MaxMind GeoLite2 Country（.mmdb）を <code class="break-all rounded bg-primary-tint-soft px-1">{{ $geoIpManualPath }}</code> に置いた場合は、そちらを優先して使います。
         </p>
     </section>
-</x-dashboard.page>
+</x-dashboard.admin-page>
