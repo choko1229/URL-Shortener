@@ -20,6 +20,7 @@ final class Installer
         private readonly Application $app,
         private readonly Kernel $artisan,
         private readonly InstallationState $state,
+        private readonly SchemaState $schema,
         private readonly EnvironmentFile $environment,
         private readonly DatabaseConnectionSwitcher $connections,
     ) {}
@@ -66,6 +67,9 @@ final class Installer
 
         $this->runArtisan('migrate', ['--force' => true], 'テーブルの作成に失敗しました。データベースの権限を確認してください。');
         $this->runArtisan('db:seed', ['--class' => ReservedWordSeeder::class, '--force' => true], '予約語の登録に失敗しました。');
+
+        // 適用済みとして記録し、次のアクセスで同じ確認を繰り返さないようにする
+        $this->schema->markUpdated();
     }
 
     /** @throws InstallationException */

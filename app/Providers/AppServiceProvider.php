@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Installer\EnvironmentFile;
 use App\Installer\InstallationState;
+use App\Installer\SchemaState;
 use App\Models\SitePage;
 use App\Models\User;
 use App\Services\GeoIp\GeoIpDatabase;
@@ -56,6 +57,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(
             InstallationState::class,
             static fn (Application $app): InstallationState => new InstallationState($app->storagePath(InstallationState::LOCK_FILE)),
+        );
+        $this->app->singleton(
+            SchemaState::class,
+            static fn (Application $app): SchemaState => new SchemaState(
+                $app->storagePath(SchemaState::FILE),
+                $app->databasePath('migrations'),
+            ),
         );
         // .env の場所は実行時に変わりうる（テスト等）ため都度解決する
         $this->app->bind(

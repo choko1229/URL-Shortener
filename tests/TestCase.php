@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use App\Installer\InstallationState;
+use App\Installer\SchemaState;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -22,6 +23,13 @@ abstract class TestCase extends BaseTestCase
             $installed->markInstalled();
         }
         $this->app->instance(InstallationState::class, $installed);
+
+        // 既定ではテーブルは最新として扱う（テスト中に migrate が走らないようにする）
+        $schema = new SchemaState(storage_path('framework/testing/schema.json'), database_path('migrations'));
+        if (! $schema->isCurrent()) {
+            $schema->markUpdated();
+        }
+        $this->app->instance(SchemaState::class, $schema);
     }
 
     protected function mainUrl(string $path = '/'): string
