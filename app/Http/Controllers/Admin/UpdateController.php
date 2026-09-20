@@ -27,6 +27,8 @@ final class UpdateController extends Controller
 {
     private const RECENT_RUNS = 10;
 
+    private const UPDATE_SECONDS = 600;
+
     public function index(
         Request $request,
         UpdateSettings $settings,
@@ -87,6 +89,19 @@ final class UpdateController extends Controller
         $result = $updater->check();
 
         return back()->with($result->error === null ? 'notice' : 'error', $result->message());
+    }
+
+    /** SSH が使えない環境でも、管理画面から今すぐ更新できるようにする（自動アップデートが無効でも実行する） */
+    public function run(Request $request, Updater $updater): RedirectResponse
+    {
+        // ダウンロードからヘルスチェックまで数分かかることがある
+        @set_time_limit(self::UPDATE_SECONDS);
+
+        Log::notice('管理画面から手動でアップデートを実行します。', ['user_id' => $request->user()?->getAuthIdentifier()]);
+
+        $outcome = $updater->run(manual: true);
+
+        return back()->with($outcome->isFailure() ? 'error' : 'notice', $outcome->message);
     }
 
     public function testNotification(DiscordWebhookNotifier $notifier): RedirectResponse

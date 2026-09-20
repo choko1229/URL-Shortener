@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Enums\UpdateRunStatus;
 use App\Models\AppSetting;
 use App\Models\UpdateRun;
+use App\Models\User;
 use App\Services\Update\AppVersion;
 use App\Services\Update\ArtisanProcess;
 use App\Services\Update\BackupManager;
@@ -178,6 +179,49 @@ final class AutoUpdateTest extends TestCase
         $this->assertCount(3, $remaining);
         $this->assertNotContains('20260101_000000_v26.1.0', $remaining);
         $this->assertNotContains('20260201_000000_v26.2.0', $remaining);
+    }
+
+    public function test_admin_can_run_the_update_from_the_dashboard(): void
+    {
+        // SSH が使えない環境向け。自動アップデートが無効に設定されていても実行する
+        AppSetting::store(AppSetting::UPDATE_ENABLED, false);
+        $this->fakeGitHub('v26.9.1');
+        $this->app->instance(Updater::class, $this->updater());
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->get($this->dashboardUrl('/admin/updates'))->assertOk()->assertSee('今すぐ更新する');
+
+        $this->actingAs($admin)->from($this->dashboardUrl('/admin/updates'))
+            ->post($this->dashboardUrl('/admin/updates/run'))
+            ->assertRedirect($this->dashboardUrl('/admin/updates'))
+            ->assertSessionHas('notice', static fn (string $message): bool => str_contains($message, 'v26.9.1'));
+
+        $this->assertFileExists($this->basePath.'/app/New.php');
+        $this->assertSame(UpdateRunStatus::Succeeded, UpdateRun::query()->sole()->status);
+    }
+
+    public function test_a_failed_update_from_the_dashboard_is_reported_on_the_screen(): void
+    {
+        $this->fakeGitHub('v26.9.1');
+        $this->healthCheckFails = true;
+        $this->app->instance(Updater::class, $this->updater());
+
+        $this->actingAs(User::factory()->admin()->create())->from($this->dashboardUrl('/admin/updates'))
+            ->post($this->dashboardUrl('/admin/updates/run'))
+            ->assertSessionHas('error');
+
+        $this->assertSame(UpdateRunStatus::RolledBack, UpdateRun::query()->sole()->status);
+    }
+
+    public function test_members_cannot_run_the_update(): void
+    {
+        User::factory()->admin()->create();
+
+        $this->actingAs(User::factory()->create())
+            ->post($this->dashboardUrl('/admin/updates/run'))
+            ->assertForbidden();
+
+        $this->assertSame(0, UpdateRun::query()->count());
     }
 
     private function updater(): Updater

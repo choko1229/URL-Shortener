@@ -162,6 +162,7 @@ Route::domain(config('shortener.domains.dashboard'))
                 Route::get('/updates', [UpdateController::class, 'index'])->name('updates');
                 Route::put('/updates/settings', [UpdateController::class, 'updateSettings'])->name('updates.settings');
                 Route::post('/updates/check', [UpdateController::class, 'check'])->middleware('throttle:10,1')->name('updates.check');
+                Route::post('/updates/run', [UpdateController::class, 'run'])->middleware('throttle:5,10')->name('updates.run');
                 Route::post('/updates/test-notification', [UpdateController::class, 'testNotification'])
                     ->middleware('throttle:5,1')
                     ->name('updates.test-notification');

@@ -42,6 +42,10 @@
                     最新リリースを確認
                 </x-button>
             </form>
+            <form method="POST" action="{{ route('dashboard.admin.updates.run') }}" data-confirm="最新リリースがあれば今すぐ更新します。先にバックアップを取り、失敗した場合は自動で元に戻します。完了まで数分かかることがあります。実行しますか？">
+                @csrf
+                <x-button type="submit" size="sm" :disabled="$currentVersion === null">今すぐ更新する</x-button>
+            </form>
             <form method="POST" action="{{ route('dashboard.admin.updates.test-notification') }}">
                 @csrf
                 <x-button type="submit" variant="ghost" size="sm" :disabled="! $hasWebhook">テスト通知を送る</x-button>
@@ -56,7 +60,8 @@
             @unless ($hasPhpCli)
                 サーバーで PHP（CLI）を起動できないため、更新時のマイグレーション等は Web の処理の中で実行します。
             @endunless
-            SSH が使える場合は <code class="rounded bg-primary-tint-soft px-1">php artisan app:update --manual</code> で今すぐ更新できます。
+            「今すぐ更新する」は、自動アップデートが無効でも実行します。完了まで数分かかることがあるため、実行中はこのページを閉じないでください。
+            SSH が使える場合は <code class="rounded bg-primary-tint-soft px-1">php artisan app:update --manual</code> でも実行できます。
         </p>
     </section>
 
