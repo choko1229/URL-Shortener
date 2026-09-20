@@ -40,7 +40,7 @@ class WebCron
     /** 自分自身へのリクエストで使う合言葉（APP_KEY から作るため外部からは分からない） */
     public function token(): string
     {
-        return hash_hmac('sha256', 'chok-ooo-web-cron', (string) $this->config->get('app.key'));
+        return hash_hmac('sha256', 'url-shortener-web-cron', (string) $this->config->get('app.key'));
     }
 
     public function isValidToken(mixed $token): bool

@@ -22,7 +22,7 @@ use Illuminate\Support\Str;
  */
 class ApiKey extends Model
 {
-    public const TOKEN_PREFIX = 'chok_';
+    public const TOKEN_PREFIX = 'usk_';
 
     private const RANDOM_LENGTH = 40;
 

@@ -61,7 +61,7 @@ Google が推奨する方式（ブラウザでトークンを取得し、サー�
 
 クリック元の IP アドレスから国を判定します。判定に使うデータベースは自動で取得し、毎月更新します。
 
-- データは [DB-IP](https://db-ip.com) の IP to Country Lite（CC BY 4.0・登録不要）です。
+- データは [DB-IP](https://db-ip.com) の IP to Country Lite（CC BY 4.0）です。
 - セットアップ後の最初の定期処理で `storage/app/private/geoip/` に取得します（約 8MB）。
 - 「外部サービス」で、使用中のデータの版・取得日時の確認と、「今すぐ更新」ができます。
 - 利用条件に従い、国の統計に「IP Geolocation by DB-IP」のリンクを表示します。

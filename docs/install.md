@@ -24,8 +24,8 @@ WordPress と同じように、ファイルを設置してブラウザで開く�
 
 ## 2. ファイルを設置する
 
-1. [Releases](https://github.com/choko1229/URL-Shortener/releases) から `chok-ooo-vXX.X.X.zip` をダウンロードして展開します。
-2. 展開した `chok-ooo` フォルダの**中身**を、公開フォルダ（例: `public_html`）に丸ごとアップロードします。
+1. [Releases](https://github.com/choko1229/URL-Shortener/releases) から `url-shortener-vXX.X.X.zip` をダウンロードして展開します。
+2. 展開した `url-shortener` フォルダの**中身**を、公開フォルダ（例: `public_html`）に丸ごとアップロードします。
 3. 4つのサブドメインの公開フォルダを、すべて手順2のフォルダに向けます。SSL もここで設定します。
 
 配布用の zip には、動作に必要なライブラリ（`vendor/`）とビルド済みの表示ファイルを同梱しています。

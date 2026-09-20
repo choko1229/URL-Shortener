@@ -29,7 +29,7 @@ final class ApiTest extends TestCase
     public function test_requests_without_valid_key_are_rejected(): void
     {
         $this->getJson($this->apiUrl('/v1/links'))->assertUnauthorized()->assertJsonStructure(['message']);
-        $this->withToken('chok_invalid')->getJson($this->apiUrl('/v1/links'))->assertUnauthorized();
+        $this->withToken('usk_invalid')->getJson($this->apiUrl('/v1/links'))->assertUnauthorized();
     }
 
     public function test_keys_of_non_admins_and_revoked_keys_are_rejected(): void

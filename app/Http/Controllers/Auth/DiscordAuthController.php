@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
 
 /**
  * Discord ログイン（requirements.md 4-1）。
- * ログイン状態を使うダッシュボードと同じドメイン（dash.chok.ooo）で処理する。
+ * ログイン状態を使うダッシュボードと同じドメインで処理する。
  */
 final class DiscordAuthController extends Controller
 {

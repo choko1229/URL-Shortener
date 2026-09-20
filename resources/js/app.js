@@ -1,5 +1,5 @@
 /**
- * chok.ooo の画面インタラクション（外部ライブラリなし）
+ * 画面のインタラクション（外部ライブラリなし）
  * - 開閉パネル（data-disclosure）
  * - 有効期限の選択（data-expiry-group）
  * - ダイアログ（data-dialog-open）

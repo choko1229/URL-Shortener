@@ -30,7 +30,7 @@ final class SiteCustomizationTest extends TestCase
         $this->get($this->mainUrl())
             ->assertSee('<title>みじかいURL - 社内向けの短縮URL</title>', false)
             ->assertSee('みじかいURL')
-            ->assertDontSee('chok.ooo');
+            ->assertDontSee('URL-Shortener');
 
         $this->assertSame('みじかいURL', AppSetting::valueFor(AppSetting::SITE_NAME));
         $this->assertSame('情報システム部', AppSetting::valueFor(AppSetting::SITE_OPERATOR));

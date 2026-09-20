@@ -98,8 +98,8 @@ final class PreviewController extends Controller
     private function sampleLinks(CarbonImmutable $now): array
     {
         $samples = [
-            ['aB3xQ9k', SlugType::Random, 'https://github.com/choko1229/chok-ooo/pulls?q=is%3Aopen', 312, null, false],
-            ['kanri-memo', SlugType::Custom, 'https://www.notion.so/choko/vrc-preparation-checklist-2026', 58, $now->addDays(2), true],
+            ['aB3xQ9k', SlugType::Random, 'https://github.com/choko1229/URL-Shortener/pulls?q=is%3Aopen', 312, null, false],
+            ['kanri-memo', SlugType::Custom, 'https://www.example.com/notes/preparation-checklist', 58, $now->addDays(2), true],
             ['x7Rp2mQ', SlugType::Random, 'https://booth.pm/ja/items/12345678', 804, $now->addDays(21), false],
             ['p9Ln4wZ', SlugType::Random, 'https://drive.google.com/file/d/1a2b3c4d5e6f7g8h9i0j/view', 9, $now->subDay(), false],
         ];

@@ -17,7 +17,8 @@ final class GitHubReleaseClient
 {
     private const API_BASE = 'https://api.github.com';
 
-    private const PACKAGE_ASSET_PATTERN = '/\Achok-ooo-.+\.zip\z/';
+    // 配布用 zip の名前（将来変更できるよう、旧名も受け付ける）
+    private const PACKAGE_ASSET_PATTERN = '/\A(?:url-shortener|chok-ooo)-.+\.zip\z/';
 
     private const DOWNLOAD_TIMEOUT_SECONDS = 300;
 
@@ -89,7 +90,7 @@ final class GitHubReleaseClient
         $request = Http::withHeaders([
             'Accept' => 'application/vnd.github+json',
             'X-GitHub-Api-Version' => '2022-11-28',
-            'User-Agent' => 'chok-ooo-updater',
+            'User-Agent' => 'url-shortener-updater',
         ]);
 
         return $token === null ? $request : $request->withToken($token);

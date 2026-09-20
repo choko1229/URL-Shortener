@@ -17,11 +17,11 @@ final class PreflightTest extends TestCase
     {
         parent::setUp();
 
-        $this->basePath = sys_get_temp_dir().'/chok-ooo-preflight-'.bin2hex(random_bytes(4));
+        $this->basePath = sys_get_temp_dir().'/url-shortener-preflight-'.bin2hex(random_bytes(4));
         foreach (Preflight::WRITABLE_DIRECTORIES as $directory) {
             mkdir($this->basePath.'/'.$directory, 0755, true);
         }
-        file_put_contents($this->basePath.'/.env.example', "APP_NAME=chok.ooo\nAPP_KEY=\nSESSION_DRIVER=database\nSESSION_DOMAIN=.chok.ooo\nSESSION_SECURE_COOKIE=true\n");
+        file_put_contents($this->basePath.'/.env.example', "APP_NAME=URL-Shortener\nAPP_KEY=\nSESSION_DRIVER=database\nSESSION_DOMAIN=.example.com\nSESSION_SECURE_COOKIE=true\n");
     }
 
     protected function tearDown(): void
@@ -38,7 +38,7 @@ final class PreflightTest extends TestCase
         $this->assertSame([], $problems);
 
         $values = Dotenv::parse((string) file_get_contents($this->basePath.'/.env'));
-        $this->assertSame('chok.ooo', $values['APP_NAME']);
+        $this->assertSame('URL-Shortener', $values['APP_NAME']);
         $this->assertMatchesRegularExpression('/\Abase64:[A-Za-z0-9+\/]{43}=\z/', (string) $values['APP_KEY']);
         $this->assertSame('file', $values['SESSION_DRIVER']);
         $this->assertSame('null', $values['SESSION_DOMAIN']);

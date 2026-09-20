@@ -55,7 +55,7 @@ final class MmdbFixture
             'binary_format_minor_version' => self::uint(self::TYPE_UINT16, 0),
             'build_epoch' => self::uint(self::TYPE_UINT64, 1_700_000_000),
             'database_type' => self::string($databaseType),
-            'description' => self::map(['en' => self::string('chok.ooo test database')]),
+            'description' => self::map(['en' => self::string('URL-Shortener test database')]),
             'ip_version' => self::uint(self::TYPE_UINT16, 4),
             'languages' => self::control(self::TYPE_ARRAY, 1).self::string('en'),
             'node_count' => self::uint(self::TYPE_UINT32, $nodeCount),

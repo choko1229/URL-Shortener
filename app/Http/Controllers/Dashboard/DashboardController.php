@@ -13,7 +13,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use LogicException;
 
-/** dash.chok.ooo トップ（発行フォーム・統計・発行履歴） */
+/** ダッシュボードのトップ（発行フォーム・統計・発行履歴） */
 final class DashboardController extends Controller
 {
     public function __invoke(Request $request, DashboardPageBuilder $builder): View

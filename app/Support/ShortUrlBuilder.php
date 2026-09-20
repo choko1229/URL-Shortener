@@ -11,13 +11,13 @@ final class ShortUrlBuilder
 {
     public function __construct(private readonly Config $config) {}
 
-    /** 例: https://chok.ooo/aB3xQ9k */
+    /** 例: https://example.com/aB3xQ9k */
     public function url(string $slug): string
     {
         return rtrim((string) $this->config->get('shortener.short_url_base'), '/').'/'.rawurlencode($slug);
     }
 
-    /** 例: chok.ooo/aB3xQ9k（スキームを除いた表示用） */
+    /** 例: example.com/aB3xQ9k（スキームを除いた表示用） */
     public function display(string $slug): string
     {
         return $this->host().'/'.$slug;

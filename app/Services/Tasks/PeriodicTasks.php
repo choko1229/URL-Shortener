@@ -35,7 +35,7 @@ class PeriodicTasks
     // cron が最後に動いてからこの時間以内なら、アクセスでの実行は行わない
     private const CRON_ACTIVE_MINUTES = 10;
 
-    private const LOCK_KEY = 'chok-ooo:periodic-tasks';
+    private const LOCK_KEY = 'url-shortener:periodic-tasks';
 
     private const LOCK_SECONDS = 3600;
 

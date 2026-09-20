@@ -34,7 +34,7 @@ final class GuestLinkDeleter
         return true;
     }
 
-    /** 「https://chok.ooo/abc1234」「chok.ooo/abc1234」「abc1234」のいずれからもコードを取り出す */
+    /** 「https://example.com/abc1234」「example.com/abc1234」「abc1234」のいずれからもコードを取り出す */
     public static function extractCode(string $input): ?string
     {
         $input = trim($input);

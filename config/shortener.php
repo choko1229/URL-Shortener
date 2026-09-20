@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| chok.ooo 固有設定
+| このアプリ固有の設定
 |--------------------------------------------------------------------------
 |
 | ドメインのようにデプロイ環境ごとに異なる値だけを .env から読み込む。
@@ -17,14 +17,14 @@ declare(strict_types=1);
 return [
 
     'domains' => [
-        'main' => env('SHORTENER_MAIN_DOMAIN', 'chok.ooo'),
-        'dashboard' => env('SHORTENER_DASHBOARD_DOMAIN', 'dash.chok.ooo'),
-        'api' => env('SHORTENER_API_DOMAIN', 'api.chok.ooo'),
-        'redirect' => env('SHORTENER_REDIRECT_DOMAIN', 'redirect.chok.ooo'),
+        'main' => env('SHORTENER_MAIN_DOMAIN', 'example.com'),
+        'dashboard' => env('SHORTENER_DASHBOARD_DOMAIN', 'dash.example.com'),
+        'api' => env('SHORTENER_API_DOMAIN', 'api.example.com'),
+        'redirect' => env('SHORTENER_REDIRECT_DOMAIN', 'redirect.example.com'),
     ],
 
     // 短縮URLの組み立てに使うベースURL（末尾スラッシュなし）
-    'short_url_base' => env('SHORTENER_SHORT_URL_BASE', 'https://chok.ooo'),
+    'short_url_base' => env('SHORTENER_SHORT_URL_BASE', 'https://example.com'),
 
     // 画面表示・月間集計に使うタイムゾーン（DB保存は UTC）
     'display_timezone' => 'Asia/Tokyo',

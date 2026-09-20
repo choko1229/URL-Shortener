@@ -47,7 +47,7 @@ final class TriggerPeriodicTasks
         }
 
         try {
-            if (! Cache::add('chok-ooo:periodic-tasks-checked', true, self::CHECK_INTERVAL_SECONDS)) {
+            if (! Cache::add('url-shortener:periodic-tasks-checked', true, self::CHECK_INTERVAL_SECONDS)) {
                 return;
             }
 

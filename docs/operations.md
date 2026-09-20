@@ -14,9 +14,9 @@ nav_order: 5
 
 ---
 
-## 定期処理（cron の登録は不要）
+## 定期処理
 
-次の処理は、WordPress の WP-Cron と同じく、サイトへのアクセスをきっかけに自動で実行されます。
+次の処理は、サイトへのアクセスをきっかけに自動で実行されます（cron は使いません）。
 
 | 処理 | タイミング |
 |---|---|
@@ -33,7 +33,7 @@ nav_order: 5
 アクセスが少ないサイトで時刻どおりに実行したい場合は、cron を登録することもできます。登録されていれば cron を優先し、アクセスでの実行は止まります。
 
 ```
-* * * * * cd /path/to/chok-ooo && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /path/to/url-shortener && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 cron だけで動かしたい場合は `.env` に `SHORTENER_WEB_CRON=false` を設定します。
@@ -42,7 +42,7 @@ cron だけで動かしたい場合は `.env` に `SHORTENER_WEB_CRON=false` を
 
 GitHub Releases に新しいリリースが出たとき、次の順で更新します。
 
-1. 最新リリース（`vYY.MM.patch` 形式のタグ）を確認します。現在より新しくなければ何もしません。更新元は `choko1229/URL-Shortener` があらかじめ設定されており、公開リポジトリのため**追加の設定なしで動きます**。
+1. 最新リリース（`vYY.MM.patch` 形式のタグ）を確認します。現在より新しくなければ何もしません。更新元（`choko1229/URL-Shortener`）は設定済みで、追加の設定なしで動きます。
 2. バックアップを取ります（`storage/app/private/backups/`、直近3世代を保持）。
    - データベース: `mysqldump` を使い、使えないサーバーでは PHP で同等のダンプを作ります。
    - コード一式: `app` `bootstrap` `config` `database` `public` `resources` `routes` `vendor` と直下のファイル。

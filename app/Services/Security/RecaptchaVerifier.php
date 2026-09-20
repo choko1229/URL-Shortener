@@ -29,7 +29,7 @@ final class RecaptchaVerifier
     private const TIMEOUT_SECONDS = 5;
 
     // 設定確認用のトークン（形式が不正なトークンとして扱われ、評価の作成自体が通るかだけを確かめる）
-    private const CONFIGURATION_CHECK_TOKEN = 'chok-ooo-configuration-check';
+    private const CONFIGURATION_CHECK_TOKEN = 'url-shortener-configuration-check';
 
     public function __construct(
         private readonly ExternalServiceKeys $keys,

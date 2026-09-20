@@ -66,7 +66,7 @@ final class RequirementChecker
     /** セットアップ中のこのサイトであることを示す値（別のサイトの応答と区別するため） */
     public function pingToken(): string
     {
-        return hash_hmac('sha256', 'chok-ooo-install-ping', (string) $this->app->make('config')->get('app.key'));
+        return hash_hmac('sha256', 'url-shortener-install-ping', (string) $this->app->make('config')->get('app.key'));
     }
 
     private function phpVersion(): RequirementResult

@@ -18,7 +18,7 @@ use Throwable;
  */
 final class Updater
 {
-    private const LOCK_KEY = 'chok-ooo:update';
+    private const LOCK_KEY = 'url-shortener:update';
 
     private const LOCK_SECONDS = 3600;
 

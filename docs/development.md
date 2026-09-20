@@ -154,6 +154,4 @@ nav_order: 9
 ---
 ```
 
-### GitHub Pages を有効にする
-
-リポジトリの Settings → Pages → Build and deployment → Source で「GitHub Actions」を選びます（非公開リポジトリの場合は GitHub Pro 以上のプランが必要です）。
+フォークした場合は、リポジトリの Settings → Pages → Build and deployment → Source で「GitHub Actions」を選ぶと、同じ手順で公開できます。

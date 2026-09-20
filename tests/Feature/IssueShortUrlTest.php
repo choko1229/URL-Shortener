@@ -193,7 +193,7 @@ final class IssueShortUrlTest extends TestCase
         $this->from($this->mainUrl())->post($this->mainUrl('/shorten'), $input)->assertSessionHasNoErrors();
         $this->assertSame(1, ShortUrl::query()->count());
 
-        Http::assertSent(fn (Request $request): bool => $request->url() === 'https://recaptchaenterprise.googleapis.com/v1/projects/chok-ooo-test/assessments'
+        Http::assertSent(fn (Request $request): bool => $request->url() === 'https://recaptchaenterprise.googleapis.com/v1/projects/url-shortener-test/assessments'
             && $request->hasHeader('X-Goog-Api-Key', 'api-key-abcdefghijklmnopqrst')
             && $request['event']['token'] === 'token'
             && $request['event']['siteKey'] === 'site-key-abcdefghijklmnop'
@@ -228,7 +228,7 @@ final class IssueShortUrlTest extends TestCase
     private function configureRecaptcha(): void
     {
         AppSetting::store(AppSetting::RECAPTCHA_SITE_KEY, 'site-key-abcdefghijklmnop');
-        AppSetting::store(AppSetting::RECAPTCHA_PROJECT_ID, 'chok-ooo-test');
+        AppSetting::store(AppSetting::RECAPTCHA_PROJECT_ID, 'url-shortener-test');
         AppSetting::store(AppSetting::RECAPTCHA_API_KEY, 'api-key-abcdefghijklmnopqrst', encrypt: true);
     }
 

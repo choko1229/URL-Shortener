@@ -56,9 +56,13 @@ jobs:
       - name: Build package
         run: bash scripts/build-release.sh "${GITHUB_REF_NAME}"
 
+      # v26.9.1 以前から自動アップデートできるよう、旧名の zip も添付する（それらが更新され次第、この手順は削除してよい）
+      - name: Build package with the previous name
+        run: php scripts/zip-directory.php build/release/url-shortener "build/release/chok-ooo-${GITHUB_REF_NAME}.zip" chok-ooo
+
       - uses: actions/upload-artifact@v4
         with:
-          name: chok-ooo-package
+          name: url-shortener-package
           path: build/release/*.zip
 
       - name: Attach to GitHub Release

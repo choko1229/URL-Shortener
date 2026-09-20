@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as HttpStatus;
 
 /**
- * redirect.chok.ooo（requirements.md 3: 手順 5〜6）。
+ * リダイレクト確認のサブドメイン（requirements.md 3: 手順 5〜6）。
  * 転送先を表示し、悪意URLチェックの結果に応じて元URLへ移動させる。
  * 中間ページからのチケット（暗号化済み）で認証するため CSRF 検証は行わない。
  */

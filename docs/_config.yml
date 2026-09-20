@@ -1,6 +1,6 @@
 # GitHub Pages（Just the Docs テーマ）の設定。
 # GitHub Actions（.github/workflows/docs.yml）がこのフォルダをビルドして公開する。
-title: chok.ooo
+title: URL-Shortener
 description: 自分のサーバーに置いて使える、シンプルなURL短縮サービスのドキュメント
 lang: ja
 
@@ -31,10 +31,6 @@ gh_edit_repository: https://github.com/choko1229/URL-Shortener
 gh_edit_branch: main
 gh_edit_source: docs
 gh_edit_view_mode: tree
-
-footer_content: >-
-  chok.ooo は <a href="https://github.com/choko1229/URL-Shortener/blob/main/LICENSE">MIT License</a>
-  で公開しているオープンソースソフトウェアです。
 
 exclude:
   - README.md

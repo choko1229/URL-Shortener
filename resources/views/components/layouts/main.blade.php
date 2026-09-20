@@ -1,4 +1,4 @@
-{{-- chok.ooo（トップページ）用レイアウト --}}
+{{-- トップページ用レイアウト --}}
 @props(['viewer', 'title' => null])
 
 <x-layouts.base :title="$title">

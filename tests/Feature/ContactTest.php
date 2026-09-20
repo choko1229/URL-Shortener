@@ -75,7 +75,7 @@ final class ContactTest extends TestCase
     public function test_recaptcha_protects_the_form_for_guests_only(): void
     {
         AppSetting::store(AppSetting::RECAPTCHA_SITE_KEY, 'site-key-abcdefghijklmnop');
-        AppSetting::store(AppSetting::RECAPTCHA_PROJECT_ID, 'chok-ooo-test');
+        AppSetting::store(AppSetting::RECAPTCHA_PROJECT_ID, 'url-shortener-test');
         AppSetting::store(AppSetting::RECAPTCHA_API_KEY, 'api-key-abcdefghijklmnopqrst', encrypt: true);
         Http::fake(['recaptchaenterprise.googleapis.com/*' => Http::response([
             'tokenProperties' => ['valid' => true, 'action' => 'contact'],

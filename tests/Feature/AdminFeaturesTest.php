@@ -121,7 +121,7 @@ final class AdminFeaturesTest extends TestCase
 
         $token = (string) session('new_api_token');
         $key = ApiKey::query()->sole();
-        $this->assertStringStartsWith('chok_', $token);
+        $this->assertStringStartsWith('usk_', $token);
         $this->assertSame(hash('sha256', $token), $key->key_hash);
         $this->assertStringNotContainsString($token, (string) json_encode($key->getAttributes()));
 

@@ -36,7 +36,7 @@ final class InstallerTest extends TestCase
         // 実際の .env やインストール記録に触れないよう、一時ディレクトリに差し替える
         $this->workDirectory = storage_path('framework/testing/installer-'.Str::random(8));
         File::ensureDirectoryExists($this->workDirectory);
-        File::put($this->workDirectory.'/.env', "APP_NAME=chok.ooo\nSESSION_DRIVER=file\nDB_CONNECTION=mysql\n");
+        File::put($this->workDirectory.'/.env', "APP_NAME=URL-Shortener\nSESSION_DRIVER=file\nDB_CONNECTION=mysql\n");
         $this->app->useEnvironmentPath($this->workDirectory);
 
         $this->state = new InstallationState($this->workDirectory.'/installed.json');
@@ -73,12 +73,12 @@ final class InstallerTest extends TestCase
     {
         Http::fake(['*' => Http::response('<!DOCTYPE html><title>セットアップ</title>', 200)]);
 
-        $this->get('http://www.chok.example/install')
+        $this->get('http://www.short.example/install')
             ->assertOk()
             ->assertSee('name="db_host"', false)
             ->assertSee('name="db_password"', false)
-            ->assertSee('value="chok.example"', false)
-            ->assertSee('value="dash.chok.example"', false)
+            ->assertSee('value="short.example"', false)
+            ->assertSee('value="dash.short.example"', false)
             ->assertDontSee('discord_client_id')
             ->assertSee('セットアップを完了する');
     }
@@ -167,7 +167,7 @@ final class InstallerTest extends TestCase
         $this->post(self::SITE.'/install', $this->input())
             ->assertRedirect(self::SITE.'/install')
             ->assertSessionHas('error', 'ユーザー名またはパスワードが正しくありません。')
-            ->assertSessionHas('_old_input.db_username', 'chok')
+            ->assertSessionHas('_old_input.db_username', 'shortener')
             ->assertSessionMissing('_old_input.db_password');
 
         $this->assertArrayNotHasKey('DB_HOST', $this->envValues());
@@ -181,14 +181,14 @@ final class InstallerTest extends TestCase
 
         $this->post(self::SITE.'/install', $this->input([
             'db_password' => 'p@ss "word" $x #1',
-            'main_domain' => 'Chok.ooo',
-            'dashboard_domain' => 'dash.chok.ooo',
-            'api_domain' => 'api.chok.ooo',
-            'redirect_domain' => 'redirect.chok.ooo',
+            'main_domain' => 'Short.example',
+            'dashboard_domain' => 'dash.short.example',
+            'api_domain' => 'api.short.example',
+            'redirect_domain' => 'redirect.short.example',
         ]))
             ->assertOk()
             ->assertSee('セットアップが完了しました')
-            ->assertSee('http://dash.chok.ooo/login');
+            ->assertSee('http://dash.short.example/login');
 
         $this->assertTrue($this->state->isInstalled());
         $this->assertGreaterThan(0, ReservedWord::query()->count());
@@ -197,10 +197,10 @@ final class InstallerTest extends TestCase
         $this->assertSame('mysql.example.jp', $values['DB_HOST']);
         $this->assertSame('3306', $values['DB_PORT']);
         $this->assertSame('p@ss "word" $x #1', $values['DB_PASSWORD']);
-        $this->assertSame('chok.ooo', $values['SHORTENER_MAIN_DOMAIN']);
-        $this->assertSame('dash.chok.ooo', $values['SHORTENER_DASHBOARD_DOMAIN']);
-        $this->assertSame('http://chok.ooo', $values['APP_URL']);
-        $this->assertSame('.chok.ooo', $values['SESSION_DOMAIN']);
+        $this->assertSame('short.example', $values['SHORTENER_MAIN_DOMAIN']);
+        $this->assertSame('dash.short.example', $values['SHORTENER_DASHBOARD_DOMAIN']);
+        $this->assertSame('http://short.example', $values['APP_URL']);
+        $this->assertSame('.short.example', $values['SESSION_DOMAIN']);
         $this->assertSame('database', $values['SESSION_DRIVER']);
     }
 
@@ -211,7 +211,7 @@ final class InstallerTest extends TestCase
 
         $this->mock(DatabaseConnectionSwitcher::class, function (MockInterface $mock): void {
             $mock->shouldReceive('use')->once()->withArgs(
-                static fn ($credentials): bool => $credentials->host === 'mysql.example.jp' && $credentials->database === 'chok_ooo',
+                static fn ($credentials): bool => $credentials->host === 'mysql.example.jp' && $credentials->database === 'url_shortener',
             );
         });
 
@@ -248,10 +248,10 @@ final class InstallerTest extends TestCase
         Http::fake(['*' => Http::response('Not Found', 404)]);
 
         $this->post(self::SITE.'/install', $this->input([
-            'main_domain' => 'chok.ooo',
-            'dashboard_domain' => 'chok.ooo',
-            'api_domain' => 'https://api.chok.ooo',
-            'redirect_domain' => 'redirect.chok.ooo',
+            'main_domain' => 'short.example',
+            'dashboard_domain' => 'short.example',
+            'api_domain' => 'https://api.short.example',
+            'redirect_domain' => 'redirect.short.example',
         ]))->assertSessionHasErrors(['main_domain', 'api_domain']);
 
         $this->assertFalse($this->state->isInstalled());
@@ -270,8 +270,8 @@ final class InstallerTest extends TestCase
         return $overrides + [
             'db_host' => 'mysql.example.jp',
             'db_port' => '3306',
-            'db_database' => 'chok_ooo',
-            'db_username' => 'chok',
+            'db_database' => 'url_shortener',
+            'db_username' => 'shortener',
             'db_password' => 'secret',
             'main_domain' => 'setup.example.test',
             'dashboard_domain' => 'dash.setup.example.test',

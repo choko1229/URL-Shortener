@@ -1,6 +1,6 @@
-# chok.ooo
+# URL-Shortener
 
-自分のサーバーに置いて使える、シンプルなURL短縮サービスです（オープンソース）。作者は chok.ooo として運用していますが、**設置した人が自分のサービスとして使えるように作ってあります**。サイト名・運営者名・利用規約・プライバシーポリシーは、設置後に管理画面から変更できます（コードの書き換えは不要です）。
+自分のサーバーに置いて使える、シンプルなURL短縮サービスです（オープンソース）。**設置した人が自分のサービスとして使えるように作ってあります**。サイト名・運営者名・利用規約・プライバシーポリシーは、設置後に管理画面から変更できます（コードの書き換えは不要です）。
 
 - **ドキュメント（設置・運用の手引き）: <https://choko1229.github.io/URL-Shortener/>**
 - ライセンス: [MIT](LICENSE)
@@ -13,10 +13,10 @@
 
 | サブドメイン | 役割 |
 |---|---|
-| `chok.ooo` | トップページ（発行フォーム）／短縮URLへのアクセス受付（`chok.ooo/abc1234`）／削除用トークンによる削除（`/delete`）／利用規約・プライバシーポリシー・お問い合わせ |
-| `dash.chok.ooo` | Discord ログイン、ダッシュボード（発行・履歴・統計・編集・削除）、設定・退会、管理者機能 |
-| `api.chok.ooo` | 管理者専用 API（`/v1/links`） |
-| `redirect.chok.ooo` | リダイレクト確認・悪意URLチェック |
+| `example.com` | トップページ（発行フォーム）／短縮URLへのアクセス受付（`example.com/abc1234`）／削除用トークンによる削除（`/delete`）／利用規約・プライバシーポリシー・お問い合わせ |
+| `dash.example.com` | Discord ログイン、ダッシュボード（発行・履歴・統計・編集・削除）、設定・退会、管理者機能 |
+| `api.example.com` | 管理者専用 API（`/v1/links`） |
+| `redirect.example.com` | リダイレクト確認・悪意URLチェック |
 
 ## 主な機能
 
@@ -24,7 +24,7 @@
 |---|---|
 | 発行 | ランダムコード（7桁）。ログインするとカスタムスラッグ（3〜20文字）・無期限も使える。パスワード保護・有効期限（未ログインは最大30日）・QRコード |
 | 利用制限 | ログイン: 60件/月・5回/分、未ログイン: 5件/月・3分に1回（IP 単位）。未ログインの発行は reCAPTCHA（スコアベース）で確認 |
-| リダイレクト | 中間ページ → `redirect.chok.ooo` で移動先を表示し Safe Browsing で確認 → 自動で移動（下記） |
+| リダイレクト | 中間ページ → `redirect.example.com` で移動先を表示し Safe Browsing で確認 → 自動で移動（下記） |
 | 統計 | クリック数・日別推移・リファラ・国・デバイス。本人のリンクはダッシュボードで、未ログイン発行分は管理者のみ閲覧 |
 | QRコード | 発行時・ダッシュボードで表示。SVG / PNG を選んでダウンロードできる（`/{コード}/qr.svg` `/{コード}/qr.png`） |
 | 共有時のカード | Discord や X に貼ったときの表示をリンクごとに選べる（転送先のカードを見せる／隠す／内容を指定する）。パスワード保護つきは常に隠す |
@@ -38,13 +38,13 @@
 
 ### リダイレクトの流れ
 
-1. `chok.ooo/{コード}` を開くと中間ページを返す（期限切れは専用ページ、削除済み・存在しないコードは 404）
+1. `example.com/{コード}` を開くと中間ページを返す（期限切れは専用ページ、削除済み・存在しないコードは 404）
    - パスワード保護ありの場合はここでパスワードを入力（同じ IP から 5 回間違えると 15 分ロック）
-2. 中間ページの JavaScript が `redirect.chok.ooo/go` へ暗号化したチケットを自動 POST する（アクセス数はここで記録）
-3. `redirect.chok.ooo` が移動先を表示し、Google Safe Browsing で安全性を確認する（結果は 3 日間キャッシュ）
+2. 中間ページの JavaScript が `redirect.example.com/go` へ暗号化したチケットを自動 POST する（アクセス数はここで記録）
+3. `redirect.example.com` が移動先を表示し、Google Safe Browsing で安全性を確認する（結果は 3 日間キャッシュ）
    - 安全 → 自動で移動 / 危険 → 移動を中止 / 確認できない → 警告を表示し「それでも開く」で利用者に任せる
 
-短縮コードは、ランダムコードに限り大文字小文字を無視して照合します（`chok.ooo/ABC1234` でも `aBc1234` に届く）。カスタムスラッグは完全一致です。
+短縮コードは、ランダムコードに限り大文字小文字を無視して照合します（`example.com/ABC1234` でも `aBc1234` に届く）。カスタムスラッグは完全一致です。
 
 ## 技術スタック
 
@@ -59,21 +59,21 @@
 
 サーバー側で Composer・Node.js・SSH・cron を使う必要はありません。**ファイルを置いて、ブラウザで開いて、DB の接続情報を入力するだけ**です。
 
-1. [Releases](https://github.com/choko1229/URL-Shortener/releases) から `chok-ooo-vX.X.X.zip` をダウンロードして展開する（まだリリースが無い場合は、下記「[リリース手順](#リリース手順)」でタグを作成すると自動で作られます）
+1. [Releases](https://github.com/choko1229/URL-Shortener/releases) から `url-shortener-vX.X.X.zip` をダウンロードして展開する（まだリリースが無い場合は、下記「[リリース手順](#リリース手順)」でタグを作成すると自動で作られます）
 2. サーバーの管理画面で MySQL 8.0 のデータベースとユーザーを作成する（文字コード utf8mb4）
-3. 展開した `chok-ooo` フォルダの**中身**を、FTP で公開フォルダ（例: `public_html`）に丸ごとアップロードする
-4. `chok.ooo` / `dash.chok.ooo` / `api.chok.ooo` / `redirect.chok.ooo` の公開フォルダを、すべて手順3のフォルダに向ける（SSL もここで設定）
-5. ブラウザで `https://chok.ooo/` を開くとセットアップ画面が表示される。動作環境の確認結果を見て、**データベースの接続情報を入力するだけ**で完了（テーブル作成・初期データ登録まで自動。ドメインはアクセス中のホスト名から自動で決まり、必要なときだけ変更できる）
-6. 完了画面のボタンから `https://dash.chok.ooo/login` を開くと、Discord ログインの設定画面が表示される。画面に出る Redirect URI を [Discord Developer Portal](https://discord.com/developers/applications) に登録し、Client ID / Secret を入力すると、そのまま Discord ログインへ進む（**最初にログインした人が管理者**になる）
+3. 展開した `url-shortener` フォルダの**中身**を、FTP で公開フォルダ（例: `public_html`）に丸ごとアップロードする
+4. `example.com` / `dash.example.com` / `api.example.com` / `redirect.example.com` の公開フォルダを、すべて手順3のフォルダに向ける（SSL もここで設定）
+5. ブラウザで `https://example.com/` を開くとセットアップ画面が表示される。動作環境の確認結果を見て、**データベースの接続情報を入力するだけ**で完了（テーブル作成・初期データ登録まで自動。ドメインはアクセス中のホスト名から自動で決まり、必要なときだけ変更できる）
+6. 完了画面のボタンから `https://dash.example.com/login` を開くと、Discord ログインの設定画面が表示される。画面に出る Redirect URI を [Discord Developer Portal](https://discord.com/developers/applications) に登録し、Client ID / Secret を入力すると、そのまま Discord ログインへ進む（**最初にログインした人が管理者**になる）
 7. 必要に応じて、ダッシュボードの「外部サービス」で悪意URLチェック・reCAPTCHA を、「アップデート」で GitHub のトークンと Discord Webhook を設定する
 
 > **注意**: WordPress と同様、セットアップが完了するまでは誰でもセットアップ画面を操作できます。Discord ログインの設定画面も、管理者が登録されるまでは誰でも開けます。アップロードしたら、すぐに最後まで（管理者としてログインするまで）進めてください。
 
 サーバーの管理画面でしかできない作業（サブドメインの公開フォルダ・SSL の設定、データベースの作成）と、Discord 側での Redirect URI の登録だけは、自動化できないため手作業になります。セットアップ画面では、サブドメインがこのフォルダを向いているかも確認します（向いていなくても「注意」として進めます）。
 
-### 定期処理（cron の登録は不要）
+### 定期処理
 
-次の処理は、WordPress の WP-Cron と同じく**サイトへのアクセスをきっかけに自動で実行**されます。
+次の処理は、**サイトへのアクセスをきっかけに自動で実行**されます（cron は使いません）。
 
 - 自動アップデートの確認: 1 日 1 回（日本時間 4:00 を過ぎてから最初のアクセス時）
 - 国判定のデータベースの取得・更新: 無ければすぐに（失敗したら 1 時間ごとに再試行）、以後は毎月新しい版が出たら
@@ -88,7 +88,7 @@
 アクセスが少ないサイトで時刻どおりに実行したい場合は、cron を登録することもできます（登録されていれば cron を優先し、アクセスでの実行は止まります）。
 
 ```
-* * * * * cd /path/to/chok-ooo && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /path/to/url-shortener && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 cron だけで動かしたい場合は `.env` に `SHORTENER_WEB_CRON=false` を設定します。
@@ -122,7 +122,7 @@ cron だけで動かしたい場合は `.env` に `SHORTENER_WEB_CRON=false` を
 
 | 機能 | 必要なもの | 設定場所 | 未設定の場合 |
 |---|---|---|---|
-| ログイン | Discord の Client ID / Client Secret | 初回: `dash.chok.ooo/login` を開くと表示される設定画面。以後: ダッシュボードの「外部サービス」 | ログインできない |
+| ログイン | Discord の Client ID / Client Secret | 初回: `dash.example.com/login` を開くと表示される設定画面。以後: ダッシュボードの「外部サービス」 | ログインできない |
 | 悪意URLチェック | Google Safe Browsing API キー（Google Cloud で Safe Browsing API を有効化） | ダッシュボードの「外部サービス」 | 転送時に「安全性を確認できませんでした」と表示し、利用者が判断して移動 |
 | スパム対策（未ログインの発行） | Google Cloud の reCAPTCHA キー（ウェブサイト用・スコアベース）の キー ID、プロジェクト ID、API キー（reCAPTCHA Enterprise API を有効にし、API キーの使える API をそれに制限） | ダッシュボードの「外部サービス」（保存時に Google で使えるか確認） | 検証しない（レート制限と月間上限のみ） |
 | アクセス元の国 | 不要（DB-IP の無料データベースを自動で取得し、毎月更新） | 設定不要。「外部サービス」で状態の確認と今すぐ更新ができる | 取得できるまで国を記録しない（他の項目は記録する） |
@@ -131,13 +131,13 @@ cron だけで動かしたい場合は `.env` に `SHORTENER_WEB_CRON=false` を
 
 - キー類は APP_KEY で暗号化してデータベースに保存します（reCAPTCHA のキー ID とプロジェクト ID は公開してよい値のため平文）。
 - reCAPTCHA は Google が推奨する方式（ブラウザで `enterprise.js` のトークンを取得し、サーバーから評価を作成）で判定します。Google Cloud のライブラリや認証ファイルは不要で、API キーだけで動きます。評価は月 10,000 回まで無料です。
-- 国の判定には [DB-IP](https://db-ip.com) の IP to Country Lite（CC BY 4.0・登録不要）を使います。セットアップ後の最初の定期処理で `storage/app/private/geoip/` に取得し（約 8MB）、以後は新しい月の版が出たら自動で差し替えます。利用条件に従い、国の統計には「IP Geolocation by DB-IP」のリンクを表示します。
+- 国の判定には [DB-IP](https://db-ip.com) の IP to Country Lite（CC BY 4.0）を使います。セットアップ後の最初の定期処理で `storage/app/private/geoip/` に取得し（約 8MB）、以後は新しい月の版が出たら自動で差し替えます。利用条件に従い、国の統計には「IP Geolocation by DB-IP」のリンクを表示します。
 - MaxMind GeoLite2 Country（`GeoLite2-Country.mmdb`）を `storage/app/private/geoip/` に置くと、そちらを優先して使います（自動取得は止まります）。自動取得を止めたい場合は `.env` に `SHORTENER_GEOIP_AUTO_UPDATE=false` を設定します。
 - 訪問者の IP は外部に送らず、保存もしません（データベースはサーバー内で参照します）。
 
 ## 自動アップデート（requirements.md 7 章）
 
-1日1回（日本時間 4:00 以降、上記「[定期処理](#定期処理cron-の登録は不要)」の仕組みで）、次の順に処理します。
+1日1回（日本時間 4:00 以降、上記「[定期処理](#定期処理)」の仕組みで）、次の順に処理します。
 
 1. GitHub Releases（既定の更新元は `choko1229/URL-Shortener`）の最新リリース（`vYY.MM.patch` 形式のタグ）を確認する。現在より新しくなければ何もしない
 2. バックアップを取る（`storage/app/private/backups/`、直近 3 世代を保持）
@@ -164,13 +164,13 @@ PHP（CLI）はサーバー上の一般的な場所から自動で探します�
 
 | メソッド | パス | 内容 |
 |---|---|---|
-| `POST` | `https://api.chok.ooo/v1/links` | 発行。`url`（必須）、`slug`、`expires_at`（ISO 8601。タイムゾーン省略時は日本時間）、`password` |
-| `GET` | `https://api.chok.ooo/v1/links` | 自分が発行した短縮URLの一覧（50件ずつ、`?page=2`） |
-| `GET` | `https://api.chok.ooo/v1/links/{コード}` | 詳細（クリック数を含む） |
-| `DELETE` | `https://api.chok.ooo/v1/links/{コード}` | 削除（論理削除） |
+| `POST` | `https://api.example.com/v1/links` | 発行。`url`（必須）、`slug`、`expires_at`（ISO 8601。タイムゾーン省略時は日本時間）、`password` |
+| `GET` | `https://api.example.com/v1/links` | 自分が発行した短縮URLの一覧（50件ずつ、`?page=2`） |
+| `GET` | `https://api.example.com/v1/links/{コード}` | 詳細（クリック数を含む） |
+| `DELETE` | `https://api.example.com/v1/links/{コード}` | 削除（論理削除） |
 
 ```bash
-curl -X POST https://api.chok.ooo/v1/links -H "Authorization: Bearer chok_xxxxxxxx" -H "Content-Type: application/json" -d "{\"url\": \"https://booth.pm/ja/items/1\"}"
+curl -X POST https://api.example.com/v1/links -H "Authorization: Bearer usk_xxxxxxxx" -H "Content-Type: application/json" -d "{\"url\": \"https://booth.pm/ja/items/1\"}"
 ```
 
 レスポンス例（201）:
@@ -179,7 +179,7 @@ curl -X POST https://api.chok.ooo/v1/links -H "Authorization: Bearer chok_xxxxxx
 {
   "data": {
     "code": "aB3xQ9k",
-    "short_url": "https://chok.ooo/aB3xQ9k",
+    "short_url": "https://example.com/aB3xQ9k",
     "original_url": "https://booth.pm/ja/items/1",
     "custom_slug": false,
     "expires_at": null,
@@ -317,12 +317,12 @@ app/
 ├── Enums/                  # 状態・種別（UserRole, SlugType, LinkStatus, IconName など）
 ├── Http/
 │   ├── Controllers/
-│   │   ├── Main/           # chok.ooo（トップ・削除用トークンでの削除・利用規約・プライバシーポリシー・お問い合わせ）
+│   │   ├── Main/           # メインドメイン（トップ・削除用トークンでの削除・利用規約・プライバシーポリシー・お問い合わせ）
 │   │   ├── Auth/           # Discord ログイン・初回のログイン設定
-│   │   ├── Dashboard/      # dash.chok.ooo（ダッシュボード・リンク詳細・設定）
+│   │   ├── Dashboard/      # dash.example.com（ダッシュボード・リンク詳細・設定）
 │   │   ├── Admin/          # 管理者機能（全URL・ユーザー・予約語・APIキー・サイト設定・お問い合わせ・外部サービス・アップデート）
-│   │   ├── Api/V1/         # api.chok.ooo
-│   │   ├── Redirect/       # chok.ooo/{コード}（中間ページ・パスワード）と redirect.chok.ooo
+│   │   ├── Api/V1/         # api.example.com
+│   │   ├── Redirect/       # /{コード}（中間ページ・パスワード）と redirect サブドメイン
 │   │   ├── Install/        # セットアップ画面
 │   │   └── Preview/        # local 専用プレビュー
 │   ├── Middleware/         # セキュリティヘッダー、セットアップ画面への誘導、API キー認証、アクセス時の定期処理
@@ -345,8 +345,8 @@ app/
 ├── Support/                # 設定値・外部サービスのキーの読み出し、短縮URLの組み立て、ナビゲーション
 └── ViewModels/             # Blade に渡す readonly なデータ
 routes/
-├── web.php                 # chok.ooo / dash.chok.ooo / redirect.chok.ooo、セットアップ画面
-├── api.php                 # api.chok.ooo、定期処理の起動口（/_cron）
+├── web.php                 # メイン / ダッシュボード / リダイレクト確認、セットアップ画面
+├── api.php                 # api.example.com、定期処理の起動口（/_cron）
 ├── console.php             # cron を登録した場合の定期実行
 └── preview.php             # local 専用プレビュー
 resources/templates/legal/  # 利用規約・プライバシーポリシーのひな形（Markdown）
@@ -400,8 +400,8 @@ requirements.md に記載が無い、または食い違っていた点は次の�
 | 「設定ファイルが外部から見えないこと」が **NG** | `.env` などが外から読める状態。上と同じく `.htaccess` の設定か公開フォルダを見直す（解決するまで先へ進めない） |
 | 同じ項目が **要確認** | サーバーが自分自身へアクセスできない環境。表示されたリンクを開き、ファイルの中身が表示されないことを確認してチェックを入れる |
 | 「ページの有効期限が切れました」（419） | 最初にアクセスしたときと違うスキーム（http / https）で開いている。最初と同じ URL で開き直す |
-| 「Discord ログインが設定されていません」 | 保存済みの Client ID / Secret を読み出せない（`.env` の APP_KEY を変更した等）。APP_KEY を元に戻す。管理者がいない状態なら `dash.chok.ooo/login` で設定画面が開く |
-| Discord で「Invalid OAuth2 redirect_uri」 | Discord Developer Portal の Redirects に `https://dash.chok.ooo/login/callback` を登録する（設定画面・「外部サービス」に表示される URL をコピー） |
+| 「Discord ログインが設定されていません」 | 保存済みの Client ID / Secret を読み出せない（`.env` の APP_KEY を変更した等）。APP_KEY を元に戻す。管理者がいない状態なら `dash.example.com/login` で設定画面が開く |
+| Discord で「Invalid OAuth2 redirect_uri」 | Discord Developer Portal の Redirects に `https://dash.example.com/login/callback` を登録する（設定画面・「外部サービス」に表示される URL をコピー） |
 | セットアップで「サブドメインの向き先」が **注意** | サブドメインの公開フォルダが未設定か、DNS・SSL がまだ反映されていない。後から設定しても構わない |
 | 自動アップデートが動かない | 「アップデート」画面の「前回の定期処理」、トークン・有効化を確認する。実行履歴にエラー内容が残る。サーバーが自分自身へ接続できない環境（PHP-FPM 以外）では、cron を登録する |
 

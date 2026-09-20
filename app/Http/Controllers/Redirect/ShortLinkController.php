@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response as HttpStatus;
 
 /**
- * chok.ooo/{code} へのアクセス受付（requirements.md 3: 手順 1〜4）。
+ * 短縮URL（/{code}）へのアクセス受付（requirements.md 3: 手順 1〜4）。
  * 中間ページを返し、JavaScript で redirect サブドメインへ自動 POST させる。
  */
 final class ShortLinkController extends Controller

@@ -8,6 +8,7 @@
 #   例) bash scripts/build-release.sh v26.9.0
 #
 # 環境変数:
+#   PACKAGE_NAME  zip とフォルダの名前（既定: url-shortener）
 #   PHP_BIN       PHP の実行ファイル（既定: php）
 #   COMPOSER_BIN  Composer の実行コマンド（既定: composer。例: "php /path/to/composer.phar"）
 #
@@ -20,7 +21,7 @@ PHP_BIN="${PHP_BIN:-php}"
 COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 
 WORK_DIR="$ROOT/build/release"
-PACKAGE_NAME="chok-ooo"
+PACKAGE_NAME="${PACKAGE_NAME:-url-shortener}"
 STAGE_DIR="$WORK_DIR/$PACKAGE_NAME"
 OUTPUT="$WORK_DIR/$PACKAGE_NAME-$VERSION.zip"
 

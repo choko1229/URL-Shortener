@@ -220,18 +220,18 @@ final class AutoUpdateTest extends TestCase
     {
         $package = $this->root.'/package.zip';
         $this->makeZip($package, [
-            'chok-ooo/VERSION' => "{$tag}\n",
-            'chok-ooo/artisan' => 'new artisan',
-            'chok-ooo/app/New.php' => '<?php // new',
-            'chok-ooo/vendor/autoload.php' => '<?php // new vendor',
-            'chok-ooo/public/index.php' => '<?php // new public',
+            'url-shortener/VERSION' => "{$tag}\n",
+            'url-shortener/artisan' => 'new artisan',
+            'url-shortener/app/New.php' => '<?php // new',
+            'url-shortener/vendor/autoload.php' => '<?php // new vendor',
+            'url-shortener/public/index.php' => '<?php // new public',
         ]);
 
         Http::fake([
             'api.github.com/repos/*/releases/latest' => Http::response([
                 'tag_name' => $tag,
                 'html_url' => "https://github.com/choko1229/URL-Shortener/releases/tag/{$tag}",
-                'assets' => [['name' => "chok-ooo-{$tag}.zip", 'url' => 'https://api.github.com/repos/choko1229/URL-Shortener/releases/assets/1']],
+                'assets' => [['name' => "url-shortener-{$tag}.zip", 'url' => 'https://api.github.com/repos/choko1229/URL-Shortener/releases/assets/1']],
             ]),
             'api.github.com/repos/*/releases/assets/*' => Http::response((string) file_get_contents($package), 200, ['Content-Type' => 'application/octet-stream']),
             'discord.com/api/webhooks/*' => Http::response(null, 204),

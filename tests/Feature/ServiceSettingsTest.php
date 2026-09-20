@@ -24,7 +24,7 @@ final class ServiceSettingsTest extends TestCase
 
     private const RECAPTCHA_INPUT = [
         'recaptcha_site_key' => '6Lc-site-key-abcdefghijklmn',
-        'recaptcha_project_id' => 'chok-ooo-test',
+        'recaptcha_project_id' => 'url-shortener-test',
         'recaptcha_api_key' => 'AIzaSy-recaptcha-api-key_0123',
     ];
 
@@ -126,17 +126,17 @@ final class ServiceSettingsTest extends TestCase
         $this->assertTrue(AppSetting::query()->where('key', AppSetting::SAFE_BROWSING_API_KEY)->value('is_encrypted'));
         $this->assertSame('6Lc-site-key-abcdefghijklmn', AppSetting::valueFor(AppSetting::RECAPTCHA_SITE_KEY));
         $this->assertFalse(AppSetting::query()->where('key', AppSetting::RECAPTCHA_SITE_KEY)->value('is_encrypted'));
-        $this->assertSame('chok-ooo-test', AppSetting::valueFor(AppSetting::RECAPTCHA_PROJECT_ID));
+        $this->assertSame('url-shortener-test', AppSetting::valueFor(AppSetting::RECAPTCHA_PROJECT_ID));
         $this->assertSame('AIzaSy-recaptcha-api-key_0123', AppSetting::valueFor(AppSetting::RECAPTCHA_API_KEY));
         $this->assertTrue(AppSetting::query()->where('key', AppSetting::RECAPTCHA_API_KEY)->value('is_encrypted'));
 
         // 保存前に、入力されたプロジェクトと API キーで評価を作成できるか確かめている
-        Http::assertSent(static fn (Request $request): bool => str_contains($request->url(), '/v1/projects/chok-ooo-test/assessments')
+        Http::assertSent(static fn (Request $request): bool => str_contains($request->url(), '/v1/projects/url-shortener-test/assessments')
             && $request->hasHeader('X-Goog-Api-Key', 'AIzaSy-recaptcha-api-key_0123')
             && $request['event']['siteKey'] === '6Lc-site-key-abcdefghijklmn');
 
         $this->actingAs($admin)->get($this->dashboardUrl('/admin/services'))
-            ->assertSee('value="chok-ooo-test"', false)
+            ->assertSee('value="url-shortener-test"', false)
             ->assertDontSee('AIzaSy-recaptcha-api-key_0123');
 
         $this->actingAs($admin)->put($this->dashboardUrl('/admin/services'), [
@@ -200,7 +200,7 @@ final class ServiceSettingsTest extends TestCase
             ...self::RECAPTCHA_INPUT,
         ])->assertSessionHasNoErrors();
 
-        $this->assertSame('chok-ooo-test', AppSetting::valueFor(AppSetting::RECAPTCHA_PROJECT_ID));
+        $this->assertSame('url-shortener-test', AppSetting::valueFor(AppSetting::RECAPTCHA_PROJECT_ID));
     }
 
     public function test_members_cannot_update_service_keys(): void

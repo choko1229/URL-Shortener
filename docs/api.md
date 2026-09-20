@@ -26,7 +26,7 @@ nav_order: 6
 
 ```bash
 curl -X POST https://api.example.com/v1/links \
-  -H "Authorization: Bearer chok_xxxxxxxx" \
+  -H "Authorization: Bearer usk_xxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.org/very/long/path"}'
 ```

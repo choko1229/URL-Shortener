@@ -18,8 +18,8 @@ final class EnvironmentFileTest extends TestCase
     {
         parent::setUp();
 
-        $this->path = sys_get_temp_dir().'/chok-ooo-env-'.bin2hex(random_bytes(4));
-        file_put_contents($this->path, "APP_NAME=chok.ooo\n# DB_HOST=commented\nDB_HOST=127.0.0.1\nVITE_APP_NAME=\"\${APP_NAME}\"\n");
+        $this->path = sys_get_temp_dir().'/url-shortener-env-'.bin2hex(random_bytes(4));
+        file_put_contents($this->path, "APP_NAME=URL-Shortener\n# DB_HOST=commented\nDB_HOST=127.0.0.1\nVITE_APP_NAME=\"\${APP_NAME}\"\n");
     }
 
     protected function tearDown(): void
@@ -45,7 +45,7 @@ final class EnvironmentFileTest extends TestCase
         $this->assertSame('3306', $values['DB_PORT']);
         $this->assertSame('false', $values['APP_DEBUG']);
         $this->assertSame('null', $values['SESSION_DOMAIN']);
-        $this->assertSame('chok.ooo', $values['VITE_APP_NAME']);
+        $this->assertSame('URL-Shortener', $values['VITE_APP_NAME']);
         $this->assertStringContainsString('# DB_HOST=commented', $contents);
         $this->assertSame(1, substr_count($contents, "\nDB_HOST="));
     }

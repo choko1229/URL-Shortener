@@ -34,7 +34,7 @@ use Illuminate\Support\Facades\Route;
 | api サブドメインのルートは routes/api.php。
 */
 
-// 画面確認用プレビュー（local 環境のみ）。chok.ooo/{code} より先に登録する
+// 画面確認用プレビュー（local 環境のみ）。/{code} より先に登録する
 if (app()->environment('local')) {
     require __DIR__.'/preview.php';
 }
@@ -49,7 +49,7 @@ Route::prefix('install')
         Route::get('/ping', 'ping')->name('ping');
     });
 
-// chok.ooo: トップページ・発行フォーム・短縮URLへのアクセス受付
+// メインドメイン: トップページ・発行フォーム・短縮URLへのアクセス受付
 Route::domain(config('shortener.domains.main'))
     ->name('main.')
     ->group(static function (): void {
@@ -87,7 +87,7 @@ Route::domain(config('shortener.domains.main'))
             ->name('short-link.unlock');
     });
 
-// dash.chok.ooo: Discord ログイン（ログイン状態を使うダッシュボードと同じドメインで処理する）
+// ダッシュボードのドメイン: Discord ログイン（ログイン状態を使う画面と同じドメインで処理する）
 Route::domain(config('shortener.domains.dashboard'))
     ->name('auth.')
     ->middleware('guest')
@@ -100,7 +100,7 @@ Route::domain(config('shortener.domains.dashboard'))
         Route::post('/login/setup', [DiscordSetupController::class, 'store'])->middleware('throttle:10,1')->name('setup.store');
     });
 
-// dash.chok.ooo: ダッシュボード（ログイン必須）
+// ダッシュボードのドメイン: ダッシュボード（ログイン必須）
 Route::domain(config('shortener.domains.dashboard'))
     ->name('dashboard.')
     ->middleware('auth')
@@ -168,7 +168,7 @@ Route::domain(config('shortener.domains.dashboard'))
             });
     });
 
-// redirect.chok.ooo: 転送先の表示と悪意URLチェック（中間ページからの暗号化チケットで認証する）
+// リダイレクト確認のドメイン: 転送先の表示と悪意URLチェック（中間ページからの暗号化チケットで認証する）
 Route::domain(config('shortener.domains.redirect'))
     ->name('redirect.')
     ->group(static function (): void {

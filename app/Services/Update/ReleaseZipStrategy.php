@@ -12,8 +12,6 @@ use Illuminate\Support\Facades\File;
  */
 final class ReleaseZipStrategy implements UpdateStrategy
 {
-    private const PACKAGE_ROOT = 'chok-ooo';
-
     public function __construct(
         private readonly string $basePath,
         private readonly string $workPath,
@@ -42,8 +40,9 @@ final class ReleaseZipStrategy implements UpdateStrategy
 
         try {
             $this->github->downloadAsset($release->packageAssetUrl, $token, $zipPath);
-            $this->code->extract($zipPath, $work.DIRECTORY_SEPARATOR.'extracted');
-            $this->code->install($work.DIRECTORY_SEPARATOR.'extracted'.DIRECTORY_SEPARATOR.self::PACKAGE_ROOT, $this->basePath, $work.DIRECTORY_SEPARATOR.'previous');
+            $extracted = $work.DIRECTORY_SEPARATOR.'extracted';
+            $this->code->extract($zipPath, $extracted);
+            $this->code->install(self::packageRoot($extracted), $this->basePath, $work.DIRECTORY_SEPARATOR.'previous');
         } finally {
             File::deleteDirectory($work);
         }
@@ -59,6 +58,27 @@ final class ReleaseZipStrategy implements UpdateStrategy
         } finally {
             File::deleteDirectory($work);
         }
+    }
+
+    /**
+     * zip の中身が入っているフォルダ。配布物のフォルダ名を将来変えても動くよう、中を見て決める
+     *
+     * @throws UpdateException
+     */
+    private static function packageRoot(string $extracted): string
+    {
+        // 直下に artisan があればそのまま、無ければ唯一のフォルダの中を使う
+        if (is_file($extracted.DIRECTORY_SEPARATOR.'artisan')) {
+            return $extracted;
+        }
+
+        $directories = File::directories($extracted);
+
+        if (count($directories) !== 1 || ! is_file($directories[0].DIRECTORY_SEPARATOR.'artisan')) {
+            throw new UpdateException('ダウンロードした zip の中身が想定と異なります。');
+        }
+
+        return $directories[0];
     }
 
     private function freshWorkDirectory(string $name): string

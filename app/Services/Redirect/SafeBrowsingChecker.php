@@ -49,7 +49,7 @@ final class SafeBrowsingChecker
                 ->acceptJson()
                 ->timeout(self::TIMEOUT_SECONDS)
                 ->post(self::ENDPOINT, [
-                    'client' => ['clientId' => 'chok-ooo', 'clientVersion' => '1.0'],
+                    'client' => ['clientId' => 'url-shortener', 'clientVersion' => '1.0'],
                     'threatInfo' => [
                         'threatTypes' => self::THREAT_TYPES,
                         'platformTypes' => ['ANY_PLATFORM'],

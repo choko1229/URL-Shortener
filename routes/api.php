@@ -9,7 +9,7 @@ use App\Http\Middleware\AuthenticateApiKey;
 use Illuminate\Support\Facades\Route;
 
 /*
-| api.chok.ooo: 管理者専用 API（requirements.md 5）。
+| api サブドメイン: 管理者専用 API（requirements.md 5）。
 | API キーで認証し、レート制限は設けない。セッション・CSRF は使わない（api ミドルウェアグループ）。
 */
 

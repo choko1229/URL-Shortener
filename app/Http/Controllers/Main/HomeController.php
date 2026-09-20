@@ -17,7 +17,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
-/** chok.ooo トップページ（短縮URL発行フォーム） */
+/** トップページ（短縮URL発行フォーム） */
 final class HomeController extends Controller
 {
     public function __invoke(Request $request, ShortenerSettings $settings, ShortUrlBuilder $urls, RecaptchaVerifier $recaptcha): View

@@ -34,7 +34,7 @@ final class HealthChecker
 
                 try {
                     $issued = $this->issuer->issue(
-                        new ShortUrlDraft('https://example.com/chok-ooo-health-check', null, ExpiryOption::OneDay, null, null),
+                        new ShortUrlDraft('https://example.com/url-shortener-health-check', null, ExpiryOption::OneDay, null, null),
                         null,
                         '127.0.0.1',
                         enforceLimits: false,
