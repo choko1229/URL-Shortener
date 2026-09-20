@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api;
 
-use App\Rules\NotOwnDomain;
+use App\Services\ShortUrl\LinkRules;
 use App\Services\ShortUrl\ShortUrlDraft;
 use App\Support\ShortenerSettings;
 use Carbon\CarbonImmutable;
@@ -21,25 +21,14 @@ final class StoreLinkRequest extends FormRequest
     /** @return array<string, list<mixed>> */
     public function rules(): array
     {
-        $settings = $this->container->make(ShortenerSettings::class);
-
-        return [
-            'url' => ['required', 'string', 'max:2048', 'url:http,https', new NotOwnDomain],
-            'slug' => ['nullable', 'string', 'min:'.$settings->customSlugMinLength(), 'max:'.$settings->customSlugMaxLength(), 'regex:/\A[A-Za-z0-9_-]+\z/'],
-            'expires_at' => ['nullable', 'date', 'after:now'],
-            'password' => ['nullable', 'string', 'min:4', 'max:72'],
-        ];
+        return LinkRules::basic($this->container->make(ShortenerSettings::class));
     }
 
     /** @return array<string, string> */
     public function messages(): array
     {
-        return [
-            'url.required' => 'url を指定してください。',
-            'url.url' => 'url は http:// または https:// から始まる URL を指定してください。',
-            'slug.regex' => 'slug には半角英数字・ハイフン・アンダースコアのみ使えます。',
+        return LinkRules::messages() + [
             'expires_at.date' => 'expires_at は ISO 8601 形式の日時で指定してください。',
-            'expires_at.after' => 'expires_at には現在より後の日時を指定してください。',
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Enums\QrFormat;
 use App\Http\Controllers\Admin\ApiKeyController;
 use App\Http\Controllers\Admin\InquiryController;
 use App\Http\Controllers\Admin\LinkController as AdminLinkController;
+use App\Http\Controllers\Admin\LinkImportController;
 use App\Http\Controllers\Admin\ReservedWordController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SiteController;
@@ -135,6 +136,8 @@ Route::domain(config('shortener.domains.dashboard'))
             ->middleware('can:admin')
             ->group(static function (): void {
                 Route::get('/links', [AdminLinkController::class, 'index'])->name('links');
+                Route::get('/links/import/template', [LinkImportController::class, 'template'])->name('links.import.template');
+                Route::post('/links/import', [LinkImportController::class, 'store'])->middleware('throttle:10,1')->name('links.import');
 
                 Route::get('/users', [UserController::class, 'index'])->name('users');
                 Route::patch('/users/{user}/role', [UserController::class, 'updateRole'])->whereNumber('user')->name('users.role');
