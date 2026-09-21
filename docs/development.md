@@ -93,10 +93,10 @@ vendor/bin/pint
 
 | 種類 | 置き場所 | 例 |
 |---|---|---|
-| 環境ごとに異なる値 | `.env` | `APP_KEY`、データベース接続情報、サブドメイン |
+| 環境ごとに異なる値 | `.env` | `APP_KEY`、データベース接続情報、サブドメイン、更新元のリポジトリ（`SHORTENER_UPDATE_REPOSITORY`） |
 | 業務ルールの初期値 | `config/shortener.php` | 月間発行上限、レート制限、有効期限の上限 |
-| 管理画面で変更する値 | `app_settings` テーブル（機密値は暗号化） | サイト名、外部サービスのキー |
-| 設置した人が書く文章 | `site_pages` テーブル（Markdown） | 利用規約、プライバシーポリシー |
+| 管理画面で変更する値 | `app_settings` テーブル（機密値は暗号化） | サイト名、見た目（配色・ダークモード・書体・アイコン）、公開範囲（限定モード）、ページのURL、外部サービスのキー |
+| 設置した人が書く文章 | `site_pages` テーブル（Markdown） | 利用規約、プライバシーポリシー、このドメインについて（限定モード） |
 | 予約語 | `reserved_words` テーブル | 管理画面で追加・削除 |
 
 業務ルールの値は `.env` に書かず、`App\Support\ShortenerSettings` 経由で読み出します。
@@ -106,6 +106,7 @@ vendor/bin/pint
 ```
 app/
 ├── Console/Commands/       # app:install / app:update / app:health-check / app:periodic-tasks
+├── Http/Middleware/        # セットアップ画面への誘導、テーブルの自動更新、限定モード、API キー認証、定期処理
 ├── Http/Controllers/
 │   ├── Main/               # トップ・削除・固定ページ・お問い合わせ
 │   ├── Auth/               # Discord ログイン・初回のログイン設定
@@ -114,15 +115,16 @@ app/
 │   ├── Api/V1/             # API
 │   ├── Redirect/           # 中間ページと転送確認
 │   └── Install/            # セットアップ画面
-├── Installer/              # Web インストーラ
+├── Installer/              # Web インストーラ、テーブルの自動更新（SchemaUpdater）
 ├── Services/
-│   ├── Auth/ Account/ ShortUrl/ Redirect/ Security/ Dashboard/
+│   ├── ShortUrl/           # 発行・空き判定・CSV 取り込み・管理者による編集・QRコード
+│   ├── Auth/ Account/ Redirect/ Security/ Dashboard/
 │   ├── GeoIp/              # 国判定データベースの自動取得
 │   ├── Settings/ Site/     # 外部サービスのキー、固定ページのひな形
 │   ├── Tasks/              # 定期処理（cron 不要）
 │   └── Update/             # 自動アップデート
-└── Support/                # 設定値・サイト名・URL 組み立て
-resources/templates/legal/  # 利用規約・プライバシーポリシーのひな形（Markdown）
+└── Support/                # 設定値・サイト名・見た目（Theme / ColorPalette / SiteIcon）・公開範囲（AccessPolicy）・ページのURL（SitePaths）
+resources/templates/legal/  # 利用規約・プライバシーポリシー・このドメインについて のひな形（Markdown）
 docs/                       # このドキュメント（GitHub Pages）
 scripts/                    # 配布用 zip の作成
 ```
@@ -137,7 +139,7 @@ git tag v26.9.0
 git push origin v26.9.0
 ```
 
-タグを push すると GitHub Actions（`.github/workflows/release.yml`）が、テストの実行、配布用 zip の作成、GitHub Releases への添付までを行います。設置済みのサーバーは、翌日の定期処理でこの zip に更新されます。
+タグを push すると GitHub Actions（`.github/workflows/release.yml`）が、テストの実行、配布用 zip（`url-shortener-vYY.MM.patch.zip`）の作成、GitHub Releases への添付までを行います。設置済みのサーバーは、翌日の定期処理でこの zip に更新されます（管理画面の「今すぐ更新する」ですぐにも更新できます）。テーブルの変更（マイグレーション）は、更新後の最初のアクセスで自動的に適用されます。
 
 Actions タブから「Release package」を手動実行すると、タグを付けずにテストと zip の作成だけを試せます。手元で作る場合は `bash scripts/build-release.sh v26.9.0` です。
 
@@ -154,4 +156,6 @@ nav_order: 9
 ---
 ```
 
-フォークした場合は、リポジトリの Settings → Pages → Build and deployment → Source で「GitHub Actions」を選ぶと、同じ手順で公開できます。
+見た目はアプリ本体に合わせて、`docs/_includes/head_custom.html` の CSS（配色・書体・角丸）で調整しています。ロゴは `docs/_includes/title.html`、ファビコンは `docs/_includes/favicon.html` です。アプリのデザイントークン（`resources/css/app.css`）を変えたときは、こちらも合わせてください。
+
+フォークした場合は、リポジトリの Settings → Pages → Build and deployment → Source で「GitHub Actions」を選ぶと、同じ手順で公開できます。管理画面（「APIキー」タブ）からのドキュメントへのリンク先は、`.env` の `SHORTENER_DOCS_URL` で変えられます。

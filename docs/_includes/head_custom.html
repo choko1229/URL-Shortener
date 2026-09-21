@@ -1,7 +1,454 @@
 {%- comment -%}
-サイドバー下部に出るテーマの宣伝文（This site uses Just the Docs...）を隠す。
+ドキュメントの見た目を、アプリ本体（resources/css/app.css のデザイントークン）に合わせる。
+テーマの SCSS を上書きせず、ここで CSS を足している（remote_theme では独自の SCSS が読まれないため）。
+サイドバー下部に出るテーマの宣伝文（This site uses Just the Docs...）も隠す。
 ライセンス表記は本文下のフッター（_includes/footer_custom.html）に出している。
 {%- endcomment -%}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<meta name="theme-color" content="#2ec5e0">
 <style>
-  .site-footer { display: none; }
+  :root {
+    --us-primary: #2ec5e0;
+    --us-primary-dark: #0891b2;
+    --us-primary-darker: #067a98;
+    --us-primary-tint: #e3f7fc;
+    --us-primary-tint-soft: #f4fbff;
+    --us-surface: #ffffff;
+    --us-border: #e7f5fa;
+    --us-border-strong: #dff3fb;
+    --us-border-input: #d7eff7;
+    --us-text-primary: #0f2a3d;
+    --us-text-secondary: #5e7a87;
+    --us-text-muted: #94a9b3;
+    --us-table-header: #f7fcfe;
+    --us-table-divider: #eef7fb;
+    --us-accent-warm: #ffd166;
+    --us-warning: #d98c00;
+    --us-danger: #d64545;
+    --us-radius-card: 18px;
+    --us-radius-control: 12px;
+    --us-radius-button: 14px;
+    --us-shadow-card: 0 8px 24px rgba(15, 42, 61, 0.06);
+    --us-font-sans: 'Noto Sans JP', ui-sans-serif, system-ui, sans-serif;
+    --us-font-rounded: 'M PLUS Rounded 1c', 'Noto Sans JP', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  /* ---- 全体 ---- */
+  body {
+    font-family: var(--us-font-sans);
+    color: var(--us-text-primary);
+    background-color: var(--us-primary-tint-soft);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .main-content {
+    line-height: 1.85;
+  }
+
+  .main-content h1,
+  .main-content h2,
+  .main-content h3,
+  .main-content h4,
+  .site-title,
+  .nav-list-link,
+  .btn,
+  .site-button,
+  .text-delta {
+    font-family: var(--us-font-rounded);
+  }
+
+  .main-content h1,
+  .main-content h2,
+  .main-content h3,
+  .main-content h4 {
+    color: var(--us-text-primary);
+    line-height: 1.5;
+  }
+
+  .main-content h1 {
+    font-size: 2rem !important;
+    font-weight: 800;
+  }
+
+  .main-content h2 {
+    margin-top: 2.25em;
+    padding-bottom: 0.4em;
+    font-size: 1.375rem !important;
+    font-weight: 800;
+    border-bottom: 2px solid var(--us-border-strong);
+  }
+
+  .main-content h3 {
+    margin-top: 1.75em;
+    font-size: 1.125rem !important;
+    font-weight: 700;
+  }
+
+  .main-content h4 {
+    font-size: 1rem !important;
+    font-weight: 700;
+  }
+
+  .main-content h1 + p {
+    color: var(--us-text-secondary);
+  }
+
+  a,
+  a:visited {
+    color: var(--us-primary-darker);
+  }
+
+  .main-content a:not(.btn):not(.anchor-heading) {
+    text-decoration: underline;
+    text-decoration-color: rgba(46, 197, 224, 0.55);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.2em;
+    background-image: none;
+  }
+
+  .main-content a:not(.btn):not(.anchor-heading):hover {
+    color: var(--us-primary-dark);
+    text-decoration-color: var(--us-primary-dark);
+  }
+
+  .anchor-heading svg {
+    color: var(--us-primary-dark);
+  }
+
+  :where(a, button, input, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--us-primary-dark);
+    outline-offset: 2px;
+  }
+
+  hr {
+    background-color: var(--us-border-strong);
+  }
+
+  /* ---- サイドバー ---- */
+  .side-bar {
+    background-color: var(--us-surface);
+    border-right: 1px solid var(--us-border);
+  }
+
+  .site-header {
+    border-bottom: 1px solid var(--us-border);
+  }
+
+  .site-title,
+  .site-title:visited {
+    color: var(--us-text-primary);
+    font-size: 1.25rem !important;
+    font-weight: 800;
+    background-image: none;
+  }
+
+  .site-title:hover {
+    background-image: none;
+    background-color: var(--us-primary-tint-soft);
+  }
+
+  .us-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+  }
+
+  .us-brand-mark {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    color: #fff;
+    background-color: var(--us-primary);
+    border-radius: 10px;
+  }
+
+  .us-brand-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .site-nav {
+    padding-top: 0.75rem;
+  }
+
+  .nav-list .nav-list-item {
+    font-size: 0.9375rem !important;
+  }
+
+  .nav-list .nav-list-item .nav-list-link,
+  .nav-list .nav-list-item .nav-list-link:visited {
+    margin: 2px 0.75rem;
+    padding-left: 1rem;
+    color: var(--us-text-secondary);
+    font-weight: 700;
+    border-radius: var(--us-radius-control);
+    background-image: none !important;
+  }
+
+  .nav-list .nav-list-item .nav-list-link:hover {
+    color: var(--us-primary-darker);
+    background-color: var(--us-primary-tint-soft);
+  }
+
+  .nav-list .nav-list-item .nav-list-link.active {
+    color: var(--us-primary-darker);
+    background-color: var(--us-primary-tint);
+  }
+
+  .site-button,
+  .site-button:visited {
+    color: var(--us-text-secondary);
+  }
+
+  .site-button:hover {
+    background-image: none;
+    background-color: var(--us-primary-tint-soft);
+  }
+
+  /* ---- 上部（検索・外部リンク） ---- */
+  .main-header,
+  .side-bar + .main .main-header {
+    background-color: var(--us-surface);
+    border-bottom: 1px solid var(--us-border);
+  }
+
+  .search-input-wrap {
+    background-color: transparent;
+  }
+
+  .search-input {
+    color: var(--us-text-primary);
+    font-family: var(--us-font-sans);
+  }
+
+  .search-input::placeholder {
+    color: var(--us-text-muted);
+  }
+
+  .search-label .search-icon {
+    color: var(--us-primary-dark);
+  }
+
+  .search-results {
+    border-radius: 0 0 var(--us-radius-card) var(--us-radius-card);
+    box-shadow: var(--us-shadow-card);
+  }
+
+  .search-result:hover,
+  .search-result.active {
+    background-color: var(--us-primary-tint-soft);
+  }
+
+  .search-result-doc-title,
+  .search-result-section {
+    color: var(--us-text-primary);
+  }
+
+  .search-result-highlight {
+    font-weight: 700;
+    background-color: var(--us-primary-tint);
+  }
+
+  .aux-nav .site-button {
+    font-weight: 700;
+    color: var(--us-primary-darker);
+  }
+
+  /* ---- 本文の面 ---- */
+  .main-content-wrap {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  @media (min-width: 50rem) {
+    .main-content-wrap {
+      margin: 1.5rem 2rem 0;
+      padding: 2.5rem 3rem;
+      background-color: var(--us-surface);
+      border: 1px solid var(--us-border);
+      border-radius: var(--us-radius-card);
+      box-shadow: var(--us-shadow-card);
+    }
+  }
+
+  /* ---- ボタン ---- */
+  .btn,
+  .btn:visited {
+    min-height: 48px;
+    padding: 0.625rem 1.5rem;
+    color: var(--us-text-primary);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.75;
+    background-color: var(--us-surface);
+    background-image: none;
+    border: 1.5px solid var(--us-primary);
+    border-radius: var(--us-radius-button);
+    box-shadow: none;
+  }
+
+  .btn:hover,
+  .btn:focus {
+    color: var(--us-text-primary);
+    background-color: var(--us-primary-tint);
+    background-image: none;
+    box-shadow: none;
+  }
+
+  .btn-primary,
+  .btn-primary:visited {
+    color: #fff;
+    background-color: var(--us-primary);
+    border-color: var(--us-primary);
+  }
+
+  .btn-primary:hover,
+  .btn-primary:focus {
+    color: #fff;
+    background-color: var(--us-primary-dark);
+    border-color: var(--us-primary-dark);
+  }
+
+  /* ---- 表 ---- */
+  .table-wrapper {
+    border: 1px solid var(--us-border);
+    border-radius: var(--us-radius-card);
+    box-shadow: none;
+  }
+
+  th,
+  td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--us-table-divider);
+    border-left: 0;
+    font-size: 0.875rem !important;
+    line-height: 1.75;
+  }
+
+  th {
+    text-align: left;
+    color: var(--us-text-secondary);
+    font-weight: 700;
+    background-color: var(--us-table-header);
+    border-bottom-color: var(--us-border-strong);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  /* ---- コード ---- */
+  code {
+    color: var(--us-text-primary);
+    font-size: 0.85em;
+  }
+
+  :not(pre, figure) > code {
+    padding: 0.15em 0.4em;
+    background-color: var(--us-primary-tint-soft);
+    border-color: var(--us-border-strong);
+    border-radius: 6px;
+  }
+
+  div.highlighter-rouge,
+  figure.highlight {
+    border: 1px solid var(--us-border);
+    border-radius: var(--us-radius-control);
+    background-color: var(--us-table-header);
+  }
+
+  div.highlighter-rouge div.highlight,
+  figure.highlight pre,
+  .highlight {
+    background-color: transparent;
+    border-radius: var(--us-radius-control);
+  }
+
+  div.highlighter-rouge > button,
+  figure.highlight > button {
+    background-color: var(--us-table-header);
+    border-color: var(--us-table-header);
+    border-radius: var(--us-radius-control);
+  }
+
+  /* ---- 目次・補足 ---- */
+  .text-delta {
+    color: var(--us-text-secondary);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  #markdown-toc {
+    padding: 1rem 1.25rem 1rem 2.5rem;
+    background-color: var(--us-primary-tint-soft);
+    border: 1px solid var(--us-border);
+    border-radius: var(--us-radius-card);
+  }
+
+  blockquote {
+    padding: 0.75rem 1rem;
+    color: var(--us-text-secondary);
+    background-color: var(--us-primary-tint-soft);
+    border-left: 4px solid var(--us-primary);
+    border-radius: 0 var(--us-radius-control) var(--us-radius-control) 0;
+  }
+
+  /* {: .note } / {: .warning } を付けた段落 */
+  .main-content .note,
+  .main-content .warning {
+    position: relative;
+    margin: 1.25rem 0;
+    padding: 0.875rem 1.125rem 0.875rem 1.25rem;
+    border-radius: var(--us-radius-control);
+  }
+
+  .main-content .note {
+    background-color: var(--us-primary-tint);
+    border-left: 4px solid var(--us-primary);
+  }
+
+  .main-content .warning {
+    background-color: #fff6df;
+    border-left: 4px solid var(--us-accent-warm);
+  }
+
+  .main-content .note::before,
+  .main-content .warning::before {
+    display: block;
+    margin-bottom: 0.125rem;
+    font-family: var(--us-font-rounded);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .main-content .note::before {
+    content: 'メモ';
+    color: var(--us-primary-darker);
+  }
+
+  .main-content .warning::before {
+    content: '注意';
+    color: #8a5a00;
+  }
+
+  /* ---- フッター ---- */
+  .site-footer {
+    display: none;
+  }
+
+  .main-content-wrap footer {
+    color: var(--us-text-secondary);
+  }
+
+  .main-content-wrap footer .text-grey-dk-000 {
+    color: var(--us-text-secondary) !important;
+  }
 </style>
