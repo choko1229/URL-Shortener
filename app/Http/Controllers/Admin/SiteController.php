@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\SiteAccessRequest;
 use App\Http\Requests\Admin\SiteIconRequest;
 use App\Http\Requests\Admin\SiteIdentityRequest;
 use App\Http\Requests\Admin\SitePageRequest;
+use App\Http\Requests\Admin\SitePathsRequest;
 use App\Http\Requests\Admin\SiteThemeRequest;
 use App\Models\SitePage;
 use App\Services\Site\LegalTemplates;
@@ -16,12 +17,14 @@ use App\Support\AccessPolicy;
 use App\Support\ShortenerSettings;
 use App\Support\SiteIcon;
 use App\Support\SiteIdentity;
+use App\Support\SitePaths;
 use App\Support\Theme;
 use App\ViewModels\ViewerData;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -30,7 +33,7 @@ use Illuminate\Support\Facades\Log;
  */
 final class SiteController extends Controller
 {
-    public function index(Request $request, SiteIdentity $site, Theme $theme, SiteIcon $icon, AccessPolicy $access, ShortenerSettings $settings): View
+    public function index(Request $request, SiteIdentity $site, Theme $theme, SiteIcon $icon, AccessPolicy $access, SitePaths $paths, ShortenerSettings $settings): View
     {
         return view('dashboard.admin.site', [
             'viewer' => ViewerData::fromUser($request->user()),
@@ -51,6 +54,7 @@ final class SiteController extends Controller
                 'outsider_action' => $access->outsiderAction()->value,
                 'redirect_url' => $access->redirectUrl(),
             ],
+            'pathValues' => $paths->all(),
             'pages' => SitePage::query()->whereIn('slug', array_keys(SitePage::AVAILABLE))->get()->keyBy('slug'),
             'timezone' => $settings->displayTimezone(),
         ]);
@@ -98,6 +102,20 @@ final class SiteController extends Controller
         return back()->with('notice', $access->isRestricted()
             ? '限定モードにしました。管理者と「ユーザー」タブで許可した人だけが使えます。'
             : 'すべての人が使えるようにしました。');
+    }
+
+    public function updatePaths(SitePathsRequest $request, SitePaths $paths): RedirectResponse
+    {
+        $paths->save($request->paths());
+
+        // ルートをキャッシュしている環境（php artisan route:cache）では、消さないと新しい URL が効かない
+        if (app()->routesAreCached()) {
+            Artisan::call('route:clear');
+        }
+
+        Log::notice('固定ページの URL を変更しました。', ['user_id' => $request->user()?->getAuthIdentifier(), 'paths' => $paths->all()]);
+
+        return back()->with('notice', 'ページの URL を保存しました。以前の URL は、管理者が短縮URLとして使えるようになります。');
     }
 
     public function updatePage(SitePageRequest $request, string $slug): RedirectResponse

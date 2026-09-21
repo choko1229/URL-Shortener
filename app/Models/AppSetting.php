@@ -66,6 +66,9 @@ class AppSetting extends Model
 
     public const SITE_ICON = 'site.icon';
 
+    // 固定ページの URL（ページ => パス）
+    public const SITE_PATHS = 'site.paths';
+
     // 限定モード（管理画面「サイト設定」で変更する）
     public const ACCESS_MODE = 'access.mode';
 

@@ -27,6 +27,7 @@ use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
 use App\Support\SiteIcon;
 use App\Support\SiteIdentity;
+use App\Support\SitePaths;
 use App\Support\Theme;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Console\Kernel;
@@ -48,6 +49,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(SiteIdentity::class);
         $this->app->scoped(Theme::class);
         $this->app->scoped(AccessPolicy::class);
+        // ルートの登録時に読むため、アプリの起動中は同じものを使う
+        $this->app->singleton(SitePaths::class);
         $this->app->scoped(
             SiteIcon::class,
             static fn (Application $app): SiteIcon => new SiteIcon($app->storagePath('app/private/branding')),

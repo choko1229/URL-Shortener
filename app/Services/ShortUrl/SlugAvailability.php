@@ -31,13 +31,33 @@ final class SlugAvailability
      */
     public function conflictsWithRoute(string $slug): bool
     {
-        $request = Request::create('http://'.config('shortener.domains.main').'/'.$slug, 'GET');
+        $route = $this->routeAt($slug);
+
+        return $route !== null && $route !== self::SHORT_LINK_ROUTE;
+    }
+
+    /** メインドメインで GET /{path} を開いたときに使われるルートの名前（名前の無いルートは空文字） */
+    public function routeAt(string $path): ?string
+    {
+        $request = Request::create('http://'.config('shortener.domains.main').'/'.$path, 'GET');
 
         try {
-            return $this->router->getRoutes()->match($request)->getName() !== self::SHORT_LINK_ROUTE;
+            return $this->router->getRoutes()->match($request)->getName() ?? '';
         } catch (HttpExceptionInterface) {
-            return false;
+            return null;
         }
+    }
+
+    /** 有効な（削除されていない）短縮URLがそのパスを使っているか。ランダムコードは大文字小文字を区別せずに届く */
+    public function isUsedByActiveLink(string $path): bool
+    {
+        return ShortUrl::query()
+            ->where(static function (Builder $query) use ($path): void {
+                $query->where('slug', $path)->orWhere(static function (Builder $query) use ($path): void {
+                    $query->where('slug_normalized', mb_strtolower($path))->where('slug_type', SlugType::Random->value);
+                });
+            })
+            ->exists();
     }
 
     public function isReserved(string $slug): bool

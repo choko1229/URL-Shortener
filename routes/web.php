@@ -29,6 +29,7 @@ use App\Http\Controllers\Redirect\ShortLinkController;
 use App\Http\Controllers\ShortUrlController;
 use App\Http\Controllers\SiteIconController;
 use App\Http\Middleware\RestrictToPermittedUsers;
+use App\Support\SitePaths;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -56,24 +57,27 @@ Route::prefix('install')
     });
 
 // メインドメイン: トップページ・発行フォーム・短縮URLへのアクセス受付
+// 固定ページの URL は管理画面で変えられる（「contact」などを短縮URLとして使えるようにするため）
 Route::domain(config('shortener.domains.main'))
     ->name('main.')
     ->group(static function (): void {
+        $paths = app(SitePaths::class);
+
         // 限定モードでは、許可されていない人に発行フォームの代わりにこのドメインの説明を出す
         Route::get('/', HomeController::class)->middleware(RestrictToPermittedUsers::class)->name('home');
         Route::post('/shorten', [ShortUrlController::class, 'store'])->middleware(RestrictToPermittedUsers::class)->name('short-urls.store');
 
-        Route::get('/terms', [LegalController::class, 'terms'])->name('terms');
-        Route::get('/privacy', [LegalController::class, 'privacy'])->name('privacy');
+        Route::get('/'.$paths->path('terms'), [LegalController::class, 'terms'])->name('terms');
+        Route::get('/'.$paths->path('privacy'), [LegalController::class, 'privacy'])->name('privacy');
 
-        Route::get('/contact', [ContactController::class, 'show'])->name('contact');
-        Route::post('/contact', [ContactController::class, 'store'])
+        Route::get('/'.$paths->path('contact'), [ContactController::class, 'show'])->name('contact');
+        Route::post('/'.$paths->path('contact'), [ContactController::class, 'store'])
             ->middleware('throttle:5,10')
             ->name('contact.store');
 
         // 削除用トークンによる削除（未ログインで発行したもの）
-        Route::get('/delete', [GuestDeletionController::class, 'show'])->name('delete');
-        Route::post('/delete', [GuestDeletionController::class, 'destroy'])
+        Route::get('/'.$paths->path('delete'), [GuestDeletionController::class, 'show'])->name('delete');
+        Route::post('/'.$paths->path('delete'), [GuestDeletionController::class, 'destroy'])
             ->middleware('throttle:10,1')
             ->name('delete.destroy');
 
@@ -84,7 +88,7 @@ Route::domain(config('shortener.domains.main'))
             ->middleware('throttle:30,1')
             ->name('short-link.qr');
 
-        // 固定のパスより後に登録する（固定パスと同じ語は予約語で発行できないようにしている）
+        // 固定のパスより後に登録する（固定のパスと同じスラッグは SlugAvailability が作れないようにしている）
         Route::get('/{code}', [ShortLinkController::class, 'show'])
             ->where('code', ShortLinkController::CODE_PATTERN)
             ->name('short-link.show');
@@ -162,6 +166,7 @@ Route::domain(config('shortener.domains.dashboard'))
                 Route::put('/site/theme', [SiteController::class, 'updateTheme'])->name('site.theme');
                 Route::post('/site/icon', [SiteController::class, 'updateIcon'])->name('site.icon');
                 Route::put('/site/access', [SiteController::class, 'updateAccess'])->name('site.access');
+                Route::put('/site/paths', [SiteController::class, 'updatePaths'])->name('site.paths');
                 Route::put('/site/pages/{slug}', [SiteController::class, 'updatePage'])->name('site.pages.update');
                 Route::post('/site/pages/{slug}/template', [SiteController::class, 'loadTemplate'])->name('site.pages.template');
                 Route::delete('/site/pages/{slug}', [SiteController::class, 'destroyPage'])->name('site.pages.destroy');

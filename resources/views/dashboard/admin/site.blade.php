@@ -6,6 +6,7 @@
     @var string $selectedIcon
     @var bool $hasUploadedIcon
     @var array{mode: string, outsider_action: string, redirect_url: string|null} $accessValues
+    @var array<string, string> $pathValues
     @var \Illuminate\Support\Collection<string, \App\Models\SitePage> $pages
     @var string $timezone
     @var \App\Support\SiteIdentity $site
@@ -249,6 +250,48 @@
 
             <p class="text-xs leading-relaxed text-text-secondary">
                 使える人は、管理者と「ユーザー」タブで「利用を許可」した人です。許可された人は <code class="rounded bg-primary-tint-soft px-1">{{ route('auth.login') }}</code> から直接ログインします（限定モードでは、ダッシュボードを開いてもログイン画面には案内しません）。
+            </p>
+
+            <x-button type="submit" size="sm">保存する</x-button>
+        </form>
+    </section>
+
+    <section aria-labelledby="paths-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
+        <h2 id="paths-heading" class="font-rounded text-[15px] font-bold">ページのURL</h2>
+        <p class="mt-1 text-[13px] leading-relaxed text-text-secondary">
+            「contact」などを短縮URLとして使いたいときは、ページの URL を別の語に変えます。変えたあとは、元の語を管理者が短縮URLとして作れます（一般のユーザーは予約語のため使えません）。
+        </p>
+
+        <form method="POST" action="{{ route('dashboard.admin.site.paths') }}" class="mt-4 max-w-2xl space-y-4">
+            @csrf
+            @method('PUT')
+
+            @foreach (\App\Support\SitePaths::PAGES as $page => $definition)
+                <div>
+                    <label for="path-{{ $page }}" class="block text-[13px] font-medium text-text-secondary">{{ $definition['label'] }}</label>
+                    <div class="mt-2 flex items-center gap-1.5">
+                        <span class="shrink-0 font-mono text-[13px] text-text-secondary">{{ config('shortener.domains.main') }}/</span>
+                        <input
+                            id="path-{{ $page }}"
+                            name="paths[{{ $page }}]"
+                            type="text"
+                            required
+                            maxlength="20"
+                            spellcheck="false"
+                            autocomplete="off"
+                            value="{{ old('paths.'.$page, $pathValues[$page]) }}"
+                            class="form-control max-w-xs font-mono"
+                            aria-describedby="path-{{ $page }}-hint{{ $errors->has('paths.'.$page) ? ' path-'.$page.'-error' : '' }}"
+                            @error('paths.'.$page) aria-invalid="true" @enderror
+                        >
+                    </div>
+                    <p id="path-{{ $page }}-hint" class="mt-1 text-xs text-text-secondary">既定は /{{ $definition['default'] }}</p>
+                    <x-field-error :name="'paths.'.$page" :id="'path-'.$page.'-error'" />
+                </div>
+            @endforeach
+
+            <p class="text-xs leading-relaxed text-text-secondary">
+                すでに短縮URLとして使われている語や、サイトのほかの機能で使っている語は指定できません。利用規約などの本文に書いた古い URL へのリンクは自動では変わらないため、必要なら書き直してください。
             </p>
 
             <x-button type="submit" size="sm">保存する</x-button>
