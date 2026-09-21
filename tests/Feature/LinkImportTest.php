@@ -11,6 +11,7 @@ use App\Models\ReservedWord;
 use App\Models\ShortUrl;
 use App\Models\User;
 use App\Services\ShortUrl\CsvImporter;
+use App\Services\ShortUrl\CsvImportError;
 use App\Services\ShortUrl\CsvImportResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -94,11 +95,45 @@ final class LinkImportTest extends TestCase
         $result = session(LinkImportController::RESULT_SESSION_KEY);
         $this->assertInstanceOf(CsvImportResult::class, $result);
         $this->assertSame(1, $result->imported);
-        $this->assertSame([3, 4, 5, 7], array_keys($result->errors));
-        $this->assertStringContainsString('url は http', $result->errors[3]);
-        $this->assertStringContainsString('すでに使われています', $result->errors[4]);
-        $this->assertStringContainsString('現在より後', $result->errors[5]);
-        $this->assertStringContainsString('slug には', $result->errors[7]);
+        $this->assertSame([3, 4, 5, 7], $result->failedLines());
+        // どの行の、どの列の、どの値が、なぜ取り込めないかを返す
+        $this->assertImportError($result, 3, 'url', 'not-a-url', 'http:// または https://');
+        $this->assertImportError($result, 4, 'slug', 'taken', 'すでに使われています');
+        $this->assertImportError($result, 5, 'expires_at', '2000-01-01 00:00', '過去の日時');
+        $this->assertImportError($result, 7, 'slug', 'a b', '半角英数字');
+    }
+
+    public function test_every_problem_in_a_row_is_shown_with_its_column_and_value(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $csv = 'url,slug,expires_at,password,preview_mode
+'
+            .'ftp://example.com/x,bad slug!,来月,abc,fancy
+';
+
+        $this->actingAs($admin)->from($this->dashboardUrl('/admin/links'))
+            ->post($this->dashboardUrl('/admin/links/import'), ['file' => $this->csvFile($csv)])
+            ->assertSessionHas('error');
+
+        $result = session(LinkImportController::RESULT_SESSION_KEY);
+        $this->assertSame([2], $result->failedLines());
+        $this->assertSame(['url', 'slug', 'expires_at', 'password', 'preview_mode'], array_map(static fn (CsvImportError $error): ?string => $error->column, $result->errorsOn(2)));
+
+        // 日本語の言語ファイルが無くても、英語の既定メッセージは出さない
+        foreach ($result->errors as $error) {
+            $this->assertDoesNotMatchRegularExpression('/\bThe\b|field/', $error->reason);
+        }
+
+        // 画面には 行・列・入力された値・理由 の表で出す
+        $this->actingAs($admin)->withSession([LinkImportController::RESULT_SESSION_KEY => $result])
+            ->get($this->dashboardUrl('/admin/links'))
+            ->assertOk()
+            ->assertSee('取り込めなかった行: 1行（2行目）')
+            ->assertSee('入力された値')
+            ->assertSee('bad slug!')
+            ->assertSee('ftp://example.com/x')
+            ->assertSee('expires_at を日時として読めません');
     }
 
     public function test_admin_can_use_reserved_words_but_not_the_own_domain(): void
@@ -114,7 +149,7 @@ final class LinkImportTest extends TestCase
         // 管理者は予約語も使える（requirements.md 4-2）が、自ドメインは短縮できない
         $this->assertTrue(ShortUrl::query()->where('slug', 'admin')->exists());
         $result = session(LinkImportController::RESULT_SESSION_KEY);
-        $this->assertStringContainsString('自身の URL は短縮できません', $result->errors[3]);
+        $this->assertImportError($result, 3, 'url', $this->mainUrl('/abc1234'), '自身の URL は短縮できません');
     }
 
     public function test_shift_jis_files_are_read_correctly(): void
@@ -143,7 +178,10 @@ final class LinkImportTest extends TestCase
             ->assertSessionHas('error', fn (string $message): bool => str_contains($message, '取り込めませんでした'));
 
         $this->assertSame(0, ShortUrl::query()->count());
-        $this->assertStringContainsString('url がありません', session(LinkImportController::RESULT_SESSION_KEY)->errors[1]);
+        $result = session(LinkImportController::RESULT_SESSION_KEY);
+        $this->assertTrue($result->rejected);
+        // 見つかった見出しも示して、何が違うのか分かるようにする
+        $this->assertStringContainsString('url がありません（見つかった見出し: link, slug）', $result->errors[0]->reason);
     }
 
     public function test_too_many_rows_are_rejected_before_importing(): void
@@ -187,6 +225,16 @@ final class LinkImportTest extends TestCase
             ->assertForbidden();
 
         $this->assertSame(0, ShortUrl::query()->count());
+    }
+
+    private function assertImportError(CsvImportResult $result, int $line, string $column, string $value, string $reason): void
+    {
+        $errors = $result->errorsOn($line);
+
+        $this->assertNotSame([], $errors, "{$line}行目のエラーがありません");
+        $this->assertSame($column, $errors[0]->column);
+        $this->assertSame($value, $errors[0]->value);
+        $this->assertStringContainsString($reason, $errors[0]->reason);
     }
 
     private function csvFile(string $contents): UploadedFile

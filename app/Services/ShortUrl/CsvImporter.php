@@ -69,23 +69,25 @@ final class CsvImporter
         $contents = @file_get_contents($path);
 
         if ($contents === false) {
-            return CsvImportResult::failed(0, 'ファイルを読み込めませんでした。');
+            return CsvImportResult::rejected('ファイルを読み込めませんでした。もう一度選び直してください。', line: 0);
         }
 
         $rows = self::parse($contents);
 
         if ($rows === []) {
-            return CsvImportResult::failed(1, 'CSV が空です。1行目に見出し（url など）を入れてください。');
+            return CsvImportResult::rejected('CSV が空です。1行目に見出し（url など）を入れてください。');
         }
 
         $header = self::header(array_shift($rows));
 
         if (! in_array('url', $header, true)) {
-            return CsvImportResult::failed(1, '1行目の見出しに url がありません。テンプレートをダウンロードして使ってください。');
+            $found = implode(', ', array_filter($header, static fn (string $column): bool => $column !== '')) ?: '（なし）';
+
+            return CsvImportResult::rejected("1行目の見出しに url がありません（見つかった見出し: {$found}）。テンプレートをダウンロードして、1行目はそのまま残してください。");
         }
 
         if (count($rows) > self::MAX_ROWS) {
-            return CsvImportResult::failed(1, '一度に取り込めるのは'.self::MAX_ROWS.'行までです。分割してください。');
+            return CsvImportResult::rejected('データが'.count($rows).'行あります。一度に取り込めるのは'.self::MAX_ROWS.'行までです。分割してください。');
         }
 
         return $this->importRows($header, $rows, $admin, $clientIp);
@@ -109,18 +111,29 @@ final class CsvImporter
                 continue;
             }
 
-            $error = $this->importRow($values, $admin, $clientIp);
+            $rowErrors = $this->importRow($line, $values, $admin, $clientIp);
 
-            $error === null ? $imported++ : $errors[$line] = $error;
+            if ($rowErrors === []) {
+                $imported++;
+            } else {
+                array_push($errors, ...$rowErrors);
+            }
         }
 
-        Log::notice('CSV から短縮URLを取り込みました。', ['user_id' => $admin->id, 'imported' => $imported, 'skipped' => count($errors)]);
+        $result = new CsvImportResult($imported, $errors);
 
-        return new CsvImportResult($imported, $errors);
+        Log::notice('CSV から短縮URLを取り込みました。', ['user_id' => $admin->id, 'imported' => $imported, 'skipped' => $result->skipped()]);
+
+        return $result;
     }
 
-    /** @param  array<string, string>  $values */
-    private function importRow(array $values, User $admin, string $clientIp): ?string
+    /**
+     * 1 行を検証して発行する。問題があれば列ごとの理由を返す（無ければ空）
+     *
+     * @param  array<string, string>  $values
+     * @return list<CsvImportError>
+     */
+    private function importRow(int $line, array $values, User $admin, string $clientIp): array
     {
         $validator = $this->validator->make(
             $values,
@@ -129,21 +142,31 @@ final class CsvImporter
         );
 
         if ($validator->fails()) {
-            return implode(' / ', $validator->errors()->all());
+            $errors = [];
+            foreach ($validator->errors()->messages() as $column => $messages) {
+                foreach ($messages as $message) {
+                    $errors[] = new CsvImportError($line, $column, $values[$column] ?? null, $message);
+                }
+            }
+
+            return $errors;
         }
 
         try {
             // 管理者による一括登録のため、月間上限・レート制限は適用しない
             $this->issuer->issue($this->draft($validator->validated()), $admin, $clientIp, enforceLimits: false);
         } catch (IssuanceException $e) {
-            return $e->getMessage();
-        } catch (Throwable $e) {
-            Log::error('CSV インポートで発行に失敗しました。', ['exception' => $e::class, 'error' => $e->getMessage()]);
+            // 発行処理はフォームの項目名（custom_slug）で返すため、CSV の列名に直す
+            $column = $e->field === 'custom_slug' ? 'slug' : $e->field;
 
-            return '発行できませんでした。';
+            return [new CsvImportError($line, $column, $column === null ? null : ($values[$column] ?? null), $e->getMessage())];
+        } catch (Throwable $e) {
+            Log::error('CSV インポートで発行に失敗しました。', ['line' => $line, 'exception' => $e::class, 'error' => $e->getMessage()]);
+
+            return [new CsvImportError($line, null, $values['url'] ?? null, '発行できませんでした（サーバーのエラー。ログに詳細があります）。')];
         }
 
-        return null;
+        return [];
     }
 
     /** @param  array<string, mixed>  $values */

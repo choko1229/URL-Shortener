@@ -123,7 +123,8 @@ final class AdminSlugTest extends TestCase
 
         // 21 文字は列に入らないため取り込まない
         $result = session(LinkImportController::RESULT_SESSION_KEY);
-        $this->assertSame([4], array_keys($result->errors));
-        $this->assertStringContainsString('20文字以内', $result->errors[4]);
+        $this->assertSame([4], $result->failedLines());
+        $this->assertSame('slug', $result->errorsOn(4)[0]->column);
+        $this->assertStringContainsString('20文字以内', $result->errorsOn(4)[0]->reason);
     }
 }

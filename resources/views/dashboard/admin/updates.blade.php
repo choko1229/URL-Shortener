@@ -65,48 +65,57 @@
         </p>
     </section>
 
-    <section aria-labelledby="settings-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
-        <h2 id="settings-heading" class="font-rounded text-[15px] font-bold">設定</h2>
-        <p class="mt-2 text-xs leading-relaxed text-text-secondary">
-            更新元は <code class="rounded bg-primary-tint-soft px-1">{{ $repository }}</code> です。フォークして自分のリリースから更新する場合だけ、<code class="rounded bg-primary-tint-soft px-1">.env</code> の <code class="rounded bg-primary-tint-soft px-1">SHORTENER_UPDATE_REPOSITORY</code> で変更してください。
-        </p>
-        <form method="POST" action="{{ route('dashboard.admin.updates.settings') }}" class="mt-4 max-w-2xl space-y-5">
-            @csrf
-            @method('PUT')
+    {{-- 通常は変更しないため閉じておく（入力エラーのときだけ開く） --}}
+    <details class="group rounded-card border border-border bg-surface" @if ($errors->hasAny(['github_token', 'discord_webhook_url'])) open @endif>
+        <summary class="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 sm:px-6">
+            <span class="flex flex-wrap items-baseline gap-x-2">
+                <span class="font-rounded text-[15px] font-bold">詳細設定</span>
+                <span class="text-[13px] text-text-secondary">自動アップデートの有効・無効、GitHub のトークン、Discord の通知先（通常は変更不要）</span>
+            </span>
+            <x-icon name="chevron-down" :size="18" class="shrink-0 text-text-secondary transition-transform group-open:rotate-180" />
+        </summary>
+        <div class="border-t border-border px-5 pt-4 pb-5 sm:px-6">
+            <p class="text-xs leading-relaxed text-text-secondary">
+                更新元は <code class="rounded bg-primary-tint-soft px-1">{{ $repository }}</code> です。フォークして自分のリリースから更新する場合だけ、<code class="rounded bg-primary-tint-soft px-1">.env</code> の <code class="rounded bg-primary-tint-soft px-1">SHORTENER_UPDATE_REPOSITORY</code> で変更してください。
+            </p>
+            <form method="POST" action="{{ route('dashboard.admin.updates.settings') }}" class="mt-4 max-w-2xl space-y-5">
+                @csrf
+                @method('PUT')
 
-            <label class="flex cursor-pointer items-start gap-3 text-sm">
-                <input type="checkbox" name="enabled" value="1" @checked(old('enabled', $enabled)) class="mt-1 size-4 shrink-0 accent-primary-dark">
-                <span>自動アップデートを有効にする</span>
-            </label>
+                <label class="flex cursor-pointer items-start gap-3 text-sm">
+                    <input type="checkbox" name="enabled" value="1" @checked(old('enabled', $enabled)) class="mt-1 size-4 shrink-0 accent-primary-dark">
+                    <span>自動アップデートを有効にする</span>
+                </label>
 
-            <div>
-                <label for="github-token" class="block text-[13px] font-medium text-text-secondary">GitHub のトークン（任意・{{ $hasToken ? '設定済み。変更する場合のみ入力' : '未設定' }}）</label>
-                <input id="github-token" name="github_token" type="password" autocomplete="new-password" spellcheck="false" class="form-control mt-2" aria-describedby="github-token-hint{{ $errors->has('github_token') ? ' github-token-error' : '' }}" @error('github_token') aria-invalid="true" @enderror>
-                <p id="github-token-hint" class="mt-1.5 text-xs text-text-secondary">公開リポジトリから更新する場合は不要です。非公開リポジトリのときは、Contents を読み取れる Fine-grained トークンを設定してください（APP_KEY で暗号化して保存します）。</p>
-                <x-field-error name="github_token" id="github-token-error" />
-                @if ($hasToken)
-                    <label class="mt-2 flex cursor-pointer items-center gap-2 text-xs text-text-secondary">
-                        <input type="checkbox" name="clear_github_token" value="1" class="size-4 accent-danger">
-                        トークンを削除する
-                    </label>
-                @endif
-            </div>
+                <div>
+                    <label for="github-token" class="block text-[13px] font-medium text-text-secondary">GitHub のトークン（任意・{{ $hasToken ? '設定済み。変更する場合のみ入力' : '未設定' }}）</label>
+                    <input id="github-token" name="github_token" type="password" autocomplete="new-password" spellcheck="false" class="form-control mt-2" aria-describedby="github-token-hint{{ $errors->has('github_token') ? ' github-token-error' : '' }}" @error('github_token') aria-invalid="true" @enderror>
+                    <p id="github-token-hint" class="mt-1.5 text-xs text-text-secondary">公開リポジトリから更新する場合は不要です。非公開リポジトリのときは、Contents を読み取れる Fine-grained トークンを設定してください（APP_KEY で暗号化して保存します）。</p>
+                    <x-field-error name="github_token" id="github-token-error" />
+                    @if ($hasToken)
+                        <label class="mt-2 flex cursor-pointer items-center gap-2 text-xs text-text-secondary">
+                            <input type="checkbox" name="clear_github_token" value="1" class="size-4 accent-danger">
+                            トークンを削除する
+                        </label>
+                    @endif
+                </div>
 
-            <div>
-                <label for="discord-webhook-url" class="block text-[13px] font-medium text-text-secondary">通知先の Discord Webhook URL（{{ $hasWebhook ? '設定済み。変更する場合のみ入力' : '未設定' }}）</label>
-                <input id="discord-webhook-url" name="discord_webhook_url" type="password" autocomplete="off" spellcheck="false" class="form-control mt-2" @error('discord_webhook_url') aria-invalid="true" aria-describedby="discord-webhook-url-error" @enderror>
-                <x-field-error name="discord_webhook_url" id="discord-webhook-url-error" />
-                @if ($hasWebhook)
-                    <label class="mt-2 flex cursor-pointer items-center gap-2 text-xs text-text-secondary">
-                        <input type="checkbox" name="clear_discord_webhook_url" value="1" class="size-4 accent-danger">
-                        Webhook URL を削除する
-                    </label>
-                @endif
-            </div>
+                <div>
+                    <label for="discord-webhook-url" class="block text-[13px] font-medium text-text-secondary">通知先の Discord Webhook URL（{{ $hasWebhook ? '設定済み。変更する場合のみ入力' : '未設定' }}）</label>
+                    <input id="discord-webhook-url" name="discord_webhook_url" type="password" autocomplete="off" spellcheck="false" class="form-control mt-2" @error('discord_webhook_url') aria-invalid="true" aria-describedby="discord-webhook-url-error" @enderror>
+                    <x-field-error name="discord_webhook_url" id="discord-webhook-url-error" />
+                    @if ($hasWebhook)
+                        <label class="mt-2 flex cursor-pointer items-center gap-2 text-xs text-text-secondary">
+                            <input type="checkbox" name="clear_discord_webhook_url" value="1" class="size-4 accent-danger">
+                            Webhook URL を削除する
+                        </label>
+                    @endif
+                </div>
 
-            <x-button type="submit" size="sm">保存する</x-button>
-        </form>
-    </section>
+                <x-button type="submit" size="sm">保存する</x-button>
+            </form>
+        </div>
+    </details>
 
     <section aria-labelledby="runs-heading" class="overflow-hidden rounded-card border border-border bg-surface">
         <h2 id="runs-heading" class="border-b border-table-divider px-5 py-5 font-rounded text-[15px] font-bold sm:px-6">実行履歴（直近10件）</h2>

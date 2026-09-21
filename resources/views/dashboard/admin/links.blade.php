@@ -41,15 +41,40 @@
         </form>
 
         @if ($importResult && $importResult->errors !== [])
-            <div class="mt-4 rounded-control border border-danger/40 bg-primary-tint-soft p-4" role="alert">
-                <p class="text-[13px] font-medium text-danger">取り込めなかった行（{{ $importResult->skipped() }}件）</p>
-                <ul class="mt-2 space-y-1 text-[13px] text-text-secondary">
-                    @foreach (array_slice($importResult->errors, 0, 20, true) as $line => $message)
-                        <li><span class="font-medium text-text-primary">{{ $line }}行目:</span> {{ $message }}</li>
-                    @endforeach
-                </ul>
-                @if ($importResult->skipped() > 20)
-                    <p class="mt-2 text-xs text-text-secondary">ほか {{ $importResult->skipped() - 20 }}行</p>
+            @php $shownErrors = array_slice($importResult->errors, 0, 100); @endphp
+            <div class="mt-4 overflow-hidden rounded-control border border-danger/40" role="alert">
+                <p class="bg-primary-tint-soft px-4 py-3 text-[13px] font-medium text-danger">
+                    @if ($importResult->rejected)
+                        ファイルを取り込めませんでした
+                    @else
+                        取り込めなかった行: {{ $importResult->skipped() }}行（{{ implode('・', array_map(static fn (int $line): string => $line.'行目', array_slice($importResult->failedLines(), 0, 30))) }}{{ $importResult->skipped() > 30 ? ' ほか' : '' }}）。直してから、その行だけを取り込み直してください。
+                    @endif
+                </p>
+                <div class="overflow-x-auto" role="region" aria-label="取り込めなかった理由" tabindex="0">
+                    <table class="w-full min-w-[640px] border-collapse text-left text-[13px]">
+                        <caption class="sr-only">取り込めなかった理由（行・列・入力された値・理由）</caption>
+                        <thead class="bg-table-header">
+                            <tr>
+                                <th scope="col" class="whitespace-nowrap px-4 py-2 text-xs font-medium text-text-secondary">行</th>
+                                <th scope="col" class="whitespace-nowrap px-4 py-2 text-xs font-medium text-text-secondary">列</th>
+                                <th scope="col" class="px-4 py-2 text-xs font-medium text-text-secondary">入力された値</th>
+                                <th scope="col" class="px-4 py-2 text-xs font-medium text-text-secondary">理由</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($shownErrors as $error)
+                                <tr class="border-t border-table-divider align-top">
+                                    <td class="whitespace-nowrap px-4 py-2.5 font-medium">{{ $error->line > 0 ? $error->line.'行目' : '—' }}</td>
+                                    <td class="whitespace-nowrap px-4 py-2.5 font-mono">{{ $error->column ?? '—' }}</td>
+                                    <td class="break-all px-4 py-2.5 font-mono text-text-secondary">{{ $error->displayValue() ?? '（空欄）' }}</td>
+                                    <td class="px-4 py-2.5">{{ $error->reason }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @if (count($importResult->errors) > count($shownErrors))
+                    <p class="border-t border-table-divider px-4 py-2 text-xs text-text-secondary">ほか {{ count($importResult->errors) - count($shownErrors) }}件</p>
                 @endif
             </div>
         @endif

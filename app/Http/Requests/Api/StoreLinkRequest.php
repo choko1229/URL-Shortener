@@ -30,9 +30,10 @@ final class StoreLinkRequest extends FormRequest
     /** @return array<string, string> */
     public function messages(): array
     {
-        return LinkRules::messages() + [
+        // 同じキーは左側が優先されるため、API 向けの説明を先に置く
+        return [
             'expires_at.date' => 'expires_at は ISO 8601 形式の日時で指定してください。',
-        ];
+        ] + LinkRules::messages();
     }
 
     public function toDraft(): ShortUrlDraft
