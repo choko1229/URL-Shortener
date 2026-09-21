@@ -113,8 +113,13 @@
     text-decoration-color: var(--us-primary-dark);
   }
 
-  .anchor-heading svg {
-    color: var(--us-primary-dark);
+  /* テーマ既定の紫を使っているアイコン類 */
+  .icon,
+  .main-content .anchor-heading svg,
+  .search-result-doc .search-result-icon,
+  .search-input:focus + .search-label .search-icon,
+  .nav-list .nav-list-item .nav-list-expander {
+    color: var(--us-primary-darker);
   }
 
   :where(a, button, input, summary, [tabindex]):focus-visible {
@@ -344,6 +349,18 @@
     border-bottom: 0;
   }
 
+  table {
+    border-collapse: collapse;
+  }
+
+  /* 1列目（項目名）が細かく折り返されないよう、広い画面では少し幅を確保する（狭い画面では表を横にスクロールできる） */
+  @media (min-width: 50rem) {
+    th:first-child,
+    td:first-child {
+      min-width: 9rem;
+    }
+  }
+
   /* ---- コード ---- */
   code {
     color: var(--us-text-primary);
@@ -365,6 +382,7 @@
   }
 
   div.highlighter-rouge div.highlight,
+  div.highlighter-rouge pre.highlight,
   figure.highlight pre,
   .highlight {
     background-color: transparent;
@@ -385,11 +403,41 @@
     letter-spacing: 0.08em;
   }
 
-  #markdown-toc {
-    padding: 1rem 1.25rem 1rem 2.5rem;
+  /* 各ページ冒頭の「目次」は見出しではなく小さなラベルとして見せる */
+  .main-content h2.text-delta {
+    margin-top: 1.5em;
+    padding-bottom: 0;
+    color: var(--us-text-secondary);
+    font-size: 0.8125rem !important;
+    border-bottom: 0;
+  }
+
+  .main-content #markdown-toc {
+    padding: 0.875rem 1.25rem;
     background-color: var(--us-primary-tint-soft);
     border: 1px solid var(--us-border);
     border-radius: var(--us-radius-card);
+  }
+
+  /* 手順の番号 */
+  .main-content ol > li::before {
+    color: var(--us-primary-darker);
+    font-family: var(--us-font-rounded);
+    font-weight: 800;
+  }
+
+  /* 見出し自体に番号が付いているページがあるため、目次の自動の番号は出さない */
+  .main-content #markdown-toc > li::before {
+    content: none;
+  }
+
+  .main-content #markdown-toc a {
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .main-content #markdown-toc a:hover {
+    text-decoration: underline;
   }
 
   blockquote {
@@ -406,6 +454,7 @@
     position: relative;
     margin: 1.25rem 0;
     padding: 0.875rem 1.125rem 0.875rem 1.25rem;
+    color: var(--us-text-primary);
     border-radius: var(--us-radius-control);
   }
 
