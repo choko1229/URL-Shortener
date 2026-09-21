@@ -11,12 +11,13 @@ use App\Services\Redirect\RedirectTicket;
 use App\Services\Redirect\RedirectTicketCodec;
 use App\Services\Redirect\SafeBrowsingChecker;
 use App\Services\Redirect\SafetyStatus;
+use App\Services\Redirect\SafetyVerdict;
+use App\Support\AccessPolicy;
 use App\Support\ShortenerSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response as HttpStatus;
 
@@ -32,6 +33,7 @@ final class RedirectController extends Controller
         private readonly SafeBrowsingChecker $safety,
         private readonly ClickRecorder $clicks,
         private readonly ShortenerSettings $settings,
+        private readonly AccessPolicy $access,
     ) {}
 
     /** 直接開かれた場合はトップページへ */
@@ -40,7 +42,7 @@ final class RedirectController extends Controller
         return redirect()->route('main.home');
     }
 
-    public function go(Request $request): Response
+    public function go(Request $request): HttpStatus
     {
         $now = CarbonImmutable::now();
         $ticket = $this->tickets->decode($request->input('ticket'), $now);
@@ -66,6 +68,11 @@ final class RedirectController extends Controller
             $this->clicks->record($link, $ticket, $request->ip(), $request->userAgent());
         }
 
+        // 限定モードで、利用を許可された人が発行したものは、確認の画面を出さずにそのまま移動する
+        if ($this->access->skipsSafetyCheck($link)) {
+            return $this->noStore(redirect()->away($link->original_url, HttpStatus::HTTP_FOUND));
+        }
+
         return $this->noStore(response()->view('redirect.show', [
             'destination' => $link->original_url,
             'ticket' => (string) $request->input('ticket'),
@@ -85,7 +92,10 @@ final class RedirectController extends Controller
             ], HttpStatus::HTTP_BAD_REQUEST));
         }
 
-        $verdict = $this->safety->check($link->original_url);
+        // 限定モードで、利用を許可された人が発行したものは Safe Browsing に問い合わせない
+        $verdict = $this->access->skipsSafetyCheck($link)
+            ? SafetyVerdict::safe()
+            : $this->safety->check($link->original_url);
 
         return $this->noStore(response()->json([
             'status' => $verdict->status->value,
@@ -121,12 +131,12 @@ final class RedirectController extends Controller
     }
 
     /**
-     * @template T of Response|JsonResponse
+     * @template T of HttpStatus
      *
      * @param  T  $response
      * @return T
      */
-    private function noStore(Response|JsonResponse $response): Response|JsonResponse
+    private function noStore(HttpStatus $response): HttpStatus
     {
         $response->headers->set('Cache-Control', 'no-store, private');
         $response->headers->set('X-Robots-Tag', 'noindex');

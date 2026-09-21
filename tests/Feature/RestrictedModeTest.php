@@ -8,7 +8,9 @@ use App\Models\AppSetting;
 use App\Models\ShortUrl;
 use App\Models\SitePage;
 use App\Models\User;
+use App\Services\Redirect\RedirectTicketCodec;
 use App\Support\AccessPolicy;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -202,10 +204,69 @@ final class RestrictedModeTest extends TestCase
         $this->assertFalse($member->refresh()->restricted_access);
     }
 
+    /** 限定モードで、利用を許可された人が発行したリンクは、安全確認をせずにそのまま移動する */
+    public function test_links_from_permitted_users_skip_the_safety_check(): void
+    {
+        $this->restrict();
+        Http::fake();
+        $admin = User::factory()->admin()->create();
+        $permitted = User::factory()->create(['restricted_access' => true]);
+
+        foreach ([$admin, $permitted] as $user) {
+            $link = ShortUrl::factory()->for($user)->create(['original_url' => 'https://example.com/trusted-'.$user->id, 'click_count' => 0]);
+
+            // 確認の画面を出さず、クリックを記録してすぐ移動する
+            $this->post($this->redirectUrl('/go'), ['ticket' => $this->ticketFor($link)])
+                ->assertRedirect('https://example.com/trusted-'.$user->id)
+                ->assertHeader('Cache-Control', 'no-store, private');
+            $this->assertSame(1, $link->refresh()->click_count);
+
+            $this->postJson($this->redirectUrl('/check'), ['ticket' => $this->ticketFor($link)])
+                ->assertOk()
+                ->assertJson(['status' => 'safe', 'destination' => 'https://example.com/trusted-'.$user->id]);
+        }
+
+        // Safe Browsing には問い合わせない
+        Http::assertNothingSent();
+    }
+
+    /** 限定モードにする前の未ログイン発行や、退会した人・許可していない人のリンクは、これまでどおり確認する */
+    public function test_other_links_are_still_checked_in_restricted_mode(): void
+    {
+        $this->restrict();
+        $withdrawn = User::factory()->create(['restricted_access' => true]);
+        $links = [
+            ShortUrl::factory()->create(['user_id' => null]),
+            ShortUrl::factory()->for(User::factory())->create(),
+            ShortUrl::factory()->for($withdrawn)->create(),
+        ];
+        $withdrawn->delete();
+
+        foreach ($links as $link) {
+            $this->post($this->redirectUrl('/go'), ['ticket' => $this->ticketFor($link)])
+                ->assertOk()
+                ->assertSee('data-safety-check', false);
+        }
+    }
+
+    public function test_safety_check_stays_on_in_public_mode_even_for_admins(): void
+    {
+        $link = ShortUrl::factory()->for(User::factory()->admin())->create();
+
+        $this->post($this->redirectUrl('/go'), ['ticket' => $this->ticketFor($link)])
+            ->assertOk()
+            ->assertSee('data-safety-check', false);
+    }
+
     public function test_public_mode_is_unchanged(): void
     {
         $this->get($this->mainUrl())->assertOk()->assertSee('name="original_url"', false);
         $this->get($this->dashboardUrl())->assertRedirect(route('auth.login'));
+    }
+
+    private function ticketFor(ShortUrl $link): string
+    {
+        return $this->app->make(RedirectTicketCodec::class)->encode($link, null, false, CarbonImmutable::now());
     }
 
     private function restrict(string $action = 'page', ?string $url = null): void

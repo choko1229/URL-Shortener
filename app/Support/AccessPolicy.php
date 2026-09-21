@@ -7,6 +7,7 @@ namespace App\Support;
 use App\Enums\AccessMode;
 use App\Enums\OutsiderAction;
 use App\Models\AppSetting;
+use App\Models\ShortUrl;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -32,6 +33,22 @@ final class AccessPolicy
     public function allows(?User $user): bool
     {
         return ! $this->isRestricted() || ($user?->canUseRestrictedSite() ?? false);
+    }
+
+    /**
+     * 転送前の安全確認（Google Safe Browsing）を省くか。
+     * 限定モードで、利用を許可された人（管理者・許可したユーザー）が発行した短縮URLは、発行者を信頼して確認しない。
+     * 限定モードにする前に未ログインで発行されたものや、退会した人のものは、これまでどおり確認する
+     */
+    public function skipsSafetyCheck(ShortUrl $link): bool
+    {
+        if (! $this->isRestricted() || $link->user_id === null) {
+            return false;
+        }
+
+        $link->loadMissing('user');
+
+        return $link->user?->canUseRestrictedSite() ?? false;
     }
 
     public function outsiderAction(): OutsiderAction

@@ -293,6 +293,10 @@ function initConfirmForms() {
 /** 中間ページ: redirect サブドメインへ自動で POST する（requirements.md 3: 手順 4） */
 function initAutoSubmitForms() {
     document.querySelectorAll('form[data-auto-submit]').forEach((form) => {
+        // 中間ページはページ内のスクリプトで送信済み（二重に送らない）
+        if (form.dataset.autoSubmitted === 'true') {
+            return;
+        }
         if (typeof form.requestSubmit === 'function') {
             form.requestSubmit();
         } else {
@@ -361,7 +365,6 @@ function initRecaptchaForms() {
 }
 
 const SAFETY_CHECK_TIMEOUT_MS = 15000;
-const SAFE_REDIRECT_DELAY_MS = 1200;
 
 /** 転送ページ: 安全性チェックの結果に応じて表示を切り替え、安全なら移動する（requirements.md 2-7, 3） */
 function initSafetyCheck() {
@@ -407,8 +410,9 @@ function initSafetyCheck() {
             const destination = isHttpUrl(body.destination) ? body.destination : null;
 
             if (body.status === 'safe' && destination) {
+                // 待たずにすぐ移動する（表示は移動までのつなぎ）
                 show('safe', { destination });
-                window.setTimeout(() => window.location.replace(destination), SAFE_REDIRECT_DELAY_MS);
+                window.location.replace(destination);
             } else if (body.status === 'unsafe') {
                 show('unsafe', { threats: Array.isArray(body.threats) ? body.threats : [] });
             } else if (body.status === 'unknown' && destination) {

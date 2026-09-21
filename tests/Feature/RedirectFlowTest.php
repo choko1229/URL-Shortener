@@ -32,7 +32,10 @@ final class RedirectFlowTest extends TestCase
             ->assertOk()
             ->assertHeader('Cache-Control', 'no-store, private')
             ->assertSee('action="'.$this->redirectUrl('/go').'"', false)
-            ->assertSee('data-auto-submit', false);
+            ->assertSee('data-auto-submit', false)
+            // 画面全体のスクリプトを待たず、その場で送信する（二重送信しないよう印を付ける）
+            ->assertSee("form.dataset.autoSubmitted = 'true';", false)
+            ->assertSee('form.submit();', false);
 
         $this->assertNotSame('', $this->ticketFrom($response));
     }

@@ -8,7 +8,7 @@
 
         <div class="flex items-center gap-3 text-sm text-text-secondary" role="status">
             <span class="progress-spinner" aria-hidden="true"></span>
-            リンク先の安全性を確認するページへ移動しています…
+            リンク先へ移動しています…
         </div>
 
         <noscript>
@@ -17,4 +17,12 @@
 
         <x-button type="submit" variant="secondary" size="sm">移動しない場合はこちら</x-button>
     </form>
+    {{-- 画面全体のスクリプト（app.js）の読み込みを待たず、その場で送信して待ち時間を減らす --}}
+    <script>
+        (function () {
+            var form = document.currentScript.previousElementSibling;
+            form.dataset.autoSubmitted = 'true';
+            form.submit();
+        })();
+    </script>
 </x-layouts.redirect>

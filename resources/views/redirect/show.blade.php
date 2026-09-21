@@ -26,7 +26,7 @@
         <div data-state="safe" class="space-y-4" hidden>
             <p class="flex items-center gap-2 text-sm font-medium text-primary-dark">
                 <x-icon name="check-circle" :size="18" />
-                安全を確認しました。まもなく移動します。
+                安全を確認しました。移動しています…
             </p>
             <x-button size="sm" href="#" data-destination-link rel="noopener">すぐに移動する</x-button>
         </div>
