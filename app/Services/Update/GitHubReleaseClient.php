@@ -17,8 +17,8 @@ final class GitHubReleaseClient
 {
     private const API_BASE = 'https://api.github.com';
 
-    // 配布用 zip の名前（将来変更できるよう、旧名も受け付ける）
-    private const PACKAGE_ASSET_PATTERN = '/\A(?:url-shortener|chok-ooo)-.+\.zip\z/';
+    // 配布用 zip の名前（scripts/build-release.sh が作る url-shortener-{タグ}.zip）
+    private const PACKAGE_ASSET_PATTERN = '/\Aurl-shortener-.+\.zip\z/';
 
     private const DOWNLOAD_TIMEOUT_SECONDS = 300;
 
