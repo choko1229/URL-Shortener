@@ -19,6 +19,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string|null $global_name
  * @property string|null $avatar_hash
  * @property UserRole $role
+ * @property bool $restricted_access
  * @property CarbonImmutable|null $last_login_at
  */
 class User extends Authenticatable
@@ -46,6 +47,7 @@ class User extends Authenticatable
     /** @var array<string, mixed> */
     protected $attributes = [
         'role' => 'member',
+        'restricted_access' => false,
     ];
 
     /** @return array<string, string> */
@@ -53,6 +55,7 @@ class User extends Authenticatable
     {
         return [
             'role' => UserRole::class,
+            'restricted_access' => 'boolean',
             'last_login_at' => 'immutable_datetime',
         ];
     }
@@ -72,6 +75,12 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
+    }
+
+    /** 限定モードでも使えるか（管理者は常に使える） */
+    public function canUseRestrictedSite(): bool
+    {
+        return $this->isAdmin() || $this->restricted_access;
     }
 
     /** 管理者が一人でもいるか（いなければ、セットアップ直後で最初のログインを待っている状態） */

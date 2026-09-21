@@ -1,5 +1,5 @@
 {{-- トップページ用レイアウト --}}
-@props(['viewer', 'title' => null])
+@props(['viewer', 'title' => null, 'showUsage' => true])
 
 <x-layouts.base :title="$title">
     <div class="flex min-h-screen flex-col">
@@ -11,9 +11,11 @@
 
                 <nav aria-label="メインメニュー" class="flex items-center gap-2 sm:gap-4">
                     <x-theme-toggle />
+                    @if ($showUsage)
                     <a href="{{ route('main.home') }}#features" class="hidden rounded-control px-2 py-2 text-sm font-medium text-primary-dark hover:text-primary-darker sm:inline-block">
                         使い方
                     </a>
+                    @endif
                     @if ($viewer->isAuthenticated)
                         <x-button variant="secondary" size="sm" :href="route('dashboard.home')">
                             <x-icon name="layout-grid" :size="16" />
@@ -38,7 +40,9 @@
                 <x-logo size="sm" />
                 <nav aria-label="フッターメニュー">
                     <ul class="flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
-                        <li><a href="{{ route('main.home') }}#features" class="text-text-secondary hover:text-primary-dark">使い方</a></li>
+                        @if ($showUsage)
+                            <li><a href="{{ route('main.home') }}#features" class="text-text-secondary hover:text-primary-dark">使い方</a></li>
+                        @endif
                         {{-- 用意されている固定ページのみ（管理画面の「サイト設定」で作る） --}}
                         @foreach ($footerPages as $slug => $pageTitle)
                             <li><a href="{{ route('main.'.$slug) }}" class="text-text-secondary hover:text-primary-dark">{{ $pageTitle }}</a></li>

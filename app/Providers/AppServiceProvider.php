@@ -21,6 +21,7 @@ use App\Services\Update\GitStrategy;
 use App\Services\Update\PhpBinaryResolver;
 use App\Services\Update\ReleaseZipStrategy;
 use App\Services\Update\UpdateStrategy;
+use App\Support\AccessPolicy;
 use App\Support\ExternalServiceKeys;
 use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
@@ -46,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(ExternalServiceKeys::class);
         $this->app->scoped(SiteIdentity::class);
         $this->app->scoped(Theme::class);
+        $this->app->scoped(AccessPolicy::class);
         $this->app->scoped(
             SiteIcon::class,
             static fn (Application $app): SiteIcon => new SiteIcon($app->storagePath('app/private/branding')),

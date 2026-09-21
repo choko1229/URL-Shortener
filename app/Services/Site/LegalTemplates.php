@@ -38,6 +38,7 @@ final class LegalTemplates
             'title' => SitePage::AVAILABLE[$slug],
             'body' => strtr($body, [
                 ':site' => $this->site->name(),
+                ':domain' => (string) config('shortener.domains.main'),
                 ':operator' => $this->site->operator(),
                 ':privacy_url' => route('main.privacy'),
                 ':terms_url' => route('main.terms'),

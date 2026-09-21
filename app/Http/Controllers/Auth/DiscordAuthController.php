@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Auth\DiscordAuthException;
 use App\Services\Auth\DiscordOAuthClient;
 use App\Services\Auth\DiscordUserRegistrar;
+use App\Support\AccessPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,7 +45,7 @@ final class DiscordAuthController extends Controller
         return redirect()->away($discord->authorizationUrl($state, route('auth.callback')));
     }
 
-    public function callback(Request $request, DiscordOAuthClient $discord, DiscordUserRegistrar $registrar): RedirectResponse
+    public function callback(Request $request, DiscordOAuthClient $discord, DiscordUserRegistrar $registrar, AccessPolicy $access): RedirectResponse
     {
         $expectedState = $request->session()->pull(self::STATE_SESSION_KEY);
         $state = $request->query('state');
@@ -76,6 +77,13 @@ final class DiscordAuthController extends Controller
         }
 
         $user = $registrar->loginOrRegister($profile, CarbonImmutable::now());
+
+        // 限定モード: 許可されていない人はログインさせない（一覧には載るため、管理者があとから許可できる）
+        if (! $access->allows($user)) {
+            Log::notice('限定モードのため、許可されていないユーザーのログインを断りました。', ['user_id' => $user->id]);
+
+            return redirect()->route('main.home')->with('error', 'このサービスは限定公開のため、利用が許可されていません。利用するには、管理者に許可を依頼してください。');
+        }
 
         Auth::login($user, remember: true);
         $request->session()->regenerate();

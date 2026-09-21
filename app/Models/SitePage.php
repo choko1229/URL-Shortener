@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 /**
  * 利用規約・プライバシーポリシーなどの固定ページ（本文は Markdown）。
  * 未作成のページは公開せず（404）、フッターにも出さない。
+ * 「このドメインについて」は限定モードで、利用を許可されていない人に見せる説明（フッターには出さない）。
  *
  * @property int $id
  * @property string $slug
@@ -27,11 +28,17 @@ class SitePage extends Model
 
     public const PRIVACY = 'privacy';
 
+    public const ABOUT = 'about';
+
     /** @var array<string, string> 用意できるページ（slug => 既定のタイトル） */
     public const AVAILABLE = [
+        self::ABOUT => 'このドメインについて',
         self::TERMS => '利用規約',
         self::PRIVACY => 'プライバシーポリシー',
     ];
+
+    /** @var list<string> フッターに並べるページ */
+    public const FOOTER = [self::TERMS, self::PRIVACY];
 
     /** @var list<string> */
     protected $fillable = [
@@ -59,13 +66,13 @@ class SitePage extends Model
         try {
             /** @var array<string, string> $titles */
             $titles = static::query()
-                ->whereIn('slug', array_keys(self::AVAILABLE))
+                ->whereIn('slug', self::FOOTER)
                 ->pluck('title', 'slug')
                 ->all();
 
-            // 表示順は AVAILABLE の並びに合わせる
+            // 表示順は FOOTER の並びに合わせる
             $menu = [];
-            foreach (array_keys(self::AVAILABLE) as $slug) {
+            foreach (self::FOOTER as $slug) {
                 if (isset($titles[$slug])) {
                     $menu[$slug] = $titles[$slug];
                 }

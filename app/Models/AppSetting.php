@@ -66,6 +66,13 @@ class AppSetting extends Model
 
     public const SITE_ICON = 'site.icon';
 
+    // 限定モード（管理画面「サイト設定」で変更する）
+    public const ACCESS_MODE = 'access.mode';
+
+    public const ACCESS_OUTSIDER_ACTION = 'access.outsider_action';
+
+    public const ACCESS_REDIRECT_URL = 'access.redirect_url';
+
     /** @var list<string> */
     protected $fillable = [
         'key',

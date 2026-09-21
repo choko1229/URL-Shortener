@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SiteAccessRequest;
 use App\Http\Requests\Admin\SiteIconRequest;
 use App\Http\Requests\Admin\SiteIdentityRequest;
 use App\Http\Requests\Admin\SitePageRequest;
 use App\Http\Requests\Admin\SiteThemeRequest;
 use App\Models\SitePage;
 use App\Services\Site\LegalTemplates;
+use App\Support\AccessPolicy;
 use App\Support\ShortenerSettings;
 use App\Support\SiteIcon;
 use App\Support\SiteIdentity;
@@ -28,7 +30,7 @@ use Illuminate\Support\Facades\Log;
  */
 final class SiteController extends Controller
 {
-    public function index(Request $request, SiteIdentity $site, Theme $theme, SiteIcon $icon, ShortenerSettings $settings): View
+    public function index(Request $request, SiteIdentity $site, Theme $theme, SiteIcon $icon, AccessPolicy $access, ShortenerSettings $settings): View
     {
         return view('dashboard.admin.site', [
             'viewer' => ViewerData::fromUser($request->user()),
@@ -44,6 +46,11 @@ final class SiteController extends Controller
             ],
             'selectedIcon' => $icon->selected(),
             'hasUploadedIcon' => $icon->path() !== null,
+            'accessValues' => [
+                'mode' => $access->mode()->value,
+                'outsider_action' => $access->outsiderAction()->value,
+                'redirect_url' => $access->redirectUrl(),
+            ],
             'pages' => SitePage::query()->whereIn('slug', array_keys(SitePage::AVAILABLE))->get()->keyBy('slug'),
             'timezone' => $settings->displayTimezone(),
         ]);
@@ -82,6 +89,17 @@ final class SiteController extends Controller
         return back()->with('notice', 'サービスアイコンを保存しました。ファビコンにも同じものを使います。');
     }
 
+    public function updateAccess(SiteAccessRequest $request, AccessPolicy $access): RedirectResponse
+    {
+        $access->save($request->access());
+
+        Log::notice('公開範囲を変更しました。', ['user_id' => $request->user()?->getAuthIdentifier(), 'mode' => $access->mode()->value]);
+
+        return back()->with('notice', $access->isRestricted()
+            ? '限定モードにしました。管理者と「ユーザー」タブで許可した人だけが使えます。'
+            : 'すべての人が使えるようにしました。');
+    }
+
     public function updatePage(SitePageRequest $request, string $slug): RedirectResponse
     {
         abort_unless(LegalTemplates::exists($slug), 404);
@@ -93,7 +111,9 @@ final class SiteController extends Controller
 
         Log::notice('固定ページを保存しました。', ['slug' => $slug, 'user_id' => $request->user()?->getAuthIdentifier()]);
 
-        return back()->with('notice', 'ページを保存しました。フッターから開けます。');
+        return back()->with('notice', $slug === SitePage::ABOUT
+            ? '「このドメインについて」を保存しました。限定モードで、許可されていない人に表示します。'
+            : 'ページを保存しました。フッターから開けます。');
     }
 
     /** ひな形を編集欄に読み込む（保存はしない） */
@@ -116,6 +136,8 @@ final class SiteController extends Controller
 
         Log::notice('固定ページを削除しました。', ['slug' => $slug, 'user_id' => $request->user()?->getAuthIdentifier()]);
 
-        return back()->with('notice', 'ページを削除しました。フッターにも表示されなくなります。');
+        return back()->with('notice', $slug === SitePage::ABOUT
+            ? '「このドメインについて」を削除しました。限定モードでは短い既定の文を表示します。'
+            : 'ページを削除しました。フッターにも表示されなくなります。');
     }
 }

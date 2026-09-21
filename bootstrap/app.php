@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use App\Http\Middleware\EnsureApplicationInstalled;
+use App\Http\Middleware\RestrictToPermittedUsers;
 use App\Http\Middleware\SetSecurityHeaders;
 use App\Http\Middleware\TriggerPeriodicTasks;
 use App\Http\Middleware\UpdateDatabaseSchema;
 use App\Installer\InstallationState;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -30,6 +32,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         // 応答を返した後に、1 日 1 回の定期処理を起動する（cron の登録を不要にする）
         $middleware->append(TriggerPeriodicTasks::class);
+
+        // 限定モードでは、ログイン画面へ誘導する（auth）より先に、このドメインの説明を出す
+        $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: RestrictToPermittedUsers::class);
 
         $middleware->web(append: [
             SetSecurityHeaders::class,

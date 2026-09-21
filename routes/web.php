@@ -28,6 +28,7 @@ use App\Http\Controllers\Redirect\RedirectController;
 use App\Http\Controllers\Redirect\ShortLinkController;
 use App\Http\Controllers\ShortUrlController;
 use App\Http\Controllers\SiteIconController;
+use App\Http\Middleware\RestrictToPermittedUsers;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -58,8 +59,9 @@ Route::prefix('install')
 Route::domain(config('shortener.domains.main'))
     ->name('main.')
     ->group(static function (): void {
-        Route::get('/', HomeController::class)->name('home');
-        Route::post('/shorten', [ShortUrlController::class, 'store'])->name('short-urls.store');
+        // 限定モードでは、許可されていない人に発行フォームの代わりにこのドメインの説明を出す
+        Route::get('/', HomeController::class)->middleware(RestrictToPermittedUsers::class)->name('home');
+        Route::post('/shorten', [ShortUrlController::class, 'store'])->middleware(RestrictToPermittedUsers::class)->name('short-urls.store');
 
         Route::get('/terms', [LegalController::class, 'terms'])->name('terms');
         Route::get('/privacy', [LegalController::class, 'privacy'])->name('privacy');
@@ -105,10 +107,11 @@ Route::domain(config('shortener.domains.dashboard'))
         Route::post('/login/setup', [DiscordSetupController::class, 'store'])->middleware('throttle:10,1')->name('setup.store');
     });
 
-// ダッシュボードのドメイン: ダッシュボード（ログイン必須）
+// ダッシュボードのドメイン: ダッシュボード（ログイン必須）。
+// 限定モードでは、ログイン画面へ誘導する前に説明を出す（許可された人は /login から直接ログインする）
 Route::domain(config('shortener.domains.dashboard'))
     ->name('dashboard.')
-    ->middleware('auth')
+    ->middleware([RestrictToPermittedUsers::class, 'auth'])
     ->group(static function (): void {
         Route::get('/', DashboardController::class)->name('home');
         Route::post('/links', [ShortUrlController::class, 'store'])->name('links.store');
@@ -141,6 +144,7 @@ Route::domain(config('shortener.domains.dashboard'))
 
                 Route::get('/users', [UserController::class, 'index'])->name('users');
                 Route::patch('/users/{user}/role', [UserController::class, 'updateRole'])->whereNumber('user')->name('users.role');
+                Route::patch('/users/{user}/access', [UserController::class, 'updateAccess'])->whereNumber('user')->name('users.access');
 
                 Route::get('/reserved-words', [ReservedWordController::class, 'index'])->name('reserved-words');
                 Route::post('/reserved-words', [ReservedWordController::class, 'store'])->name('reserved-words.store');
@@ -156,6 +160,7 @@ Route::domain(config('shortener.domains.dashboard'))
                 Route::put('/site', [SiteController::class, 'updateIdentity'])->name('site.update');
                 Route::put('/site/theme', [SiteController::class, 'updateTheme'])->name('site.theme');
                 Route::post('/site/icon', [SiteController::class, 'updateIcon'])->name('site.icon');
+                Route::put('/site/access', [SiteController::class, 'updateAccess'])->name('site.access');
                 Route::put('/site/pages/{slug}', [SiteController::class, 'updatePage'])->name('site.pages.update');
                 Route::post('/site/pages/{slug}/template', [SiteController::class, 'loadTemplate'])->name('site.pages.template');
                 Route::delete('/site/pages/{slug}', [SiteController::class, 'destroyPage'])->name('site.pages.destroy');

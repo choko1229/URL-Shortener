@@ -4,17 +4,28 @@
     @var \Illuminate\Contracts\Pagination\LengthAwarePaginator<int, \App\Models\User> $users
     @var int|string|null $currentUserId
     @var string $timezone
+    @var bool $isRestricted
 --}}
 <x-dashboard.admin-page :viewer="$viewer" title="ユーザー" description="Discord でログインしたユーザーの一覧です。管理者は予約語の使用・全URLの管理・APIキーの発行・アップデート管理ができます。">
     <section aria-labelledby="users-heading" class="overflow-hidden rounded-card border border-border bg-surface">
-        <h2 id="users-heading" class="border-b border-table-divider px-5 py-5 font-rounded text-[15px] font-bold sm:px-6">ユーザー一覧</h2>
+        <div class="border-b border-table-divider px-5 py-5 sm:px-6">
+            <h2 id="users-heading" class="font-rounded text-[15px] font-bold">ユーザー一覧</h2>
+            <p class="mt-1 text-xs leading-relaxed text-text-secondary">
+                @if ($isRestricted)
+                    限定モードです。管理者と「利用を許可」したユーザーだけが発行・ダッシュボードを使えます。許可されていない人がログインしようとすると、ここに表示されるので許可できます。
+                @else
+                    「利用を許可」は限定モードでだけ使われます（「サイト設定」タブで切り替えます）。
+                @endif
+            </p>
+        </div>
         <div class="overflow-x-auto" role="region" aria-labelledby="users-heading" tabindex="0">
-            <table class="w-full min-w-[760px] border-collapse text-left text-[13px]">
+            <table class="w-full min-w-[900px] border-collapse text-left text-[13px]">
                 <caption class="sr-only">ユーザー一覧（管理者が先頭）</caption>
                 <thead class="bg-table-header">
                     <tr>
                         <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">ユーザー</th>
                         <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">権限</th>
+                        <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">限定モードでの利用</th>
                         <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">発行数</th>
                         <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">最終ログイン</th>
                         <th scope="col" class="whitespace-nowrap px-6 py-3 text-right text-xs font-medium text-text-secondary">操作</th>
@@ -45,6 +56,24 @@
                                     'bg-primary-tint text-primary-dark' => $isAdmin,
                                     'border border-border text-text-secondary' => ! $isAdmin,
                                 ])>{{ $user->role->label() }}</span>
+                            </td>
+                            <td class="px-6 py-2">
+                                @if ($isAdmin)
+                                    <span class="text-text-secondary">常に利用可</span>
+                                @else
+                                    <form method="POST" action="{{ route('dashboard.admin.users.access', ['user' => $user->id]) }}" class="flex items-center gap-2">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="allowed" value="{{ $user->restricted_access ? '0' : '1' }}">
+                                        <span @class(['whitespace-nowrap', 'font-medium text-primary-dark' => $user->restricted_access, 'text-text-secondary' => ! $user->restricted_access])>
+                                            {{ $user->restricted_access ? '許可済み' : '未許可' }}
+                                        </span>
+                                        <x-button type="submit" variant="ghost" size="sm">
+                                            {{ $user->restricted_access ? '取り消す' : '許可する' }}
+                                            <span class="sr-only">（{{ $user->displayName() }}）</span>
+                                        </x-button>
+                                    </form>
+                                @endif
                             </td>
                             <td class="px-6 py-3.5 tabular-nums">{{ number_format($user->short_urls_count) }}</td>
                             <td class="whitespace-nowrap px-6 py-3.5 text-text-secondary">{{ $user->last_login_at?->setTimezone($timezone)->format('Y/m/d H:i') ?? '—' }}</td>

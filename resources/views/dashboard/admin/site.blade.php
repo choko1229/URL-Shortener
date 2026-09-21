@@ -5,6 +5,7 @@
     @var array{color: string, color_scheme: string, font: string} $themeValues
     @var string $selectedIcon
     @var bool $hasUploadedIcon
+    @var array{mode: string, outsider_action: string, redirect_url: string|null} $accessValues
     @var \Illuminate\Support\Collection<string, \App\Models\SitePage> $pages
     @var string $timezone
     @var \App\Support\SiteIdentity $site
@@ -191,6 +192,69 @@
         </form>
     </section>
 
+    @php $currentMode = old('mode', $accessValues['mode']); $currentAction = old('outsider_action', $accessValues['outsider_action']); @endphp
+    <section aria-labelledby="access-heading" class="rounded-card border border-border bg-surface p-5 sm:p-6">
+        <h2 id="access-heading" class="font-rounded text-[15px] font-bold">公開範囲</h2>
+        <p class="mt-1 text-[13px] text-text-secondary">自分や身内だけで使う短縮URLにしたい場合は、限定モードにします。発行済みの短縮URLは、どちらのモードでも誰でも開けます。</p>
+
+        <form method="POST" action="{{ route('dashboard.admin.site.access') }}" class="mt-4 max-w-2xl space-y-6">
+            @csrf
+            @method('PUT')
+
+            <fieldset>
+                <legend class="text-[13px] font-medium text-text-secondary">使える人</legend>
+                <div class="mt-2 space-y-2">
+                    @foreach (\App\Enums\AccessMode::cases() as $mode)
+                        <label class="flex cursor-pointer items-start gap-3 text-sm">
+                            <input type="radio" name="mode" value="{{ $mode->value }}" @checked($currentMode === $mode->value) class="mt-1 size-4 shrink-0 accent-primary-dark">
+                            <span>
+                                {{ $mode->label() }}
+                                <span class="block text-xs text-text-secondary">{{ $mode->description() }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <x-field-error name="mode" />
+            </fieldset>
+
+            <fieldset>
+                <legend class="text-[13px] font-medium text-text-secondary">限定モードで、許可されていない人がトップページやダッシュボードを開いたとき</legend>
+                <div class="mt-2 space-y-2">
+                    @foreach (\App\Enums\OutsiderAction::cases() as $action)
+                        <label class="flex cursor-pointer items-start gap-3 text-sm">
+                            <input type="radio" name="outsider_action" value="{{ $action->value }}" @checked($currentAction === $action->value) class="mt-1 size-4 shrink-0 accent-primary-dark">
+                            <span>{{ $action->label() }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                <x-field-error name="outsider_action" />
+
+                <div class="mt-3">
+                    <label for="access-redirect-url" class="block text-[13px] font-medium text-text-secondary">移動先の URL（「別のURLへ移動する」のとき）</label>
+                    <input
+                        id="access-redirect-url"
+                        name="redirect_url"
+                        type="url"
+                        maxlength="2048"
+                        placeholder="https://example.org/"
+                        value="{{ old('redirect_url', $accessValues['redirect_url']) }}"
+                        class="form-control mt-2"
+                        aria-describedby="access-redirect-url-hint{{ $errors->has('redirect_url') ? ' access-redirect-url-error' : '' }}"
+                        @error('redirect_url') aria-invalid="true" @enderror
+                    >
+                    <p id="access-redirect-url-hint" class="mt-1.5 text-xs text-text-secondary">本来のサイトやポートフォリオなど。このサイト自身の URL は指定できません。</p>
+                    <x-field-error name="redirect_url" id="access-redirect-url-error" />
+                </div>
+            </fieldset>
+
+            <p class="text-xs leading-relaxed text-text-secondary">
+                使える人は、管理者と「ユーザー」タブで「利用を許可」した人です。許可された人は <code class="rounded bg-primary-tint-soft px-1">{{ route('auth.login') }}</code> から直接ログインします（限定モードでは、ダッシュボードを開いてもログイン画面には案内しません）。
+            </p>
+
+            <x-button type="submit" size="sm">保存する</x-button>
+        </form>
+    </section>
+
     @foreach (\App\Models\SitePage::AVAILABLE as $slug => $defaultTitle)
         @php
             $page = $pages->get($slug);
@@ -203,7 +267,9 @@
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 id="{{ $slug }}-heading" class="font-rounded text-[15px] font-bold">{{ $defaultTitle }}</h2>
                 <p class="text-[13px] text-text-secondary">
-                    @if ($page)
+                    @if ($slug === \App\Models\SitePage::ABOUT)
+                        限定モードで、許可されていない人に表示します{{ $page ? '（'.$page->updated_at?->setTimezone($timezone)->format('Y/m/d H:i').' 更新）' : '（未作成のときは短い既定の文を表示します）' }}
+                    @elseif ($page)
                         公開中: <a href="{{ route('main.'.$slug) }}" target="_blank" rel="noopener noreferrer" class="text-primary-dark underline hover:text-primary-darker">{{ route('main.'.$slug) }}</a>
                         （{{ $page->updated_at?->setTimezone($timezone)->format('Y/m/d H:i') }} 更新）
                     @else
