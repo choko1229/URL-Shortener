@@ -20,6 +20,7 @@ use App\Services\Update\UpdateException;
 use App\Services\Update\Updater;
 use App\Services\Update\UpdateSettings;
 use App\Support\ExternalServiceKeys;
+use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\File;
@@ -106,6 +107,24 @@ final class AutoUpdateTest extends TestCase
         $this->assertSame(UpdateRunStatus::Succeeded, $run->status);
 
         Http::assertSent(fn ($request): bool => $request->url() === self::WEBHOOK && str_contains((string) $request['content'], '成功'));
+
+        // 「application/vnd.github+json, application/octet-stream」になると、GitHub は zip ではなく JSON を返す（v26.9.2 の不具合）
+        Http::assertSent(static fn (Request $request): bool => str_contains($request->url(), '/releases/assets/')
+            && $request->header('Accept') === ['application/octet-stream']);
+    }
+
+    /** GitHub が zip の代わりに添付ファイルの説明（JSON）を返した場合は、更新せずに元へ戻す */
+    public function test_a_download_that_is_not_a_zip_is_rolled_back(): void
+    {
+        $this->fakeGitHub('v26.9.1', assetResponse: Http::response(['url' => 'https://api.github.com/repos/x/y/releases/assets/1', 'name' => 'url-shortener-v26.9.1.zip'], 200, ['Content-Type' => 'application/json']));
+
+        $outcome = $this->updater()->run();
+
+        $this->assertSame(UpdateRunStatus::RolledBack, $outcome->status);
+        $this->assertStringContainsString('zip 以外のデータが返りました', $outcome->message);
+        $this->assertSame('v26.9.0
+', File::get($this->basePath.'/VERSION'));
+        $this->assertFileExists($this->basePath.'/app/Old.php');
     }
 
     public function test_rolls_back_code_and_database_when_health_check_fails(): void
@@ -260,7 +279,7 @@ final class AutoUpdateTest extends TestCase
         );
     }
 
-    private function fakeGitHub(string $tag): void
+    private function fakeGitHub(string $tag, ?PromiseInterface $assetResponse = null): void
     {
         $package = $this->root.'/package.zip';
         $this->makeZip($package, [
@@ -277,7 +296,7 @@ final class AutoUpdateTest extends TestCase
                 'html_url' => "https://github.com/choko1229/URL-Shortener/releases/tag/{$tag}",
                 'assets' => [['name' => "url-shortener-{$tag}.zip", 'url' => 'https://api.github.com/repos/choko1229/URL-Shortener/releases/assets/1']],
             ]),
-            'api.github.com/repos/*/releases/assets/*' => Http::response((string) file_get_contents($package), 200, ['Content-Type' => 'application/octet-stream']),
+            'api.github.com/repos/*/releases/assets/*' => $assetResponse ?? Http::response((string) file_get_contents($package), 200, ['Content-Type' => 'application/octet-stream']),
             'discord.com/api/webhooks/*' => Http::response(null, 204),
         ]);
     }

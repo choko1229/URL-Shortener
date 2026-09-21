@@ -70,7 +70,9 @@ final class GitHubReleaseClient
         try {
             // リダイレクト先（ストレージ）には Authorization ヘッダーを送らない（Guzzle が別ホストでは除去する）
             $response = $this->request($token)
-                ->withHeaders(['Accept' => 'application/octet-stream'])
+                // withHeaders は同名のヘッダーを結合するため置き換える。
+                // 「application/vnd.github+json, application/octet-stream」になると、GitHub は zip ではなく添付ファイルの説明（JSON）を返す
+                ->replaceHeaders(['Accept' => 'application/octet-stream'])
                 ->timeout(self::DOWNLOAD_TIMEOUT_SECONDS)
                 ->sink($destination)
                 ->get($assetUrl);
@@ -83,6 +85,30 @@ final class GitHubReleaseClient
         if (! $response->successful() || ! is_file($destination) || filesize($destination) === 0) {
             throw new UpdateException("リリースの zip をダウンロードできませんでした（HTTP {$response->status()}）。");
         }
+
+        if (! self::looksLikeZip($destination)) {
+            Log::error('リリースのダウンロードで zip 以外が返りました。', [
+                'content_type' => $response->header('Content-Type'),
+                'size' => filesize($destination),
+            ]);
+
+            throw new UpdateException('リリースの zip をダウンロードできませんでした（zip 以外のデータが返りました: '.($response->header('Content-Type') ?: '種類不明').'）。');
+        }
+    }
+
+    /** zip の先頭 4 バイト（PK\x03\x04）で判定する */
+    private static function looksLikeZip(string $path): bool
+    {
+        $handle = @fopen($path, 'rb');
+
+        if ($handle === false) {
+            return false;
+        }
+
+        $signature = fread($handle, 4);
+        fclose($handle);
+
+        return $signature === "PK\x03\x04";
     }
 
     private function request(?string $token): PendingRequest

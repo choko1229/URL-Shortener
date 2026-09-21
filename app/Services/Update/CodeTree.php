@@ -66,8 +66,9 @@ final class CodeTree
     public function extract(string $zipPath, string $destination): void
     {
         $zip = new ZipArchive;
-        if ($zip->open($zipPath) !== true) {
-            throw new UpdateException('zip を開けません。');
+        $result = $zip->open($zipPath);
+        if ($result !== true) {
+            throw new UpdateException("zip を開けません（ZipArchive のエラー {$result}）。");
         }
 
         File::ensureDirectoryExists($destination);
