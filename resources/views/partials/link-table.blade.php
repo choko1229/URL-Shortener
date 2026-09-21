@@ -85,6 +85,18 @@
                                     <x-icon name="qr-code" :size="16" />
                                 </x-button>
                             @endunless
+                            {{-- 管理者の一覧（全URL）: 元URL・有効期限・発行者を変更する --}}
+                            @if (($showOwner ?? false) && ! $link->isDeleted())
+                                <x-button
+                                    variant="ghost"
+                                    size="icon"
+                                    :href="route('dashboard.links.show', ['shortUrl' => $link->id]).'#admin-edit'"
+                                    :aria-label="$link->displayUrl.' を編集（元URL・有効期限・発行者）'"
+                                    :title="$link->displayUrl.' を編集（元URL・有効期限・発行者）'"
+                                >
+                                    <x-icon name="pencil" :size="16" />
+                                </x-button>
+                            @endif
                             <x-button
                                 variant="ghost"
                                 size="icon"

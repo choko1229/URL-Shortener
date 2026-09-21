@@ -6,6 +6,7 @@
     @var int $slugMinLength
     @var int $slugMaxLength
     @var bool $showGeoIpAttribution
+    @var \App\ViewModels\AdminLinkEditData|null $adminEdit
 --}}
 @php
     $link = $stats->link;
@@ -258,6 +259,75 @@
                 </form>
             @endif
         </section>
+
+        @if ($adminEdit)
+            @php $expiryChoice = old('expiry', $adminEdit->expiresAtLocal === null ? 'never' : 'custom'); @endphp
+            <section id="admin-edit" aria-labelledby="admin-edit-heading" class="scroll-mt-6 rounded-card border border-border bg-surface p-5 sm:p-6">
+                <h2 id="admin-edit-heading" class="font-rounded text-[15px] font-bold">管理者による編集</h2>
+                <p class="mt-1 text-[13px] text-text-secondary">元URL・有効期限・発行者を変更できます。短縮URL（{{ $link->displayUrl }}）はそのままです。</p>
+
+                <form method="POST" action="{{ route('dashboard.admin.links.update', ['shortUrl' => $adminEdit->linkId]) }}" class="mt-4 max-w-xl space-y-5">
+                    @csrf
+                    @method('PATCH')
+
+                    <div>
+                        <label for="admin-original-url" class="block text-[13px] font-medium text-text-secondary">元URL（移動先）</label>
+                        <input
+                            id="admin-original-url"
+                            name="original_url"
+                            type="url"
+                            required
+                            maxlength="2048"
+                            value="{{ old('original_url', $adminEdit->originalUrl) }}"
+                            class="form-control mt-2"
+                            @error('original_url') aria-invalid="true" aria-describedby="admin-original-url-error" @enderror
+                        >
+                        <x-field-error name="original_url" id="admin-original-url-error" />
+                    </div>
+
+                    <fieldset>
+                        <legend class="text-[13px] font-medium text-text-secondary">有効期限</legend>
+                        <div class="mt-2 space-y-2 text-sm">
+                            <label class="flex cursor-pointer items-center gap-2.5">
+                                <input type="radio" name="expiry" value="never" @checked($expiryChoice === 'never') class="size-4 accent-primary-dark">
+                                無期限
+                            </label>
+                            <label class="flex cursor-pointer flex-wrap items-center gap-2.5">
+                                <input type="radio" name="expiry" value="custom" @checked($expiryChoice === 'custom') class="size-4 accent-primary-dark">
+                                日時を指定
+                                <input
+                                    type="datetime-local"
+                                    name="expires_at"
+                                    step="60"
+                                    value="{{ old('expires_at', $adminEdit->expiresAtLocal) }}"
+                                    class="form-control w-auto py-2"
+                                    aria-label="有効期限の日時"
+                                    aria-describedby="admin-expires-hint"
+                                    @error('expires_at') aria-invalid="true" @enderror
+                                >
+                            </label>
+                        </div>
+                        <p id="admin-expires-hint" class="mt-1.5 text-xs text-text-secondary">日時は {{ $adminEdit->timezone }} です。過去の日時にすると、削除せずに期限切れにできます。</p>
+                        <x-field-error name="expires_at" />
+                    </fieldset>
+
+                    <div>
+                        <label for="admin-owner" class="block text-[13px] font-medium text-text-secondary">発行者</label>
+                        @php $currentOwner = (string) old('user_id', (string) $adminEdit->userId); @endphp
+                        <select id="admin-owner" name="user_id" class="form-control mt-2" @error('user_id') aria-invalid="true" aria-describedby="admin-owner-error" @enderror>
+                            <option value="" @selected($currentOwner === '')>未ログインで発行（管理者だけが管理できます）</option>
+                            @foreach ($adminEdit->users as $userId => $label)
+                                <option value="{{ $userId }}" @selected($currentOwner === (string) $userId)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1.5 text-xs text-text-secondary">ユーザーに移すと、その人のダッシュボードに表示され、統計の確認や削除ができるようになります（月間の発行数には数えません）。</p>
+                        <x-field-error name="user_id" id="admin-owner-error" />
+                    </div>
+
+                    <x-button type="submit" size="sm">保存する</x-button>
+                </form>
+            </section>
+        @endif
     </div>
 
     @include('partials.qr-dialog')

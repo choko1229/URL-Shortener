@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateLinkRequest;
 use App\Models\ShortUrl;
+use App\Models\User;
+use App\Services\ShortUrl\AdminLinkEditor;
 use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
 use App\ViewModels\LinkRowData;
@@ -13,6 +16,7 @@ use App\ViewModels\ViewerData;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /** 全URLの管理（requirements.md 4-2: 管理者は全URLを管理・削除、未ログイン発行分の統計も閲覧できる） */
@@ -64,5 +68,18 @@ final class LinkController extends Controller
                 ->through(static fn (ShortUrl $link): LinkRowData => LinkRowData::fromModel($link, $urls, $now, $warningDays, $timezone, withOwner: true)),
             'filters' => ['owner' => $owner, 'state' => $state, 'q' => $keyword],
         ]);
+    }
+
+    /** 元URL・有効期限・発行者の変更（短縮コードはそのまま） */
+    public function update(UpdateLinkRequest $request, ShortUrl $shortUrl, AdminLinkEditor $editor): RedirectResponse
+    {
+        /** @var User $admin */
+        $admin = $request->user();
+
+        $changed = $editor->update($shortUrl, $request->changes(), $admin);
+
+        return redirect()
+            ->to(route('dashboard.links.show', ['shortUrl' => $shortUrl->id]).'#admin-edit')
+            ->with('notice', $changed === [] ? '変更はありませんでした。' : implode('・', $changed).'を変更しました。');
     }
 }

@@ -139,6 +139,7 @@ Route::domain(config('shortener.domains.dashboard'))
             ->middleware('can:admin')
             ->group(static function (): void {
                 Route::get('/links', [AdminLinkController::class, 'index'])->name('links');
+                Route::patch('/links/{shortUrl}', [AdminLinkController::class, 'update'])->whereNumber('shortUrl')->name('links.update');
                 Route::get('/links/import/template', [LinkImportController::class, 'template'])->name('links.import.template');
                 Route::post('/links/import', [LinkImportController::class, 'store'])->middleware('throttle:10,1')->name('links.import');
 

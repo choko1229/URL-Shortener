@@ -14,6 +14,7 @@ use App\Services\GeoIp\GeoIpDatabase;
 use App\Services\ShortUrl\IssuanceException;
 use App\Services\ShortUrl\SlugEditor;
 use App\Support\ShortenerSettings;
+use App\ViewModels\AdminLinkEditData;
 use App\ViewModels\ViewerData;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -30,14 +31,18 @@ final class LinkController extends Controller
         Gate::authorize('view', $shortUrl);
         $shortUrl->loadMissing('user');
 
+        $viewer = self::user($request);
+
         return view('dashboard.links.show', [
-            'viewer' => ViewerData::fromUser(self::user($request)),
+            'viewer' => ViewerData::fromUser($viewer),
             'stats' => $statistics->build($shortUrl, CarbonImmutable::now()),
             'canEdit' => Gate::allows('update', $shortUrl),
             'slugMinLength' => $settings->customSlugMinLengthFor(self::user($request)),
             'slugMaxLength' => $settings->customSlugMaxLength(),
             // DB-IP のデータ（CC BY 4.0）で判定した国を表示する場合は出典のリンクが必要
             'showGeoIpAttribution' => $geoIp->source()?->requiresAttribution() ?? false,
+            // 管理者だけが元URL・有効期限・発行者を変更できる
+            'adminEdit' => $viewer->isAdmin() && ! $shortUrl->trashed() ? AdminLinkEditData::from($shortUrl, $settings->displayTimezone()) : null,
         ]);
     }
 
