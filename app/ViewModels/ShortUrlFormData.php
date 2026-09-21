@@ -38,6 +38,8 @@ final readonly class ShortUrlFormData
         ShortUrlBuilder $urls,
         CarbonImmutable $now,
         ?string $recaptchaSiteKey = null,
+        // 管理者は 1 文字のカスタムスラッグも使える
+        bool $isAdmin = false,
     ): self {
         $localNow = $now->setTimezone($settings->displayTimezone());
         $maxDays = $isMember ? null : $settings->guestMaxExpiryDays();
@@ -49,7 +51,7 @@ final readonly class ShortUrlFormData
             maxExpiryDays: $maxDays,
             expiresAtMin: $localNow->addMinutes(5)->format(self::DATETIME_LOCAL_FORMAT),
             expiresAtMax: $maxDays === null ? null : $localNow->addDays($maxDays)->format(self::DATETIME_LOCAL_FORMAT),
-            customSlugMinLength: $settings->customSlugMinLength(),
+            customSlugMinLength: $isAdmin ? ShortenerSettings::ADMIN_CUSTOM_SLUG_MIN_LENGTH : $settings->customSlugMinLength(),
             customSlugMaxLength: $settings->customSlugMaxLength(),
             shortHost: $urls->host(),
             recaptchaSiteKey: $isMember ? null : $recaptchaSiteKey,

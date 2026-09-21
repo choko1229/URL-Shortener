@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\ShortUrl;
 
 use App\Enums\PreviewMode;
+use App\Models\User;
 use App\Rules\NotOwnDomain;
 use App\Support\ShortenerSettings;
 use Illuminate\Validation\Rule;
@@ -12,12 +13,18 @@ use Illuminate\Validation\Rule;
 /** 発行時の入力ルール（API と CSV インポートで共用する） */
 final class LinkRules
 {
-    /** @return array<string, list<mixed>> */
-    public static function basic(ShortenerSettings $settings): array
+    /**
+     * @param  bool  $bulkImport  CSV インポート（管理者のみ）: スラッグの文字数の設定を無視し、1 文字から列の長さまで受け付ける
+     * @return array<string, list<mixed>>
+     */
+    public static function basic(ShortenerSettings $settings, ?User $user, bool $bulkImport = false): array
     {
+        $minLength = $bulkImport ? ShortenerSettings::ADMIN_CUSTOM_SLUG_MIN_LENGTH : $settings->customSlugMinLengthFor($user);
+        $maxLength = $bulkImport ? ShortenerSettings::SLUG_COLUMN_LENGTH : $settings->customSlugMaxLength();
+
         return [
             'url' => ['required', 'string', 'max:2048', 'url:http,https', new NotOwnDomain],
-            'slug' => ['nullable', 'string', 'min:'.$settings->customSlugMinLength(), 'max:'.$settings->customSlugMaxLength(), 'regex:/\A[A-Za-z0-9_-]+\z/'],
+            'slug' => ['nullable', 'string', 'min:'.$minLength, 'max:'.$maxLength, 'regex:/\A[A-Za-z0-9_-]+\z/'],
             'expires_at' => ['nullable', 'date', 'after:now'],
             'password' => ['nullable', 'string', 'min:4', 'max:72'],
         ];

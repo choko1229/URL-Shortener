@@ -16,7 +16,7 @@
             </x-button>
         </div>
         <p class="mt-2 text-[13px] leading-relaxed text-text-secondary">
-            1行目に見出し、2行目以降にURLを並べた CSV を取り込みます。発行した短縮URLの発行者はあなたになり、月間上限は適用しません。一度に{{ \App\Services\ShortUrl\CsvImporter::MAX_ROWS }}行まで。
+            1行目に見出し、2行目以降にURLを並べた CSV を取り込みます。発行した短縮URLの発行者はあなたになります。月間上限・予約語・スラッグの文字数の設定は適用しません（スラッグは1〜20文字）。一度に{{ \App\Services\ShortUrl\CsvImporter::MAX_ROWS }}行まで。
         </p>
 
         <form method="POST" action="{{ route('dashboard.admin.links.import') }}" enctype="multipart/form-data" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start">

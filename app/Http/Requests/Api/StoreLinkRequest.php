@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Api;
 
+use App\Models\User;
 use App\Services\ShortUrl\LinkRules;
 use App\Services\ShortUrl\ShortUrlDraft;
 use App\Support\ShortenerSettings;
@@ -21,7 +22,9 @@ final class StoreLinkRequest extends FormRequest
     /** @return array<string, list<mixed>> */
     public function rules(): array
     {
-        return LinkRules::basic($this->container->make(ShortenerSettings::class));
+        $user = $this->user();
+
+        return LinkRules::basic($this->container->make(ShortenerSettings::class), $user instanceof User ? $user : null);
     }
 
     /** @return array<string, string> */

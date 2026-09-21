@@ -27,8 +27,8 @@ use Symfony\Component\HttpFoundation\Response as HttpStatus;
  */
 final class ShortLinkController extends Controller
 {
-    /** カスタムスラッグの文字種（英数字・ハイフン・アンダースコア）かつ 3〜20 文字 */
-    public const CODE_PATTERN = '[A-Za-z0-9_\-]{3,20}';
+    /** カスタムスラッグの文字種（英数字・ハイフン・アンダースコア）。管理者の 1 文字から、列の長さ（20 文字）まで */
+    public const CODE_PATTERN = '[A-Za-z0-9_\-]{'.ShortenerSettings::ADMIN_CUSTOM_SLUG_MIN_LENGTH.','.ShortenerSettings::SLUG_COLUMN_LENGTH.'}';
 
     public function __construct(
         private readonly ShortUrlResolver $resolver,

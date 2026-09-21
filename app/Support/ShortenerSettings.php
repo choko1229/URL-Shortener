@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Models\AppSetting;
+use App\Models\User;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +17,11 @@ use InvalidArgumentException;
  */
 final class ShortenerSettings
 {
+    public const ADMIN_CUSTOM_SLUG_MIN_LENGTH = 1;
+
+    /** short_urls.slug の列の長さ。設定にかかわらず、これより長いスラッグは保存できない */
+    public const SLUG_COLUMN_LENGTH = 20;
+
     /** @var array<string, int> リクエスト内キャッシュ */
     private array $resolved = [];
 
@@ -49,6 +55,12 @@ final class ShortenerSettings
     public function customSlugMaxLength(): int
     {
         return $this->int('custom_slug_max_length');
+    }
+
+    /** 管理者は 1 文字のカスタムスラッグも使える（短いほど貴重なため、一般ユーザーには開放しない） */
+    public function customSlugMinLengthFor(?User $user): int
+    {
+        return ($user?->isAdmin() ?? false) ? self::ADMIN_CUSTOM_SLUG_MIN_LENGTH : $this->customSlugMinLength();
     }
 
     public function dashboardLinksPerPage(): int

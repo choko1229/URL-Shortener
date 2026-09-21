@@ -45,7 +45,7 @@ final class StoreShortUrlRequest extends FormRequest
                 ? [
                     'nullable',
                     'string',
-                    'min:'.$settings->customSlugMinLength(),
+                    'min:'.$settings->customSlugMinLengthFor($this->user()),
                     'max:'.$settings->customSlugMaxLength(),
                     'regex:/\A[A-Za-z0-9_-]+\z/',
                 ]

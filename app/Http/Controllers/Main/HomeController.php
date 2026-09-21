@@ -28,7 +28,7 @@ final class HomeController extends Controller
         return view('main.home', [
             'page' => new HomePageData(
                 viewer: $isMember ? ViewerData::fromUser($user) : ViewerData::guest(),
-                form: ShortUrlFormData::build($isMember, $settings, $urls, CarbonImmutable::now(), $recaptcha->siteKey()),
+                form: ShortUrlFormData::build($isMember, $settings, $urls, CarbonImmutable::now(), $recaptcha->siteKey(), isAdmin: $isMember && $user->isAdmin()),
                 issuedLink: IssuedLinkData::fromSession($request->session()),
                 displayTimezone: $settings->displayTimezone(),
             ),

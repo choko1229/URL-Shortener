@@ -30,7 +30,7 @@ final class DashboardPageBuilder
     public function build(User $user, CarbonImmutable $now, ?IssuedLinkData $issuedLink = null): DashboardPageData
     {
         $viewer = ViewerData::fromUser($user);
-        $form = ShortUrlFormData::build(true, $this->settings, $this->urls, $now);
+        $form = ShortUrlFormData::build(true, $this->settings, $this->urls, $now, isAdmin: $user->isAdmin());
 
         try {
             $stats = $this->stats($user, $now);

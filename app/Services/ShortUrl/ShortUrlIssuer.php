@@ -86,6 +86,10 @@ final class ShortUrlIssuer
     /** @throws IssuanceException */
     public function ensureCustomSlugAvailable(string $slug, ?User $user): void
     {
+        if ($this->availability->conflictsWithRoute($slug)) {
+            throw new IssuanceException('このカスタムスラッグはサイト内のページと同じ URL になるため使えません。', 'custom_slug');
+        }
+
         if (! ($user?->isAdmin() ?? false) && $this->availability->isReserved($slug)) {
             throw new IssuanceException('このカスタムスラッグは予約されているため使えません。', 'custom_slug');
         }

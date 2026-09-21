@@ -34,7 +34,7 @@ final class LinkController extends Controller
             'viewer' => ViewerData::fromUser(self::user($request)),
             'stats' => $statistics->build($shortUrl, CarbonImmutable::now()),
             'canEdit' => Gate::allows('update', $shortUrl),
-            'slugMinLength' => $settings->customSlugMinLength(),
+            'slugMinLength' => $settings->customSlugMinLengthFor(self::user($request)),
             'slugMaxLength' => $settings->customSlugMaxLength(),
             // DB-IP のデータ（CC BY 4.0）で判定した国を表示する場合は出典のリンクが必要
             'showGeoIpAttribution' => $geoIp->source()?->requiresAttribution() ?? false,

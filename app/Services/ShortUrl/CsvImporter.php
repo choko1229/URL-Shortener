@@ -124,7 +124,7 @@ final class CsvImporter
     {
         $validator = $this->validator->make(
             $values,
-            LinkRules::basic($this->settings) + LinkRules::preview(),
+            LinkRules::basic($this->settings, $admin, bulkImport: true) + LinkRules::preview(),
             LinkRules::messages(),
         );
 
