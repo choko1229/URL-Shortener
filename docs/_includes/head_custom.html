@@ -427,8 +427,12 @@
   }
 
   /* 見出し自体に番号が付いているページがあるため、目次の自動の番号は出さない */
-  .main-content #markdown-toc > li::before {
+  .main-content #markdown-toc li::before {
     content: none;
+  }
+
+  .main-content #markdown-toc ol {
+    padding-left: 1.25rem;
   }
 
   .main-content #markdown-toc a {
