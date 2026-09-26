@@ -123,12 +123,13 @@ final class UpdateSupportTest extends TestCase
     public function test_admin_can_check_latest_release(): void
     {
         AppSetting::store(AppSetting::UPDATE_GITHUB_TOKEN, 'github-token-value', encrypt: true);
-        Http::fake(['api.github.com/*' => Http::response(['tag_name' => 'v26.9.5', 'html_url' => 'https://github.com/x', 'assets' => []])]);
+        // 現在のバージョン（git のタグ）より必ず新しいタグにする。同じタグだと「最新の状態です」になる
+        Http::fake(['api.github.com/*' => Http::response(['tag_name' => 'v99.1.0', 'html_url' => 'https://github.com/x', 'assets' => []])]);
 
         $this->actingAs(User::factory()->admin()->create())
             ->from($this->dashboardUrl('/admin/updates'))
             ->post($this->dashboardUrl('/admin/updates/check'))
-            ->assertSessionHas('notice', fn (string $message): bool => str_contains($message, 'v26.9.5'));
+            ->assertSessionHas('notice', fn (string $message): bool => str_contains($message, 'v99.1.0'));
 
         Http::assertSent(fn ($request): bool => $request->hasHeader('Authorization', 'Bearer github-token-value'));
     }
