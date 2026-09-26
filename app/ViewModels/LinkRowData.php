@@ -25,6 +25,10 @@ final readonly class LinkRowData
         public bool $isCustomSlug,
         // 管理者の一覧でのみ使う発行者の表示名（未ログイン発行は「未ログイン」）
         public ?string $ownerLabel = null,
+        // 発行日（Y/m/d）
+        public string $createdLabel = '',
+        // 「残りN日」「期限切れ」の下に添える期限の日時（それ以外は null）
+        public ?string $expiryDetail = null,
     ) {}
 
     public static function fromModel(
@@ -49,6 +53,8 @@ final readonly class LinkRowData
             isPasswordProtected: $link->isPasswordProtected(),
             isCustomSlug: $link->isCustomSlug(),
             ownerLabel: $withOwner ? self::ownerLabel($link) : null,
+            createdLabel: $link->created_at?->setTimezone($timezone)->format('Y/m/d') ?? '',
+            expiryDetail: self::expiryDetail($link->expires_at, $status, $timezone),
         );
     }
 
@@ -89,6 +95,16 @@ final readonly class LinkRowData
             LinkStatus::ExpiringSoon => self::remainingLabel($now, $expiresAt),
             default => $expiresAt->setTimezone($timezone)->format('Y/m/d H:i').' まで',
         };
+    }
+
+    /** 残り日数や「期限切れ」だけでは分からない、実際の期限の日時 */
+    private static function expiryDetail(?CarbonImmutable $expiresAt, LinkStatus $status, string $timezone): ?string
+    {
+        if ($expiresAt === null || ! in_array($status, [LinkStatus::ExpiringSoon, LinkStatus::Expired], true)) {
+            return null;
+        }
+
+        return $expiresAt->setTimezone($timezone)->format('Y/m/d H:i').($status === LinkStatus::Expired ? ' に終了' : ' まで');
     }
 
     private static function remainingLabel(CarbonImmutable $now, CarbonImmutable $expiresAt): string

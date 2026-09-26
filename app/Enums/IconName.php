@@ -40,10 +40,24 @@ enum IconName: string
     case Share = 'share';
     case Sun = 'sun';
     case Moon = 'moon';
+    case Eye = 'eye';
+    case EyeOff = 'eye-off';
+    case Sparkles = 'sparkles';
+    case Check = 'check';
+    case ArrowUp = 'arrow-up';
+    case ArrowDown = 'arrow-down';
+    case ArrowUpDown = 'arrow-up-down';
 
     public function svgContent(): string
     {
         return match ($this) {
+            self::Eye => '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+            self::EyeOff => '<path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.2 3.2M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/>',
+            self::Sparkles => '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15v4M17 17h4M5 3v3M3.5 4.5h3"/>',
+            self::Check => '<path d="m5 12 5 5L20 7"/>',
+            self::ArrowUp => '<path d="M12 19V5M6 11l6-6 6 6"/>',
+            self::ArrowDown => '<path d="M12 5v14M6 13l6 6 6-6"/>',
+            self::ArrowUpDown => '<path d="m8 9 4-4 4 4M8 15l4 4 4-4"/>',
             self::Sun => '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
             self::Moon => '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z"/>',
             self::Share => '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',

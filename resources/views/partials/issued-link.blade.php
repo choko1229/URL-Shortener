@@ -3,11 +3,12 @@
     @var \App\ViewModels\IssuedLinkData $link
     @var string $timezone
 --}}
-<section aria-labelledby="issued-link-heading" class="mt-6 rounded-card bg-dark-panel px-5 py-5 text-white sm:px-7 sm:py-[22px]">
+{{-- 発行直後は、押しつぶした URL がぽんっと広がるように現れる（app.css: .issued-pop） --}}
+<section aria-labelledby="issued-link-heading" class="issued-pop mt-6 rounded-card bg-dark-panel px-5 py-5 text-white sm:px-7 sm:py-[22px]" data-issued-link>
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
             <h2 id="issued-link-heading" class="mb-1 text-xs font-medium text-primary">発行された短縮URL</h2>
-            <p class="truncate font-rounded text-xl font-bold">
+            <p class="issued-pop-url truncate font-rounded text-xl font-bold">
                 <a href="{{ $link->shortUrl }}" target="_blank" rel="noopener noreferrer" class="text-white hover:text-primary-tint">
                     {{ $link->displayUrl }}<span class="sr-only">（新しいタブで開く）</span>
                 </a>

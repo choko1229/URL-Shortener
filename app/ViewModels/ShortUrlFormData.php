@@ -30,6 +30,8 @@ final readonly class ShortUrlFormData
         public string $shortHost,
         // reCAPTCHA v3 のサイトキー。未ログインかつ設定済みの場合のみ
         public ?string $recaptchaSiteKey = null,
+        // 有効期限の「いつまで」を表示するときのタイムゾーン
+        public string $timezone = 'Asia/Tokyo',
     ) {}
 
     public static function build(
@@ -55,6 +57,7 @@ final readonly class ShortUrlFormData
             customSlugMaxLength: $settings->customSlugMaxLength(),
             shortHost: $urls->host(),
             recaptchaSiteKey: $isMember ? null : $recaptchaSiteKey,
+            timezone: $settings->displayTimezone(),
         );
     }
 

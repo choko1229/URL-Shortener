@@ -118,6 +118,96 @@
             @apply w-full opacity-60;
         }
     }
+
+    /*
+     * 発行時の「圧縮」演出: 入力欄を左右のプレートで押しつぶし、ボタンは「圧縮中…」に変える。
+     * form.is-compressing は app.js（initShortenForms）が付ける
+     */
+    .compress-stage {
+        @apply relative;
+    }
+
+    .compress-stage::before,
+    .compress-stage::after {
+        @apply pointer-events-none absolute -top-1 -bottom-1 w-1.5 rounded-full bg-primary-dark opacity-0;
+        content: '';
+    }
+
+    .compress-stage::before {
+        left: 0;
+    }
+
+    .compress-stage::after {
+        right: 0;
+    }
+
+    .is-compressing .compress-stage > input {
+        animation: compress-squeeze 650ms cubic-bezier(0.55, -0.15, 0.35, 1.25) forwards;
+    }
+
+    .is-compressing .compress-stage::before {
+        animation: compress-plate-left 650ms cubic-bezier(0.55, -0.15, 0.35, 1.25) forwards;
+    }
+
+    .is-compressing .compress-stage::after {
+        animation: compress-plate-right 650ms cubic-bezier(0.55, -0.15, 0.35, 1.25) forwards;
+    }
+
+    [data-label-busy],
+    .is-compressing [data-label-idle] {
+        display: none;
+    }
+
+    .is-compressing [data-label-busy] {
+        display: inline-flex;
+    }
+
+    /* 発行結果: 押しつぶした URL が横に広がって現れる */
+    .issued-pop {
+        animation: issued-decompress 700ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
+    }
+
+    .issued-pop-url {
+        animation: issued-letters 900ms cubic-bezier(0.2, 1.2, 0.4, 1) 150ms both;
+    }
+
+    /* コピー: ボタンが弾み、上に「コピーしました」の吹き出しを出す */
+    .copy-button {
+        @apply relative;
+    }
+
+    .copy-button[data-copied='true'] {
+        animation: copy-bounce 450ms cubic-bezier(0.3, 1.6, 0.5, 1);
+    }
+
+    .copy-button[data-copied='true']::before {
+        @apply pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 whitespace-nowrap rounded-md bg-primary-darker px-2 py-1 font-sans text-[11px] font-medium text-white shadow-card;
+        content: 'コピーしました';
+        animation: copy-tooltip 1600ms ease-out both;
+    }
+
+    .copy-button[data-copied='true']::after {
+        @apply pointer-events-none absolute inset-0 rounded-control border-2 border-primary;
+        content: '';
+        animation: copy-ripple 600ms ease-out both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .is-compressing .compress-stage > input,
+        .is-compressing .compress-stage::before,
+        .is-compressing .compress-stage::after,
+        .issued-pop,
+        .issued-pop-url,
+        .copy-button[data-copied='true'],
+        .copy-button[data-copied='true']::after {
+            animation: none;
+        }
+
+        .copy-button[data-copied='true']::before {
+            animation: none;
+            transform: translateX(-50%);
+        }
+    }
 }
 
 @keyframes progress-slide {
@@ -126,5 +216,131 @@
     }
     to {
         transform: translateX(300%);
+    }
+}
+
+@keyframes compress-squeeze {
+    0% {
+        transform: scaleX(1);
+    }
+    60% {
+        transform: scaleX(0.16) scaleY(1.08);
+        opacity: 0.85;
+    }
+    78% {
+        transform: scaleX(0.24) scaleY(0.98);
+    }
+    100% {
+        transform: scaleX(0.2);
+        opacity: 0.9;
+    }
+}
+
+@keyframes compress-plate-left {
+    0% {
+        left: -12px;
+        opacity: 0;
+    }
+    12% {
+        left: 0;
+        opacity: 1;
+    }
+    60% {
+        left: 41%;
+    }
+    78% {
+        left: 37%;
+    }
+    100% {
+        left: 39%;
+        opacity: 1;
+    }
+}
+
+@keyframes compress-plate-right {
+    0% {
+        right: -12px;
+        opacity: 0;
+    }
+    12% {
+        right: 0;
+        opacity: 1;
+    }
+    60% {
+        right: 41%;
+    }
+    78% {
+        right: 37%;
+    }
+    100% {
+        right: 39%;
+        opacity: 1;
+    }
+}
+
+@keyframes issued-decompress {
+    0% {
+        transform: scaleX(0.2);
+        opacity: 0;
+    }
+    55% {
+        transform: scaleX(1.04);
+        opacity: 1;
+    }
+    100% {
+        transform: scaleX(1);
+    }
+}
+
+@keyframes issued-letters {
+    0% {
+        letter-spacing: -0.4em;
+        opacity: 0;
+    }
+    100% {
+        letter-spacing: normal;
+        opacity: 1;
+    }
+}
+
+@keyframes copy-bounce {
+    0% {
+        transform: scale(1);
+    }
+    35% {
+        transform: scale(0.82);
+    }
+    70% {
+        transform: scale(1.12);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes copy-ripple {
+    from {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    to {
+        transform: scale(1.6);
+        opacity: 0;
+    }
+}
+
+@keyframes copy-tooltip {
+    0% {
+        transform: translate(-50%, 6px);
+        opacity: 0;
+    }
+    15%,
+    75% {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -4px);
+        opacity: 0;
     }
 }

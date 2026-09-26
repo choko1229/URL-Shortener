@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\UpdateLinkRequest;
 use App\Models\ShortUrl;
 use App\Models\User;
 use App\Services\ShortUrl\AdminLinkEditor;
+use App\Support\LinkSort;
 use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
 use App\ViewModels\LinkRowData;
@@ -37,7 +38,8 @@ final class LinkController extends Controller
         $keyword = trim((string) $request->query('q', ''));
         $keyword = mb_substr($keyword, 0, 100);
 
-        $query = ShortUrl::withTrashed()->with('user')->latest('id');
+        $sort = LinkSort::fromRequest($request);
+        $query = $sort->apply(ShortUrl::withTrashed()->with('user'));
 
         match ($state) {
             'active' => $query->whereNull('deleted_at'),
@@ -67,6 +69,7 @@ final class LinkController extends Controller
             'links' => $query->paginate(self::PER_PAGE)->withQueryString()
                 ->through(static fn (ShortUrl $link): LinkRowData => LinkRowData::fromModel($link, $urls, $now, $warningDays, $timezone, withOwner: true)),
             'filters' => ['owner' => $owner, 'state' => $state, 'q' => $keyword],
+            'sort' => $sort,
         ]);
     }
 

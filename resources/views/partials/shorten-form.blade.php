@@ -5,9 +5,11 @@
     @var string $idPrefix    同一ページ内で id が衝突しないための接頭辞
     @var string $submitLabel 送信ボタンの文言
     @var string|null $caption 入力欄の下に出す補足
+    @var string|null $cardPreviewUrl 転送先のカード情報の取得先（省略時はメインドメイン）
 --}}
 @php
     $caption ??= null;
+    $cardPreviewUrl ??= route('main.card-preview');
     $ids = [
         'url' => "{$idPrefix}-original-url",
         'slug' => "{$idPrefix}-custom-slug",
@@ -35,6 +37,7 @@
     method="POST"
     action="{{ $action }}"
     class="space-y-4"
+    data-shorten-form
     @if ($form->recaptchaSiteKey) data-recaptcha-site-key="{{ $form->recaptchaSiteKey }}" data-recaptcha-action="{{ \App\Services\Security\RecaptchaVerifier::ACTION_SHORTEN }}" @endif
 >
     @csrf
@@ -45,19 +48,22 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div class="min-w-0 flex-1">
             <label for="{{ $ids['url'] }}" class="sr-only">短縮したいURL</label>
-            <input
-                id="{{ $ids['url'] }}"
-                name="original_url"
-                type="url"
-                inputmode="url"
-                autocomplete="url"
-                required
-                maxlength="2048"
-                placeholder="https://example.com/very/long/path/to/shorten"
-                value="{{ old('original_url') }}"
-                class="form-control"
-                @error('original_url') aria-invalid="true" aria-describedby="{{ $ids['url'] }}-error" @enderror
-            >
+            {{-- 発行時に入力欄を左右から押しつぶすアニメーションの舞台 --}}
+            <div class="compress-stage">
+                <input
+                    id="{{ $ids['url'] }}"
+                    name="original_url"
+                    type="url"
+                    inputmode="url"
+                    autocomplete="url"
+                    required
+                    maxlength="2048"
+                    placeholder="https://example.com/very/long/path/to/shorten"
+                    value="{{ old('original_url') }}"
+                    class="form-control"
+                    @error('original_url') aria-invalid="true" aria-describedby="{{ $ids['url'] }}-error" @enderror
+                >
+            </div>
             <x-field-error name="original_url" :id="$ids['url'].'-error'" />
         </div>
 
@@ -87,7 +93,13 @@
             </div>
         @endif
 
-        <x-button type="submit" class="w-full sm:w-auto">{{ $submitLabel }}</x-button>
+        <x-button type="submit" class="w-full sm:w-auto" data-shorten-submit>
+            <span data-label-idle>{{ $submitLabel }}</span>
+            <span class="items-center gap-2" data-label-busy>
+                <span class="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true"></span>
+                圧縮中…
+            </span>
+        </x-button>
     </div>
 
     @if ($caption)
@@ -163,25 +175,63 @@
             </div>
         </div>
 
+        @include('partials.x-card-preview', [
+            'fetchUrl' => $cardPreviewUrl,
+            'shortHost' => $form->shortHost,
+        ])
+
         <p class="mt-4 text-xs leading-relaxed text-text-secondary">
             パスワード保護をつけたリンクは、転送先が分からないよう常に「カードを隠す」になります。
         </p>
     </div>
 
-    <div id="{{ $ids['passwordPanel'] }}" class="rounded-card border border-border bg-primary-tint-soft p-4 sm:p-5" @unless ($showPasswordPanel) hidden @endunless>
+    <div id="{{ $ids['passwordPanel'] }}" class="rounded-card border border-border bg-primary-tint-soft p-4 sm:p-5" data-password-field @unless ($showPasswordPanel) hidden @endunless>
         <label for="{{ $ids['password'] }}" class="block text-[13px] font-medium text-text-secondary">アクセス用パスワード（任意）</label>
-        <input
-            id="{{ $ids['password'] }}"
-            name="password"
-            type="password"
-            autocomplete="new-password"
-            minlength="4"
-            maxlength="72"
-            class="form-control mt-2 sm:max-w-sm"
-            aria-describedby="{{ $ids['password'] }}-hint{{ $errors->has('password') ? ' '.$ids['password'].'-error' : '' }}"
-            @error('password') aria-invalid="true" @enderror
-        >
-        <p id="{{ $ids['password'] }}-hint" class="mt-2 text-xs text-text-secondary">設定すると、リンクを開く前にパスワードの入力が必要になります（4〜72文字）。</p>
+        <div class="mt-2 flex gap-2 sm:max-w-md">
+            <div class="relative min-w-0 flex-1">
+                <input
+                    id="{{ $ids['password'] }}"
+                    name="password"
+                    type="password"
+                    autocomplete="new-password"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    minlength="4"
+                    maxlength="72"
+                    class="form-control pr-12"
+                    aria-describedby="{{ $ids['password'] }}-hint {{ $ids['password'] }}-strength{{ $errors->has('password') ? ' '.$ids['password'].'-error' : '' }}"
+                    data-password-input
+                    @error('password') aria-invalid="true" @enderror
+                >
+                <button
+                    type="button"
+                    class="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-control text-text-secondary transition-colors hover:text-primary-dark"
+                    aria-controls="{{ $ids['password'] }}"
+                    aria-pressed="false"
+                    aria-label="パスワードを表示する"
+                    title="パスワードを表示する"
+                    data-password-reveal
+                >
+                    <x-icon name="eye" :size="18" data-reveal-icon="show" />
+                    <x-icon name="eye-off" :size="18" data-reveal-icon="hide" hidden />
+                </button>
+            </div>
+            <x-button variant="secondary" size="sm" class="min-h-[52px] px-3.5 sm:px-4" aria-controls="{{ $ids['password'] }}" data-password-generate>
+                <x-icon name="sparkles" :size="16" />
+                自動生成
+            </x-button>
+        </div>
+        <p id="{{ $ids['password'] }}-hint" class="mt-2 text-xs text-text-secondary">設定すると、リンクを開く前にパスワードの入力が必要になります（4〜72文字）。「自動生成」で英数字・記号の12文字を作れます。</p>
+
+        {{-- 安全度の目安（入力を制限するものではない） --}}
+        <div class="mt-3 sm:max-w-md" data-password-strength hidden>
+            <div class="flex gap-1" aria-hidden="true">
+                @for ($i = 0; $i < 4; $i++)
+                    <span class="h-1.5 flex-1 rounded-full bg-border-input transition-colors" data-strength-bar></span>
+                @endfor
+            </div>
+            <p id="{{ $ids['password'] }}-strength" class="mt-1.5 text-xs text-text-secondary" data-strength-label></p>
+        </div>
         <x-field-error name="password" :id="$ids['password'].'-error'" />
     </div>
 
@@ -190,6 +240,7 @@
         class="rounded-card border border-border bg-primary-tint-soft p-4 sm:p-5"
         data-expiry-group
         data-expiry-summary="{{ $ids['expirySummary'] }}"
+        data-timezone="{{ $form->timezone }}"
         @unless ($showExpiryPanel) hidden @endunless
     >
         <fieldset>
@@ -240,6 +291,12 @@
             >
             <x-field-error name="expires_at" :id="$ids['expiresAt'].'-error'" />
         </div>
+
+        {{-- 選んだ期限で今発行した場合に、いつまで使えるか --}}
+        <p class="mt-4 flex items-start gap-1.5 text-sm font-medium text-text-primary">
+            <x-icon name="clock" :size="16" class="mt-0.5 text-primary-dark" />
+            <span data-expiry-until></span>
+        </p>
         <x-field-error name="expiry" :id="$ids['expiryPanel'].'-error'" />
     </div>
 

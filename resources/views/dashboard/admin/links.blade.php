@@ -81,6 +81,9 @@
     </section>
 
     <form method="GET" action="{{ route('dashboard.admin.links') }}" class="flex flex-col gap-3 rounded-card border border-border bg-surface p-4 sm:flex-row sm:items-end sm:p-5">
+        {{-- 絞り込んでも並び順はそのまま --}}
+        <input type="hidden" name="sort" value="{{ $sort->column->value }}">
+        <input type="hidden" name="dir" value="{{ $sort->descending ? 'desc' : 'asc' }}">
         <div class="min-w-0 flex-1">
             <label for="filter-q" class="block text-[13px] font-medium text-text-secondary">コード・元URLで検索</label>
             <input id="filter-q" name="q" type="search" value="{{ $filters['q'] }}" class="form-control mt-2" autocomplete="off">
@@ -116,7 +119,8 @@
             @include('partials.link-table', [
                 'links' => $links,
                 'headingId' => 'all-links-heading',
-                'caption' => 'すべての短縮URLの一覧（新しい順）',
+                'caption' => 'すべての短縮URLの一覧',
+                'sort' => $sort,
                 'showOwner' => true,
             ])
         @endif

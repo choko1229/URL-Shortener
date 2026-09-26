@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\UpdateController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\DiscordAuthController;
 use App\Http\Controllers\Auth\DiscordSetupController;
+use App\Http\Controllers\CardPreviewController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\LinkController;
 use App\Http\Controllers\Dashboard\LogoutController;
@@ -66,6 +67,10 @@ Route::domain(config('shortener.domains.main'))
         // 限定モードでは、許可されていない人に発行フォームの代わりにこのドメインの説明を出す
         Route::get('/', HomeController::class)->middleware(RestrictToPermittedUsers::class)->name('home');
         Route::post('/shorten', [ShortUrlController::class, 'store'])->middleware(RestrictToPermittedUsers::class)->name('short-urls.store');
+        // 発行フォームの「X に貼ったときの見え方」（転送先のカード情報の取得）
+        Route::post('/shorten/card-preview', CardPreviewController::class)
+            ->middleware([RestrictToPermittedUsers::class, 'throttle:30,1'])
+            ->name('card-preview');
 
         Route::get('/'.$paths->path('terms'), [LegalController::class, 'terms'])->name('terms');
         Route::get('/'.$paths->path('privacy'), [LegalController::class, 'privacy'])->name('privacy');
@@ -119,6 +124,7 @@ Route::domain(config('shortener.domains.dashboard'))
     ->group(static function (): void {
         Route::get('/', DashboardController::class)->name('home');
         Route::post('/links', [ShortUrlController::class, 'store'])->name('links.store');
+        Route::post('/links/card-preview', CardPreviewController::class)->middleware('throttle:30,1')->name('links.card-preview');
         Route::get('/links/{shortUrl}', [LinkController::class, 'show'])
             ->whereNumber('shortUrl')
             ->withTrashed()

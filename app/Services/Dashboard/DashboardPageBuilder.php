@@ -6,6 +6,7 @@ namespace App\Services\Dashboard;
 
 use App\Models\ShortUrl;
 use App\Models\User;
+use App\Support\LinkSort;
 use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
 use App\ViewModels\DashboardPageData;
@@ -27,24 +28,24 @@ final class DashboardPageBuilder
         private readonly ShortUrlBuilder $urls,
     ) {}
 
-    public function build(User $user, CarbonImmutable $now, ?IssuedLinkData $issuedLink = null): DashboardPageData
+    public function build(User $user, CarbonImmutable $now, ?IssuedLinkData $issuedLink = null, LinkSort $sort = new LinkSort): DashboardPageData
     {
         $viewer = ViewerData::fromUser($user);
         $form = ShortUrlFormData::build(true, $this->settings, $this->urls, $now, isAdmin: $user->isAdmin());
 
         try {
             $stats = $this->stats($user, $now);
-            $links = $this->links($user, $now);
+            $links = $this->links($user, $now, $sort);
         } catch (QueryException $e) {
             Log::error('ダッシュボードのデータ取得に失敗しました。', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return new DashboardPageData($viewer, $form, stats: null, links: null, issuedLink: $issuedLink, displayTimezone: $this->settings->displayTimezone());
+            return new DashboardPageData($viewer, $form, stats: null, links: null, issuedLink: $issuedLink, displayTimezone: $this->settings->displayTimezone(), sort: $sort);
         }
 
-        return new DashboardPageData($viewer, $form, $stats, $links, $issuedLink, $this->settings->displayTimezone());
+        return new DashboardPageData($viewer, $form, $stats, $links, $issuedLink, $this->settings->displayTimezone(), $sort);
     }
 
     private function stats(User $user, CarbonImmutable $now): DashboardStatsData
@@ -67,15 +68,14 @@ final class DashboardPageBuilder
     }
 
     /** @return LengthAwarePaginator<int, LinkRowData> */
-    private function links(User $user, CarbonImmutable $now): LengthAwarePaginator
+    private function links(User $user, CarbonImmutable $now, LinkSort $sort): LengthAwarePaginator
     {
         $warningDays = $this->settings->expiryWarningDays();
         $timezone = $this->settings->displayTimezone();
 
-        return ShortUrl::query()
-            ->ownedBy($user)
-            ->latest('id')
+        return $sort->apply(ShortUrl::query()->ownedBy($user))
             ->paginate($this->settings->dashboardLinksPerPage())
+            ->withQueryString()
             ->through(fn (ShortUrl $link): LinkRowData => LinkRowData::fromModel($link, $this->urls, $now, $warningDays, $timezone));
     }
 }

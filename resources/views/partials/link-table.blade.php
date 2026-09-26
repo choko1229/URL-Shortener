@@ -4,24 +4,36 @@
     @var string $headingId   テーブルを説明する見出しの id
     @var string $caption
     @var bool $showOwner     発行者の列を表示するか
+    @var \App\Support\LinkSort|null $sort 並び順（渡すと列見出しから並べ替えられる）
 --}}
 @php
     $showOwner ??= false;
+    $sort ??= null;
+    $columns = \App\Enums\LinkSortColumn::class;
 @endphp
 
 {{-- スマホでは横スクロール（design.md 5）。キーボードでもスクロールできるよう tabindex を付与 --}}
 <div class="overflow-x-auto" role="region" aria-labelledby="{{ $headingId }}" tabindex="0">
-    <table class="w-full min-w-[820px] border-collapse text-left">
-        <caption class="sr-only">{{ $caption }}</caption>
+    <table class="w-full min-w-[900px] border-collapse text-left">
+        <caption class="sr-only">{{ $caption }}{{ $sort ? '（'.$sort->directionLabel().'）' : '' }}</caption>
         <thead class="bg-table-header">
             <tr>
-                <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">短縮URL</th>
+                <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary" @if ($sort) aria-sort="{{ $sort->ariaSort($columns::Slug) }}" @endif>
+                    <x-sort-header label="短縮URL" :column="$columns::Slug" :sort="$sort" />
+                </th>
                 <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">元URL</th>
                 @if ($showOwner)
                     <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">発行者</th>
                 @endif
-                <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">クリック数</th>
-                <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary">有効期限</th>
+                <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary" @if ($sort) aria-sort="{{ $sort->ariaSort($columns::Created) }}" @endif>
+                    <x-sort-header label="発行日" :column="$columns::Created" :sort="$sort" />
+                </th>
+                <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary" @if ($sort) aria-sort="{{ $sort->ariaSort($columns::Clicks) }}" @endif>
+                    <x-sort-header label="クリック数" :column="$columns::Clicks" :sort="$sort" />
+                </th>
+                <th scope="col" class="whitespace-nowrap px-6 py-3 text-xs font-medium text-text-secondary" @if ($sort) aria-sort="{{ $sort->ariaSort($columns::Expires) }}" @endif>
+                    <x-sort-header label="有効期限" :column="$columns::Expires" :sort="$sort" />
+                </th>
                 <th scope="col" class="whitespace-nowrap px-6 py-3 text-right text-xs font-medium text-text-secondary">操作</th>
             </tr>
         </thead>
@@ -61,11 +73,17 @@
                     @if ($showOwner)
                         <td class="whitespace-nowrap px-6 py-3.5 text-[13px] text-text-secondary">{{ $link->ownerLabel }}</td>
                     @endif
+                    <td @class(['whitespace-nowrap px-6 py-3.5 text-[13px] tabular-nums', 'text-text-secondary' => ! $muted, 'text-text-muted' => $muted])>
+                        {{ $link->createdLabel }}
+                    </td>
                     <td @class(['px-6 py-3.5 text-[13px] tabular-nums', 'text-text-muted' => $muted])>
                         {{ number_format($link->clickCount) }}
                     </td>
                     <td class="px-6 py-3.5">
                         <x-link-status :status="$link->status" :label="$link->expiryLabel" />
+                        @if ($link->expiryDetail)
+                            <span class="mt-0.5 block whitespace-nowrap text-[11px] tabular-nums text-text-muted">{{ $link->expiryDetail }}</span>
+                        @endif
                     </td>
                     <td class="px-6 py-2 text-right">
                         <div class="inline-flex items-center gap-1">

@@ -18,6 +18,7 @@
             @include('partials.shorten-form', [
                 'form' => $page->form,
                 'action' => route('dashboard.links.store'),
+                'cardPreviewUrl' => route('dashboard.links.card-preview'),
                 'idPrefix' => 'dashboard',
                 'submitLabel' => '発行する',
                 'caption' => $page->stats
@@ -71,7 +72,8 @@
                     @include('partials.link-table', [
                         'links' => $page->links,
                         'headingId' => 'history-heading',
-                        'caption' => '発行した短縮URLの一覧（新しい順）',
+                        'caption' => '発行した短縮URLの一覧',
+                        'sort' => $page->sort,
                     ])
                 @endif
             </section>

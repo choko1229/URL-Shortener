@@ -214,6 +214,14 @@
                             <p class="text-xs leading-relaxed text-text-secondary">パスワード保護つきのため、設定にかかわらず転送先は表示されません（サービス名のカードになります）。</p>
                         @endif
 
+                        @include('partials.x-card-preview', [
+                            'fetchUrl' => route('dashboard.links.card-preview'),
+                            'shortHost' => \Illuminate\Support\Str::beforeLast($link->displayUrl, '/'.$link->slug),
+                            'slug' => $link->slug,
+                            'destination' => $link->originalUrl,
+                            'passwordProtected' => $link->isPasswordProtected,
+                        ])
+
                         <x-button type="submit" size="sm" variant="secondary">カードの設定を保存</x-button>
                     </form>
                 </div>
