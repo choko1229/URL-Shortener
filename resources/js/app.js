@@ -95,7 +95,21 @@ const SOUNDS = {
     },
 };
 
+const SOUND_STORAGE_KEY = 'sound-effects';
+
+/** 効果音を鳴らすか（既定はオン。ヘッダーのボタンでオフにできる） */
+function soundEnabled() {
+    try {
+        return localStorage.getItem(SOUND_STORAGE_KEY) !== 'off';
+    } catch {
+        return true;
+    }
+}
+
 function playSound(name) {
+    if (!soundEnabled()) {
+        return;
+    }
     try {
         const context = getAudioContext();
         if (context) {
@@ -389,6 +403,53 @@ function initThemeToggle() {
     // 端末の設定に合わせている間は、その変化にも追従する
     prefersDark.addEventListener('change', () => {
         if (!root.dataset.theme) {
+            sync();
+        }
+    });
+
+    sync();
+}
+
+/** 効果音のオン／オフ（選択はこのブラウザーにだけ記憶する） */
+function initSoundToggle() {
+    const buttons = document.querySelectorAll('[data-sound-toggle]');
+
+    const sync = () => {
+        const enabled = soundEnabled();
+        const label = enabled ? '効果音をオフにする' : '効果音をオンにする';
+        buttons.forEach((button) => {
+            button.setAttribute('aria-pressed', String(!enabled));
+            button.setAttribute('aria-label', label);
+            button.setAttribute('title', label);
+            button.querySelectorAll('[data-sound-icon]').forEach((icon) => {
+                icon.hidden = icon.dataset.soundIcon !== (enabled ? 'on' : 'off');
+            });
+        });
+    };
+
+    buttons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const enable = !soundEnabled();
+            try {
+                if (enable) {
+                    localStorage.removeItem(SOUND_STORAGE_KEY);
+                } else {
+                    localStorage.setItem(SOUND_STORAGE_KEY, 'off');
+                }
+            } catch (error) {
+                console.warn('[sound] 効果音の設定を保存できませんでした。', error);
+            }
+            sync();
+            if (enable) {
+                playSound('copy');
+            }
+            announce(enable ? '効果音をオンにしました。' : '効果音をオフにしました。');
+        });
+    });
+
+    // ほかのタブで切り替えたときも表示を揃える
+    window.addEventListener('storage', (event) => {
+        if (event.key === SOUND_STORAGE_KEY) {
             sync();
         }
     });
@@ -1060,6 +1121,7 @@ initQrDialogs();
 initCopyButtons();
 initColorGroups();
 initThemeToggle();
+initSoundToggle();
 initScrollingTabs();
 initMenus();
 initConfirmForms();

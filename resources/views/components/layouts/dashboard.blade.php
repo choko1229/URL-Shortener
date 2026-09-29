@@ -21,6 +21,7 @@
 
                 <div class="flex items-center gap-1">
                     <x-theme-toggle />
+                    <x-sound-toggle />
 
                 <div class="relative">
                     <button

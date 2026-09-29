@@ -47,10 +47,14 @@ enum IconName: string
     case ArrowUp = 'arrow-up';
     case ArrowDown = 'arrow-down';
     case ArrowUpDown = 'arrow-up-down';
+    case Volume = 'volume';
+    case VolumeOff = 'volume-off';
 
     public function svgContent(): string
     {
         return match ($this) {
+            self::Volume => '<path d="M11 5 6 9H3v6h3l5 4Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
+            self::VolumeOff => '<path d="M11 5 6 9H3v6h3l5 4Z"/><path d="m16 9 6 6M22 9l-6 6"/>',
             self::Eye => '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
             self::EyeOff => '<path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.2 3.2M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/>',
             self::Sparkles => '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15v4M17 17h4M5 3v3M3.5 4.5h3"/>',

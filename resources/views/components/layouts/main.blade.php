@@ -11,6 +11,7 @@
 
                 <nav aria-label="メインメニュー" class="flex items-center gap-2 sm:gap-4">
                     <x-theme-toggle />
+                    <x-sound-toggle />
                     @if ($showUsage)
                     <a href="{{ route('main.home') }}#features" class="hidden rounded-control px-2 py-2 text-sm font-medium text-primary-dark hover:text-primary-darker sm:inline-block">
                         使い方
