@@ -198,8 +198,12 @@ final class CsvImporter
         return is_string($value) && trim($value) !== '' ? trim($value) : null;
     }
 
-    /** @return list<list<string>> */
-    private static function parse(string $contents): array
+    /**
+     * CSV を行ごとに読む（文字コードの判定と BOM の除去も行う）。移行用の取り込み（LinkTransfer）でも使う
+     *
+     * @return list<list<string>>
+     */
+    public static function parse(string $contents): array
     {
         $encoding = mb_detect_encoding($contents, self::ENCODINGS, true);
         $contents = mb_convert_encoding($contents, 'UTF-8', $encoding !== false ? $encoding : 'UTF-8');

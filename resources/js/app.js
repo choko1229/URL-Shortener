@@ -2,7 +2,8 @@
  * 画面のインタラクション（外部ライブラリなし）
  * - 開閉パネル（data-disclosure）
  * - 有効期限の選択（data-expiry-group）
- * - ダイアログ（data-dialog-open）
+ * - ダイアログ（data-dialog-open / data-dialog-auto-open）
+ * - 発行履歴のインポートで重なった行の一括選択（data-transfer-bulk）
  * - クリップボードへのコピー（data-copy-text）
  * - メインカラーの入力（data-color-group）
  * - ライト／ダークの切り替え（data-theme-toggle）
@@ -284,6 +285,30 @@ function initDialogs() {
             if (event.target === dialog) {
                 dialog.close();
             }
+        });
+    });
+
+    // 入力のやり直しが必要なとき（サーバー側の検証エラー）は、開いた状態で表示する
+    document.querySelectorAll('dialog[data-dialog-auto-open]').forEach((dialog) => {
+        openDialog(dialog);
+    });
+}
+
+/*
+ * 発行履歴のインポートで重なった短縮URLの扱いを、まとめて選ぶ（data-transfer-bulk="overwrite" など）。
+ * その選択肢が無い行（ほかの人の短縮URLは上書きできない）はそのままにする。
+ */
+function initTransferConfirm() {
+    document.querySelectorAll('[data-transfer-confirm]').forEach((panel) => {
+        panel.querySelectorAll('[data-transfer-bulk]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const value = button.dataset.transferBulk;
+                panel.querySelectorAll('input[type="radio"]').forEach((radio) => {
+                    if (radio.value === value) {
+                        radio.checked = true;
+                    }
+                });
+            });
         });
     });
 }
@@ -1116,6 +1141,7 @@ initPasswordFields();
 initXCardPreviews();
 initShortenForms();
 initDialogs();
+initTransferConfirm();
 initPreviewGroups();
 initQrDialogs();
 initCopyButtons();

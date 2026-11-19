@@ -55,10 +55,37 @@
 
         @if ($page->links)
             <section aria-labelledby="history-heading" class="overflow-hidden rounded-card border border-border bg-surface">
-                <div class="flex items-center justify-between gap-4 border-b border-table-divider px-5 py-5 sm:px-6">
-                    <h2 id="history-heading" class="font-rounded text-[15px] font-bold">発行履歴</h2>
-                    <p class="text-xs text-text-secondary">全 {{ number_format($page->links->total()) }} 件</p>
+                @php
+                    $transferPending = session(\App\Http\Controllers\Dashboard\LinkTransferController::PENDING_SESSION_KEY);
+                    $transferResult = session(\App\Http\Controllers\Dashboard\LinkTransferController::RESULT_SESSION_KEY);
+                @endphp
+                <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-table-divider px-5 py-4 sm:px-6">
+                    <div class="flex items-baseline gap-3">
+                        <h2 id="history-heading" class="scroll-mt-6 font-rounded text-[15px] font-bold">発行履歴</h2>
+                        <p class="text-xs text-text-secondary">全 {{ number_format($page->links->total()) }} 件</p>
+                    </div>
+                    {{-- 別のサーバーへ移行するための CSV エクスポート・インポート --}}
+                    <div class="flex flex-wrap gap-2">
+                        <x-button variant="ghost" size="sm" :href="route('dashboard.links.export')" download>
+                            <x-icon name="download" :size="16" />
+                            エクスポート
+                        </x-button>
+                        <x-button variant="ghost" size="sm" data-dialog-open="link-import-dialog">
+                            <x-icon name="upload" :size="16" />
+                            インポート
+                        </x-button>
+                    </div>
                 </div>
+
+                @if (is_array($transferPending))
+                    @include('partials.link-transfer-confirm', ['pending' => $transferPending])
+                @endif
+
+                @if ($transferResult)
+                    <div class="border-b border-table-divider px-5 pb-4 sm:px-6">
+                        @include('partials.import-errors', ['result' => $transferResult])
+                    </div>
+                @endif
 
                 @if ($page->links->isEmpty())
                     <div class="flex flex-col items-center gap-3 px-6 py-14 text-center">
@@ -81,4 +108,5 @@
     </div>
 
     @include('partials.qr-dialog')
+    @include('partials.link-import-dialog')
 </x-layouts.dashboard>

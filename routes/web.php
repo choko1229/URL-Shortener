@@ -17,6 +17,7 @@ use App\Http\Controllers\Auth\DiscordSetupController;
 use App\Http\Controllers\CardPreviewController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\LinkController;
+use App\Http\Controllers\Dashboard\LinkTransferController;
 use App\Http\Controllers\Dashboard\LogoutController;
 use App\Http\Controllers\Dashboard\SettingsController;
 use App\Http\Controllers\Install\InstallController;
@@ -125,6 +126,11 @@ Route::domain(config('shortener.domains.dashboard'))
         Route::get('/', DashboardController::class)->name('home');
         Route::post('/links', [ShortUrlController::class, 'store'])->name('links.store');
         Route::post('/links/card-preview', CardPreviewController::class)->middleware('throttle:30,1')->name('links.card-preview');
+        // 発行履歴の CSV エクスポート・インポート（別のサーバーへの移行）
+        Route::get('/links/export', [LinkTransferController::class, 'export'])->middleware('throttle:10,1')->name('links.export');
+        Route::post('/links/import', [LinkTransferController::class, 'store'])->middleware('throttle:10,1')->name('links.import');
+        Route::post('/links/import/confirm', [LinkTransferController::class, 'confirm'])->middleware('throttle:10,1')->name('links.import.confirm');
+        Route::delete('/links/import', [LinkTransferController::class, 'cancel'])->name('links.import.cancel');
         Route::get('/links/{shortUrl}', [LinkController::class, 'show'])
             ->whereNumber('shortUrl')
             ->withTrashed()
