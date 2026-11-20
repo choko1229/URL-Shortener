@@ -64,6 +64,9 @@
                                 <x-icon name="lock" :size="13" class="text-text-muted" />
                                 <span class="sr-only">パスワード保護あり</span>
                             @endif
+                            @if ($link->isFromApi)
+                                <span class="rounded-full bg-primary-tint px-2 py-0.5 text-[11px] font-medium text-primary-dark">API</span>
+                            @endif
                         </span>
                     </td>
                     <td @class(['max-w-[300px] px-6 py-3.5 text-[13px]', 'text-text-secondary' => ! $muted, 'text-text-muted' => $muted])>
@@ -96,8 +99,8 @@
                                     :title="$link->displayUrl.' のQRコードを表示'"
                                     aria-haspopup="dialog"
                                     data-qr-open
-                                    :data-qr-src="route('main.short-link.qr', ['code' => $link->slug, 'format' => 'svg'])"
-                                    :data-qr-png="route('main.short-link.qr', ['code' => $link->slug, 'format' => 'png'])"
+                                    :data-qr-src="$link->qrUrl('svg')"
+                                    :data-qr-png="$link->qrUrl('png')"
                                     :data-qr-label="$link->displayUrl"
                                 >
                                     <x-icon name="qr-code" :size="16" />

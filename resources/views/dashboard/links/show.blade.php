@@ -152,8 +152,8 @@
                         size="sm"
                         aria-haspopup="dialog"
                         data-qr-open
-                        :data-qr-src="route('main.short-link.qr', ['code' => $link->slug, 'format' => 'svg'])"
-                        :data-qr-png="route('main.short-link.qr', ['code' => $link->slug, 'format' => 'png'])"
+                        :data-qr-src="$link->qrUrl('svg')"
+                        :data-qr-png="$link->qrUrl('png')"
                         :data-qr-label="$link->displayUrl"
                     >
                         <x-icon name="qr-code" :size="16" />

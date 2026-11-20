@@ -53,7 +53,7 @@ final class LinkTransferTest extends TestCase
         $this->assertStringContainsString('short-urls-', (string) $response->headers->get('Content-Disposition'));
 
         $csv = (string) $response->getContent();
-        $this->assertStringStartsWith("\u{FEFF}slug,short_url,url,slug_type,expires_at,password_hash", $csv);
+        $this->assertStringStartsWith("\u{FEFF}slug,domain,short_url,url,slug_type,expires_at,password_hash", $csv);
         $this->assertStringContainsString('spring-sale', $csv);
         $this->assertStringContainsString('aB3xQ9k', $csv);
         $this->assertStringContainsString('2030-01-01 09:00:00+09:00', $csv);

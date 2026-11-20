@@ -37,10 +37,12 @@ curl -X POST https://api.example.com/v1/links \
 |---|---|---|
 | `POST` | `/v1/links` | 発行 |
 | `GET` | `/v1/links` | 自分が発行した短縮URLの一覧（50件ずつ、`?page=2`） |
-| `GET` | `/v1/links/{コード}` | 詳細（クリック数を含む） |
-| `DELETE` | `/v1/links/{コード}` | 削除（論理削除。コードは再利用されません） |
+| `GET` | `/v1/links/{コード}` | 詳細（クリック数を含む）。追加ドメインの短縮URLは `?domain=go.example.com` を付けます |
+| `DELETE` | `/v1/links/{コード}` | 削除（論理削除。コードは再利用されません）。追加ドメインは `?domain=` を付けます |
 
-QRコードは `https://example.com/{コード}/qr.svg`（または `.png`）でも取得できます（認証不要）。
+QRコードは `https://example.com/{コード}/qr.svg`（または `.png`）でも取得できます（認証不要）。追加ドメインの短縮URLは `?domain=go.example.com` を付けます。
+
+API で発行した短縮URLは「API で発行」として記録し、ダッシュボードではページで発行したものとは別のタブ・別の件数で表示します。月間の発行上限には数えません。
 
 ### 発行時に指定できる項目
 
@@ -50,6 +52,7 @@ QRコードは `https://example.com/{コード}/qr.svg`（または `.png`）で
 | `slug` | | カスタムスラッグ（1〜20文字、英数字と `-` `_`。API は管理者専用のため1文字から使えます） |
 | `expires_at` | | 有効期限（ISO 8601 形式。タイムゾーンを省略すると日本時間として扱います） |
 | `password` | | パスワード保護（4〜72文字） |
+| `domain` | | 短縮URLのドメイン（例: `go.example.com`）。省略するとメインドメイン。管理画面の「ドメイン」で追加したドメインを、「API のみ」のものも含めて指定できます |
 
 ## レスポンス例（201）
 
@@ -57,7 +60,9 @@ QRコードは `https://example.com/{コード}/qr.svg`（または `.png`）で
 {
   "data": {
     "code": "aB3xQ9k",
+    "domain": "example.com",
     "short_url": "https://example.com/aB3xQ9k",
+    "source": "api",
     "original_url": "https://example.org/very/long/path",
     "custom_slug": false,
     "expires_at": null,

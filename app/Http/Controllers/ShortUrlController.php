@@ -54,7 +54,7 @@ final class ShortUrlController extends Controller
             $link,
             $issued->deletionToken,
             $urls,
-            $qrCodes->dataUri($urls->url($link->slug)),
+            $qrCodes->dataUri($urls->urlFor($link)),
         ));
     }
 
@@ -74,6 +74,6 @@ final class ShortUrlController extends Controller
         $previous = url()->previous();
         $target = str_contains($previous, '/links/'.$shortUrl->id) ? route('dashboard.home') : $previous;
 
-        return redirect()->to($target)->with('notice', $urls->display($shortUrl->slug).' を削除しました。');
+        return redirect()->to($target)->with('notice', $urls->displayFor($shortUrl).' を削除しました。');
     }
 }

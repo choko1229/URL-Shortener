@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ShortUrl\Transfer;
 
+use App\Enums\LinkSource;
 use App\Enums\PreviewMode;
 use App\Enums\SlugType;
 use App\Models\RetiredSlug;
@@ -15,6 +16,7 @@ use App\Services\ShortUrl\IssuanceLimiter;
 use App\Services\ShortUrl\LinkRules;
 use App\Services\ShortUrl\SlugAvailability;
 use App\Services\ShortUrl\SlugGenerator;
+use App\Support\ShortDomains;
 use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
 use Carbon\CarbonImmutable;
@@ -32,7 +34,8 @@ use Throwable;
 /**
  * 発行履歴の CSV エクスポート・インポート（別のサーバーへの移行用）。
  *
- * - 短縮コード（slug）をそのまま持っていき、移行先でも同じ短縮URLで開けるようにする
+ * - 短縮コード（slug）とドメインをそのまま持っていき、移行先でも同じ短縮URLで開けるようにする
+ *   （domain が空欄ならメインドメイン。追加ドメインは移行先の管理画面でも追加しておく必要がある）
  * - パスワードは平文を持っていないため、ハッシュ値（password_hash）を書き出して移行先でもそのまま使う
  * - 移行先で同じ短縮コードがすでに使われている行は、取り込む前に利用者に扱いを選んでもらう
  */
@@ -41,6 +44,7 @@ final class LinkTransfer
     /** エクスポートする列（short_url は表で見たとき分かりやすいように付けるだけで、取り込みでは使わない） */
     public const EXPORT_COLUMNS = [
         'slug',
+        'domain',
         'short_url',
         'url',
         'slug_type',
@@ -52,6 +56,7 @@ final class LinkTransfer
         'preview_image_url',
         'click_count',
         'created_at',
+        'source',
     ];
 
     /** 取り込みで読む列（管理者向け CSV インポートのひな形で作った CSV も読めるよう password も受け付ける） */
@@ -78,6 +83,7 @@ final class LinkTransfer
         private readonly IssuanceLimiter $limiter,
         private readonly ShortUrlBuilder $urls,
         private readonly ValidationFactory $validator,
+        private readonly ShortDomains $domains,
     ) {}
 
     /** 利用者の（削除していない）短縮URLをすべて CSV にする。Excel で開いても文字化けしないよう BOM を付ける */
@@ -100,7 +106,9 @@ final class LinkTransfer
 
                 self::writeLine($handle, [
                     $link->slug,
-                    $this->urls->url($link->slug),
+                    // メインドメインは空欄（移行先のメインドメインのホスト名が違っても、メインドメインとして取り込めるように）
+                    (string) $link->domain,
+                    $this->urls->urlFor($link),
                     $link->original_url,
                     $link->slug_type->value,
                     $link->expires_at?->setTimezone($timezone)->format('Y-m-d H:i:sP') ?? '',
@@ -111,6 +119,7 @@ final class LinkTransfer
                     $custom ? (string) $link->preview_image_url : '',
                     (string) $link->click_count,
                     $link->created_at?->setTimezone($timezone)->format('Y-m-d H:i:sP') ?? '',
+                    $link->source->value,
                 ]);
             }
         });
@@ -174,11 +183,18 @@ final class LinkTransfer
                 continue;
             }
 
-            $normalized = $this->normalize($line, $validator->validated());
+            $normalized = $this->normalize($line, $validator->validated(), $user);
             $slug = $normalized['slug'];
 
+            if ($normalized['domain'] === null) {
+                $errors[] = new CsvImportError($line, 'domain', $values['domain'] ?? null, 'このドメインはこのサーバーに登録されていません。管理画面の「ドメイン」で追加してから取り込んでください。');
+
+                continue;
+            }
+
             if ($slug !== null) {
-                $key = mb_strtolower($slug);
+                // 短縮コードはドメインごとに一意なので、ドメインも含めて重複を調べる
+                $key = $normalized['domain'].'/'.mb_strtolower($slug);
                 if (isset($seen[$key])) {
                     $errors[] = new CsvImportError($line, 'slug', $slug, "同じ短縮コードが{$seen[$key]}行目にもあります。1つにまとめてください。");
 
@@ -186,7 +202,7 @@ final class LinkTransfer
                 }
                 $seen[$key] = $line;
 
-                $conflict = $this->conflictFor($line, $slug, SlugType::from($normalized['slug_type']), $normalized['url'], $user);
+                $conflict = $this->conflictFor($line, $slug, (string) $normalized['domain'], SlugType::from($normalized['slug_type']), $normalized['url'], $user);
                 if ($conflict !== null) {
                     $conflicts[$line] = $conflict;
                 }
@@ -261,19 +277,19 @@ final class LinkTransfer
     }
 
     /** 移行先で同じ短縮コードが使えるか。使えなければその理由 */
-    private function conflictFor(int $line, string $slug, SlugType $type, string $importUrl, User $user): ?LinkTransferConflict
+    private function conflictFor(int $line, string $slug, string $domain, SlugType $type, string $importUrl, User $user): ?LinkTransferConflict
     {
-        $conflict = static fn (string $reason): LinkTransferConflict => new LinkTransferConflict($line, $slug, LinkTransferConflict::TAKEN, $reason, $importUrl);
+        $conflict = static fn (string $reason): LinkTransferConflict => new LinkTransferConflict($line, $slug, LinkTransferConflict::TAKEN, $reason, $importUrl, domain: $domain);
 
-        if ($this->availability->conflictsWithRoute($slug)) {
+        if ($this->availability->conflictsWithRoute($slug, $domain)) {
             return $conflict('このサーバーのページと同じ URL になるため、この短縮コードは使えません。');
         }
 
-        $existing = ShortUrl::withTrashed()->where($this->sameCode($slug, $type))->first();
+        $existing = ShortUrl::withTrashed()->where('domain', $domain)->where($this->sameCode($slug, $type))->first();
 
         if ($existing !== null) {
             if (! $existing->trashed() && $existing->user_id === $user->id && $existing->slug === $slug) {
-                return new LinkTransferConflict($line, $slug, LinkTransferConflict::OWN, 'あなたの短縮URLがすでにこの短縮コードを使っています。', $importUrl, $existing->original_url);
+                return new LinkTransferConflict($line, $slug, LinkTransferConflict::OWN, 'あなたの短縮URLがすでにこの短縮コードを使っています。', $importUrl, $existing->original_url, $domain);
             }
 
             return $conflict($existing->trashed()
@@ -281,7 +297,7 @@ final class LinkTransfer
                 : 'ほかの短縮URLがすでにこの短縮コードを使っています。');
         }
 
-        if (RetiredSlug::query()->where($this->sameCode($slug, $type))->exists()) {
+        if (RetiredSlug::query()->where('domain', $domain)->where($this->sameCode($slug, $type))->exists()) {
             return $conflict('以前に使われていた短縮コードは欠番のため使えません。');
         }
 
@@ -343,7 +359,7 @@ final class LinkTransfer
     /** @param  array<string, mixed>  $row */
     private function overwrite(array $row, User $user): void
     {
-        $link = ShortUrl::query()->ownedBy($user)->where('slug', (string) $row['slug'])->first();
+        $link = ShortUrl::query()->ownedBy($user)->where('domain', (string) $row['domain'])->where('slug', (string) $row['slug'])->first();
 
         if ($link === null) {
             throw new LinkTransferException('上書きするはずの短縮URLが見つかりませんでした（取り込みの途中で削除された可能性があります）。', 'slug');
@@ -360,7 +376,7 @@ final class LinkTransfer
         $type = SlugType::from((string) $row['slug_type']);
 
         // 確認画面を出している間にほかの人が同じコードで発行した場合に備えて、保存の直前にもう一度確かめる
-        $conflict = $this->conflictFor((int) $row['line'], $slug, $type, (string) $row['url'], $user);
+        $conflict = $this->conflictFor((int) $row['line'], $slug, (string) $row['domain'], $type, (string) $row['url'], $user);
         if ($conflict !== null) {
             throw new LinkTransferException($conflict->reason, 'slug');
         }
@@ -384,7 +400,7 @@ final class LinkTransfer
         for ($attempt = 1; $attempt <= self::MAX_RANDOM_CODE_ATTEMPTS; $attempt++) {
             $code = $this->slugGenerator->generate($length);
 
-            if ($this->availability->isReserved($code) || $this->availability->isTakenForRandom($code)) {
+            if ($this->availability->isReserved($code) || $this->availability->isTakenForRandom($code, (string) $row['domain'])) {
                 continue;
             }
 
@@ -409,6 +425,8 @@ final class LinkTransfer
     {
         $link = new ShortUrl;
         $link->user_id = $user->id;
+        $link->domain = (string) $row['domain'];
+        $link->source = LinkSource::from((string) $row['source']);
         $link->creator_ip_hash = null;
         $link->deletion_token_hash = null;
         $link->click_count = (int) $row['click_count'];
@@ -443,7 +461,7 @@ final class LinkTransfer
      * @param  array<string, mixed>  $values
      * @return array<string, mixed>
      */
-    private function normalize(int $line, array $values): array
+    private function normalize(int $line, array $values, User $user): array
     {
         $timezone = $this->settings->displayTimezone();
         $text = static function (string $key) use ($values): ?string {
@@ -463,6 +481,8 @@ final class LinkTransfer
 
         return [
             'line' => $line,
+            // 空欄・移行先のメインドメインはメインドメイン。移行先に無いドメインは null（その行は取り込まない）
+            'domain' => $this->domains->resolveInput($text('domain'), $this->domains->forApi()),
             'slug' => $slug,
             'slug_type' => $slug === null ? SlugType::Random->value : ($text('slug_type') ?? SlugType::Custom->value),
             'url' => (string) $text('url'),
@@ -475,6 +495,8 @@ final class LinkTransfer
             'preview_image_url' => $text('preview_image_url'),
             'click_count' => (int) ($text('click_count') ?? 0),
             'created_at' => $date('created_at'),
+            // API で発行したものは月間上限の外で数えるため、引き継げるのは管理者だけ（API を使えるのも管理者だけ）
+            'source' => $user->isAdmin() && $text('source') === LinkSource::Api->value ? LinkSource::Api->value : LinkSource::Page->value,
         ];
     }
 
@@ -498,6 +520,8 @@ final class LinkTransfer
             }],
             'click_count' => ['bail', 'nullable', 'integer', 'min:0', 'max:'.self::MAX_CLICK_COUNT],
             'created_at' => ['bail', 'nullable', 'date'],
+            'domain' => ['bail', 'nullable', 'string', 'max:255'],
+            'source' => ['bail', 'nullable', Rule::enum(LinkSource::class)],
         ] + LinkRules::preview();
     }
 
@@ -513,6 +537,8 @@ final class LinkTransfer
             'click_count.min' => 'click_count は 0 以上の整数を入れてください。',
             'click_count.max' => 'click_count が大きすぎます。',
             'created_at.date' => 'created_at を日時として読めません。2026-12-31 23:59 のように入れてください。',
+            'domain.max' => 'domain が長すぎます。',
+            'source.enum' => 'source は page か api を入れてください（空欄なら page）。',
         ];
     }
 

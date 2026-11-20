@@ -24,6 +24,8 @@ final readonly class LinkTransferConflict
         public string $importUrl,
         // 自分の短縮URLと重なった場合の、今の転送先
         public ?string $currentUrl = null,
+        // 短縮URLのドメイン（空文字 = メインドメイン）
+        public string $domain = '',
     ) {}
 
     public function canOverwrite(): bool
@@ -41,6 +43,7 @@ final readonly class LinkTransferConflict
             'reason' => $this->reason,
             'import_url' => $this->importUrl,
             'current_url' => $this->currentUrl,
+            'domain' => $this->domain,
         ];
     }
 
@@ -54,6 +57,7 @@ final readonly class LinkTransferConflict
             (string) $data['reason'],
             (string) $data['import_url'],
             isset($data['current_url']) ? (string) $data['current_url'] : null,
+            (string) ($data['domain'] ?? ''),
         );
     }
 }

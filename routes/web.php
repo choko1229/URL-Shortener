@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\LinkController as AdminLinkController;
 use App\Http\Controllers\Admin\LinkImportController;
 use App\Http\Controllers\Admin\ReservedWordController;
 use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\ShortDomainController;
 use App\Http\Controllers\Admin\SiteController;
 use App\Http\Controllers\Admin\UpdateController;
 use App\Http\Controllers\Admin\UserController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Redirect\RedirectController;
 use App\Http\Controllers\Redirect\ShortLinkController;
 use App\Http\Controllers\ShortUrlController;
 use App\Http\Controllers\SiteIconController;
+use App\Http\Middleware\ResolveShortDomain;
 use App\Http\Middleware\RestrictToPermittedUsers;
 use App\Support\SitePaths;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -169,6 +171,11 @@ Route::domain(config('shortener.domains.dashboard'))
                     ->whereNumber('reservedWord')
                     ->name('reserved-words.destroy');
 
+                Route::get('/domains', [ShortDomainController::class, 'index'])->name('domains');
+                Route::post('/domains', [ShortDomainController::class, 'store'])->name('domains.store');
+                Route::patch('/domains/{shortDomain}', [ShortDomainController::class, 'update'])->whereNumber('shortDomain')->name('domains.update');
+                Route::delete('/domains/{shortDomain}', [ShortDomainController::class, 'destroy'])->whereNumber('shortDomain')->name('domains.destroy');
+
                 Route::get('/api-keys', [ApiKeyController::class, 'index'])->name('api-keys');
                 Route::post('/api-keys', [ApiKeyController::class, 'store'])->name('api-keys.store');
                 Route::delete('/api-keys/{apiKey}', [ApiKeyController::class, 'revoke'])->whereNumber('apiKey')->name('api-keys.revoke');
@@ -214,4 +221,25 @@ Route::domain(config('shortener.domains.redirect'))
             ->withoutMiddleware(ValidateCsrfToken::class)
             ->middleware('throttle:60,1')
             ->name('check');
+    });
+
+// 管理画面で追加した短縮URL用のドメイン（go.example.com など）: 短縮URLへのアクセス受付だけを行う。
+// どのホストにも当たるため、ほかのドメインのルートより後に登録する（登録していないホストは ResolveShortDomain が 404 にする）
+// サイトの画面に使うドメイン（メイン・ダッシュボード・API・リダイレクト確認）には当てない（405 などの応答を変えないため）
+$ownHosts = implode('|', array_map(
+    static fn (mixed $host): string => preg_quote(strtolower((string) $host), '#'),
+    array_values((array) config('shortener.domains')),
+));
+Route::domain('{'.ResolveShortDomain::PARAMETER.'}')
+    ->where([ResolveShortDomain::PARAMETER => '(?!(?:'.$ownHosts.')$)[A-Za-z0-9.\-]+'])
+    ->name('short.')
+    ->middleware(ResolveShortDomain::class)
+    ->group(static function (): void {
+        Route::get('/{code}', [ShortLinkController::class, 'show'])
+            ->where('code', ShortLinkController::CODE_PATTERN)
+            ->name('show');
+        Route::post('/{code}/unlock', [ShortLinkController::class, 'unlock'])
+            ->where('code', ShortLinkController::CODE_PATTERN)
+            ->middleware('throttle:30,1')
+            ->name('unlock');
     });

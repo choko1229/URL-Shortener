@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\LinkSource;
 use App\Enums\LinkStatus;
 use App\Enums\PreviewMode;
 use App\Enums\SlugType;
@@ -21,9 +22,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property int $id
  * @property int|null $user_id
+ * @property string $domain 空文字 = メインドメイン。それ以外は追加ドメインのホスト名
  * @property string $slug
  * @property string $slug_normalized
  * @property SlugType $slug_type
+ * @property LinkSource $source
  * @property string $original_url
  * @property string|null $password_hash
  * @property PreviewMode $preview_mode
@@ -45,14 +48,22 @@ class ShortUrl extends Model
 
     /** @var list<string> */
     protected $fillable = [
+        'domain',
         'slug',
         'slug_type',
+        'source',
         'original_url',
         'expires_at',
         'preview_mode',
         'preview_title',
         'preview_description',
         'preview_image_url',
+    ];
+
+    /** 新しく作った（まだ DB から読み直していない）モデルでも列の既定値を持たせる */
+    protected $attributes = [
+        'domain' => '',
+        'source' => 'page',
     ];
 
     /** @var list<string> */
@@ -68,6 +79,7 @@ class ShortUrl extends Model
         return [
             'user_id' => 'integer',
             'slug_type' => SlugType::class,
+            'source' => LinkSource::class,
             'preview_mode' => PreviewMode::class,
             'expires_at' => 'immutable_datetime',
             'click_count' => 'integer',
@@ -117,6 +129,23 @@ class ShortUrl extends Model
         $query->where(static function (Builder $q) use ($at): void {
             $q->whereNull('expires_at')->orWhere('expires_at', '>', $at);
         });
+    }
+
+    /** @param Builder<self> $query */
+    public function scopeOnDomain(Builder $query, string $domain): void
+    {
+        $query->where('domain', $domain);
+    }
+
+    /** @param Builder<self> $query */
+    public function scopeFromSource(Builder $query, LinkSource $source): void
+    {
+        $query->where('source', $source->value);
+    }
+
+    public function isFromApi(): bool
+    {
+        return $this->source === LinkSource::Api;
     }
 
     public function isPasswordProtected(): bool

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property int $id
+ * @property string $domain 空文字 = メインドメイン
  * @property string $slug
  * @property string $slug_normalized
  * @property SlugType $slug_type
@@ -21,8 +22,13 @@ class RetiredSlug extends Model
 {
     public $timestamps = false;
 
+    protected $attributes = [
+        'domain' => '',
+    ];
+
     /** @var list<string> */
     protected $fillable = [
+        'domain',
         'slug',
         'slug_type',
         'short_url_id',

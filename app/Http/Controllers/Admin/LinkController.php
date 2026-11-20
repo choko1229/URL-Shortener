@@ -31,10 +31,14 @@ final class LinkController extends Controller
     /** @var list<string> */
     private const STATE_FILTERS = ['active', 'deleted', 'all'];
 
+    /** @var list<string> ページで発行／API で発行 */
+    private const SOURCE_FILTERS = ['all', 'page', 'api'];
+
     public function index(Request $request, ShortenerSettings $settings, ShortUrlBuilder $urls): View
     {
         $owner = in_array($request->query('owner'), self::OWNER_FILTERS, true) ? (string) $request->query('owner') : 'all';
         $state = in_array($request->query('state'), self::STATE_FILTERS, true) ? (string) $request->query('state') : 'active';
+        $source = in_array($request->query('source'), self::SOURCE_FILTERS, true) ? (string) $request->query('source') : 'all';
         $keyword = trim((string) $request->query('q', ''));
         $keyword = mb_substr($keyword, 0, 100);
 
@@ -53,6 +57,10 @@ final class LinkController extends Controller
             default => null,
         };
 
+        if ($source !== 'all') {
+            $query->where('source', $source);
+        }
+
         if ($keyword !== '') {
             $like = '%'.addcslashes($keyword, '%_\\').'%';
             $query->where(static function (Builder $q) use ($like): void {
@@ -68,7 +76,7 @@ final class LinkController extends Controller
             'viewer' => ViewerData::fromUser($request->user()),
             'links' => $query->paginate(self::PER_PAGE)->withQueryString()
                 ->through(static fn (ShortUrl $link): LinkRowData => LinkRowData::fromModel($link, $urls, $now, $warningDays, $timezone, withOwner: true)),
-            'filters' => ['owner' => $owner, 'state' => $state, 'q' => $keyword],
+            'filters' => ['owner' => $owner, 'state' => $state, 'q' => $keyword, 'source' => $source],
             'sort' => $sort,
         ]);
     }

@@ -67,6 +67,19 @@
             <x-field-error name="original_url" :id="$ids['url'].'-error'" />
         </div>
 
+        @if ($form->hasDomainChoice())
+            {{-- 管理画面で追加した短縮URL用のドメイン（「ページと API」にしたもの）から選ぶ --}}
+            <div class="sm:w-[200px]">
+                <label for="{{ $ids['url'] }}-domain" class="sr-only">短縮URLのドメイン</label>
+                <select id="{{ $ids['url'] }}-domain" name="domain" class="form-control" @error('domain') aria-invalid="true" aria-describedby="{{ $ids['url'] }}-domain-error" @enderror>
+                    @foreach ($form->domainOptions as $value => $label)
+                        <option value="{{ $value }}" @selected(old('domain', '') === $value)>{{ $label }}/</option>
+                    @endforeach
+                </select>
+                <x-field-error name="domain" :id="$ids['url'].'-domain-error'" />
+            </div>
+        @endif
+
         @if ($form->isMember)
             <div class="sm:w-[220px]">
                 <label for="{{ $ids['slug'] }}" class="sr-only">カスタムスラッグ（任意）</label>
@@ -87,7 +100,7 @@
                     @error('custom_slug') aria-invalid="true" @enderror
                 >
                 <p id="{{ $ids['slugHint'] }}" class="sr-only">
-                    {{ $form->shortHost }}/ の後ろに続く文字列です。半角英数字・ハイフン・アンダースコアで{{ $form->customSlugMinLength }}〜{{ $form->customSlugMaxLength }}文字。大文字と小文字は区別されます。
+                    {{ $form->hasDomainChoice() ? '選んだドメイン' : $form->shortHost }}/ の後ろに続く文字列です。半角英数字・ハイフン・アンダースコアで{{ $form->customSlugMinLength }}〜{{ $form->customSlugMaxLength }}文字。大文字と小文字は区別されます。
                 </p>
                 <x-field-error name="custom_slug" :id="$ids['slug'].'-error'" />
             </div>

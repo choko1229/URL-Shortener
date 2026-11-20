@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\ViewModels;
 
 use App\Enums\ExpiryOption;
+use App\Support\ShortDomains;
 use App\Support\ShortenerSettings;
 use App\Support\ShortUrlBuilder;
 use Carbon\CarbonImmutable;
@@ -17,6 +18,7 @@ final readonly class ShortUrlFormData
 
     /**
      * @param  list<ExpiryOption>  $expiryOptions
+     * @param  array<string, string>  $domainOptions  選べるドメイン（値 => 表示名。値の空文字はメインドメイン）
      */
     public function __construct(
         public bool $isMember,
@@ -32,6 +34,7 @@ final readonly class ShortUrlFormData
         public ?string $recaptchaSiteKey = null,
         // 有効期限の「いつまで」を表示するときのタイムゾーン
         public string $timezone = 'Asia/Tokyo',
+        public array $domainOptions = [],
     ) {}
 
     public static function build(
@@ -58,7 +61,15 @@ final readonly class ShortUrlFormData
             shortHost: $urls->host(),
             recaptchaSiteKey: $isMember ? null : $recaptchaSiteKey,
             timezone: $settings->displayTimezone(),
+            // 管理画面で「ページと API」にした追加ドメインも選べる（「API のみ」のドメインは出さない）
+            domainOptions: app(ShortDomains::class)->forPage(),
         );
+    }
+
+    /** 追加ドメインがあり、発行先のドメインを選べるか */
+    public function hasDomainChoice(): bool
+    {
+        return count($this->domainOptions) > 1;
     }
 
     /** 「無期限」を選んだときにログインを促す必要があるか（requirements.md 2-3） */

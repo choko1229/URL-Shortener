@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Dashboard;
 
+use App\Enums\LinkSource;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Dashboard\DashboardPageBuilder;
@@ -27,7 +28,14 @@ final class DashboardController extends Controller
         }
 
         return view('dashboard.index', [
-            'page' => $builder->build($user, CarbonImmutable::now(), IssuedLinkData::fromSession($request->session()), LinkSort::fromRequest($request)),
+            'page' => $builder->build(
+                $user,
+                CarbonImmutable::now(),
+                IssuedLinkData::fromSession($request->session()),
+                LinkSort::fromRequest($request),
+                // 発行履歴のタブ（?source=api で API で発行したもの）
+                LinkSource::tryFrom((string) $request->query('source', '')) ?? LinkSource::Page,
+            ),
         ]);
     }
 }

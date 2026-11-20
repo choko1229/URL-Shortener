@@ -7,8 +7,10 @@ namespace App\Http\Requests\Api;
 use App\Models\User;
 use App\Services\ShortUrl\LinkRules;
 use App\Services\ShortUrl\ShortUrlDraft;
+use App\Support\ShortDomains;
 use App\Support\ShortenerSettings;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 
 /** API での短縮URL発行（requirements.md 5） */
@@ -24,7 +26,14 @@ final class StoreLinkRequest extends FormRequest
     {
         $user = $this->user();
 
-        return LinkRules::basic($this->container->make(ShortenerSettings::class), $user instanceof User ? $user : null);
+        return LinkRules::basic($this->container->make(ShortenerSettings::class), $user instanceof User ? $user : null) + [
+            // 短縮URLのドメイン（省略時はメインドメイン）。管理画面で追加したドメインは「API のみ」も使える
+            'domain' => ['nullable', 'string', 'max:255', function (string $attribute, mixed $value, Closure $fail): void {
+                if ($this->domains()->resolveInput(is_string($value) ? $value : null, $this->domains()->forApi()) === null) {
+                    $fail('domain に指定したドメインは登録されていません。管理画面の「ドメイン」で追加してください。');
+                }
+            }],
+        ];
     }
 
     /** @return array<string, string> */
@@ -50,6 +59,12 @@ final class StoreLinkRequest extends FormRequest
                 ? CarbonImmutable::parse($expiresAt, $this->container->make(ShortenerSettings::class)->displayTimezone())
                 : null,
             password: is_string($password) && $password !== '' ? $password : null,
+            domain: (string) $this->domains()->resolveInput(is_string($this->validated('domain')) ? $this->validated('domain') : null, $this->domains()->forApi()),
         );
+    }
+
+    private function domains(): ShortDomains
+    {
+        return $this->container->make(ShortDomains::class);
     }
 }

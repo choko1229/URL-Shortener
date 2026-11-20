@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ShortUrl;
 
+use App\Enums\LinkSource;
 use App\Enums\PreviewMode;
 use App\Enums\SlugType;
 use App\Models\ShortUrl;
@@ -32,10 +33,11 @@ final class ShortUrlIssuer
 
     /**
      * @param  bool  $enforceLimits  false なら月間上限・レート制限を適用しない（管理者専用 API: requirements.md 5）
+     * @param  LinkSource  $source  API で発行したものはページの月間発行数とは別に数える
      *
      * @throws IssuanceException
      */
-    public function issue(ShortUrlDraft $draft, ?User $user, string $clientIp, bool $enforceLimits = true): IssuedShortUrl
+    public function issue(ShortUrlDraft $draft, ?User $user, string $clientIp, bool $enforceLimits = true, LinkSource $source = LinkSource::Page): IssuedShortUrl
     {
         $now = CarbonImmutable::now();
         $clientIpHash = self::hashClientIp($clientIp);
@@ -47,6 +49,8 @@ final class ShortUrlIssuer
         $deletionToken = $user === null ? Str::random(self::DELETION_TOKEN_LENGTH) : null;
 
         $link = new ShortUrl;
+        $link->domain = $draft->domain;
+        $link->source = $source;
         $link->original_url = $draft->originalUrl;
         $link->expires_at = $draft->expiresAt($now, $this->settings->displayTimezone());
         $link->password_hash = $draft->password !== null ? Hash::make($draft->password) : null;
@@ -72,6 +76,8 @@ final class ShortUrlIssuer
             'short_url_id' => $link->id,
             'user_id' => $user?->id,
             'slug_type' => $link->slug_type->value,
+            'domain' => $link->domain,
+            'source' => $source->value,
         ]);
 
         return new IssuedShortUrl($link, $deletionToken);
@@ -84,9 +90,9 @@ final class ShortUrlIssuer
     }
 
     /** @throws IssuanceException */
-    public function ensureCustomSlugAvailable(string $slug, ?User $user): void
+    public function ensureCustomSlugAvailable(string $slug, ?User $user, string $domain = ''): void
     {
-        if ($this->availability->conflictsWithRoute($slug)) {
+        if ($this->availability->conflictsWithRoute($slug, $domain)) {
             throw new IssuanceException('このカスタムスラッグはサイト内のページと同じ URL になるため使えません。', 'custom_slug');
         }
 
@@ -94,7 +100,7 @@ final class ShortUrlIssuer
             throw new IssuanceException('このカスタムスラッグは予約されているため使えません。', 'custom_slug');
         }
 
-        if ($this->availability->isTakenForCustom($slug)) {
+        if ($this->availability->isTakenForCustom($slug, $domain)) {
             throw new IssuanceException('このカスタムスラッグはすでに使われています。', 'custom_slug');
         }
     }
@@ -102,7 +108,7 @@ final class ShortUrlIssuer
     /** @throws IssuanceException */
     private function saveWithCustomSlug(ShortUrl $link, string $slug, ?User $user): void
     {
-        $this->ensureCustomSlugAvailable($slug, $user);
+        $this->ensureCustomSlugAvailable($slug, $user, $link->domain);
 
         $link->slug = $slug;
         $link->slug_type = SlugType::Custom;
@@ -122,7 +128,7 @@ final class ShortUrlIssuer
         for ($attempt = 1; $attempt <= self::MAX_RANDOM_CODE_ATTEMPTS; $attempt++) {
             $code = $this->slugGenerator->generate($length);
 
-            if ($this->availability->isReserved($code) || $this->availability->isTakenForRandom($code)) {
+            if ($this->availability->isReserved($code) || $this->availability->isTakenForRandom($code, $link->domain)) {
                 continue;
             }
 

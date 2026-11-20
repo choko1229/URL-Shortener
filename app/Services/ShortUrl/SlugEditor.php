@@ -28,7 +28,7 @@ final class SlugEditor
             return;
         }
 
-        $this->issuer->ensureCustomSlugAvailable($newSlug, $editor);
+        $this->issuer->ensureCustomSlugAvailable($newSlug, $editor, $link->domain);
 
         $oldSlug = $link->slug;
         $oldType = $link->slug_type;
@@ -36,6 +36,7 @@ final class SlugEditor
         try {
             DB::transaction(static function () use ($link, $newSlug, $oldSlug, $oldType): void {
                 RetiredSlug::query()->create([
+                    'domain' => $link->domain,
                     'slug' => $oldSlug,
                     'slug_type' => $oldType,
                     'short_url_id' => $link->id,

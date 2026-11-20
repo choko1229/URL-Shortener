@@ -29,20 +29,34 @@ final readonly class IssuedLinkData
         public ?string $deletionToken,
         // QRコード（endroid/qr-code で生成した SVG の data URI）。生成できなければ null
         public ?string $qrCodeDataUri,
+        // 短縮URLのドメイン（空文字 = メインドメイン）
+        public string $domain = '',
     ) {}
 
     public static function fromModel(ShortUrl $link, ?string $deletionToken, ShortUrlBuilder $urls, ?string $qrCodeDataUri): self
     {
         return new self(
-            shortUrl: $urls->url($link->slug),
-            displayUrl: $urls->display($link->slug),
+            shortUrl: $urls->urlFor($link),
+            displayUrl: $urls->displayFor($link),
             code: $link->slug,
             originalUrl: $link->original_url,
             expiresAt: $link->expires_at,
             isPasswordProtected: $link->isPasswordProtected(),
             deletionToken: $deletionToken,
             qrCodeDataUri: $qrCodeDataUri,
+            domain: (string) $link->domain,
         );
+    }
+
+    /** QR コードのダウンロード URL（追加ドメインの短縮URLは domain を付ける） */
+    public function qrUrl(string $format): string
+    {
+        $parameters = ['code' => $this->code, 'format' => $format];
+        if ($this->domain !== '') {
+            $parameters['domain'] = $this->domain;
+        }
+
+        return route('main.short-link.qr', $parameters);
     }
 
     /** flash された発行結果を取り出す。形式が不正なら破棄してログに残す */

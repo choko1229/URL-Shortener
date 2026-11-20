@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ShortUrl;
 
+use App\Enums\LinkSource;
 use App\Models\ShortUrl;
 use App\Models\User;
 use App\Support\ShortenerSettings;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * 発行の利用制限（requirements.md 4-3）。
- * - 月間上限: 表示タイムゾーンの暦月で数え、論理削除分も含める（削除→再発行による回避を防ぐ）
+ * - 月間上限: 表示タイムゾーンの暦月で数え、論理削除分も含める（削除→再発行による回避を防ぐ）。API で発行した分は数えない
  * - レート制限: 発行に成功した回数だけを数える（入力ミスで締め出さないため）
  */
 final class IssuanceLimiter
@@ -48,7 +49,7 @@ final class IssuanceLimiter
     public function issuedThisMonth(?User $user, string $clientIpHash, CarbonImmutable $now): int
     {
         $localNow = $now->setTimezone($this->settings->displayTimezone());
-        $query = ShortUrl::withTrashed()->whereBetween('created_at', [
+        $query = ShortUrl::withTrashed()->where('source', LinkSource::Page->value)->whereBetween('created_at', [
             $localNow->startOfMonth()->utc(),
             $localNow->endOfMonth()->utc(),
         ]);

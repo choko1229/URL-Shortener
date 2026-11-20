@@ -13,7 +13,7 @@
             <p>パスワードを続けて間違えたため、入力を一時的に停止しています。約 {{ $lockedMinutes }} 分後にもう一度お試しください。</p>
         </div>
     @else
-        <form method="POST" action="{{ route('main.short-link.unlock', ['code' => $code]) }}" class="mt-5 space-y-4">
+        <form method="POST" action="{{ $unlockUrl }}" class="mt-5 space-y-4">
             @csrf
             <div>
                 <label for="link-password" class="block text-[13px] font-medium text-text-secondary">パスワード</label>

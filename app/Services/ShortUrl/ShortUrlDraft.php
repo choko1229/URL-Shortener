@@ -27,10 +27,12 @@ final readonly class ShortUrlDraft
         public ?string $previewTitle = null,
         public ?string $previewDescription = null,
         public ?string $previewImageUrl = null,
+        // 短縮URLのドメイン（空文字 = メインドメイン。追加ドメインはホスト名。選べるかは呼び出し側で確認済み）
+        public string $domain = '',
     ) {}
 
     /** API 用: 有効期限を日時で直接指定する（null なら無期限） */
-    public static function withExpiresAt(string $originalUrl, ?string $customSlug, ?CarbonImmutable $expiresAt, ?string $password): self
+    public static function withExpiresAt(string $originalUrl, ?string $customSlug, ?CarbonImmutable $expiresAt, ?string $password, string $domain = ''): self
     {
         return new self(
             originalUrl: $originalUrl,
@@ -39,6 +41,7 @@ final readonly class ShortUrlDraft
             expiresAtLocal: null,
             password: $password,
             explicitExpiresAt: $expiresAt,
+            domain: $domain,
         );
     }
 

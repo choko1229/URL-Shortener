@@ -34,13 +34,26 @@
         @if ($page->stats)
             <section aria-labelledby="stats-heading">
                 <h2 id="stats-heading" class="sr-only">利用状況</h2>
-                <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
+                <dl @class([
+                    'grid grid-cols-1 gap-4 sm:gap-5',
+                    'sm:grid-cols-3' => ! $page->stats->showApi,
+                    'sm:grid-cols-2 lg:grid-cols-4' => $page->stats->showApi,
+                ])>
                     <div class="rounded-card border border-border bg-surface px-6 py-[22px]">
-                        <dt class="text-[13px] text-text-secondary">今月の発行数</dt>
+                        <dt class="text-[13px] text-text-secondary">{{ $page->stats->showApi ? '今月の発行数（ページ）' : '今月の発行数' }}</dt>
                         <dd class="mt-2.5 font-rounded text-stat font-extrabold">
                             {{ number_format($page->stats->monthlyIssued) }}<span class="text-base font-medium text-text-secondary"> / {{ number_format($page->stats->monthlyLimit) }}</span>
                         </dd>
                     </div>
+                    @if ($page->stats->showApi)
+                        {{-- API で発行したものは月間上限とは別に数える --}}
+                        <div class="rounded-card border border-border bg-surface px-6 py-[22px]">
+                            <dt class="text-[13px] text-text-secondary">今月の発行数（API）</dt>
+                            <dd class="mt-2.5 font-rounded text-stat font-extrabold">
+                                {{ number_format($page->stats->apiMonthlyIssued) }}<span class="text-base font-medium text-text-secondary"> 件（上限なし）</span>
+                            </dd>
+                        </div>
+                    @endif
                     <div class="rounded-card border border-border bg-surface px-6 py-[22px]">
                         <dt class="text-[13px] text-text-secondary">総クリック数</dt>
                         <dd class="mt-2.5 font-rounded text-stat font-extrabold">{{ number_format($page->stats->totalClicks) }}</dd>
@@ -87,13 +100,47 @@
                     </div>
                 @endif
 
+                @if ($page->hasSourceTabs())
+                    {{-- ページで発行したものと API で発行したものを分けて表示する --}}
+                    <nav aria-label="発行元" class="border-b border-table-divider px-5 py-3 sm:px-6">
+                        <ul class="flex flex-wrap gap-1">
+                            @foreach ([
+                                [\App\Enums\LinkSource::Page, $page->pageLinkCount],
+                                [\App\Enums\LinkSource::Api, $page->apiLinkCount],
+                            ] as [$tabSource, $tabCount])
+                                @php $isCurrent = $page->source === $tabSource; @endphp
+                                <li>
+                                    <a
+                                        href="{{ route('dashboard.home', array_filter(['source' => $tabSource === \App\Enums\LinkSource::Api ? 'api' : null, 'sort' => request('sort'), 'dir' => request('dir')])) }}#history-heading"
+                                        @if ($isCurrent) aria-current="page" @endif
+                                        @class([
+                                            'flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-control px-3 text-[13px] font-medium transition-colors',
+                                            'bg-primary-tint text-primary-dark' => $isCurrent,
+                                            'text-text-secondary hover:bg-primary-tint-soft hover:text-primary-dark' => ! $isCurrent,
+                                        ])
+                                    >
+                                        <x-icon :name="$tabSource === \App\Enums\LinkSource::Api ? 'plug' : 'link'" :size="16" />
+                                        {{ $tabSource->label() }}
+                                        <span class="text-xs text-text-secondary">{{ number_format((int) $tabCount) }}</span>
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </nav>
+                @endif
+
                 @if ($page->links->isEmpty())
                     <div class="flex flex-col items-center gap-3 px-6 py-14 text-center">
                         <div class="flex size-11 items-center justify-center rounded-control bg-primary-tint text-primary-dark">
-                            <x-icon name="link" :size="22" />
+                            <x-icon :name="$page->source === \App\Enums\LinkSource::Api ? 'plug' : 'link'" :size="22" />
                         </div>
-                        <p class="font-rounded font-bold">まだ短縮URLがありません</p>
-                        <p class="text-sm text-text-secondary">上のフォームから最初の短縮URLを発行してみましょう。</p>
+                        @if ($page->source === \App\Enums\LinkSource::Api)
+                            <p class="font-rounded font-bold">API で発行した短縮URLはまだありません</p>
+                            <p class="text-sm text-text-secondary">API で発行すると、ここに表示されます（ページで発行した件数とは別に数えます）。</p>
+                        @else
+                            <p class="font-rounded font-bold">まだ短縮URLがありません</p>
+                            <p class="text-sm text-text-secondary">上のフォームから最初の短縮URLを発行してみましょう。</p>
+                        @endif
                     </div>
                 @else
                     @include('partials.link-table', [

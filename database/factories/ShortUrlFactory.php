@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\LinkSource;
 use App\Enums\SlugType;
 use App\Models\ShortUrl;
 use App\Models\User;
@@ -20,8 +21,10 @@ class ShortUrlFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
+            'domain' => '',
             'slug' => Str::random(7),
             'slug_type' => SlugType::Random,
+            'source' => LinkSource::Page,
             'original_url' => fake()->url(),
             'expires_at' => null,
             'click_count' => fake()->numberBetween(0, 500),
@@ -41,6 +44,16 @@ class ShortUrlFactory extends Factory
     public function custom(string $slug): static
     {
         return $this->state(fn (): array => ['slug' => $slug, 'slug_type' => SlugType::Custom]);
+    }
+
+    public function onDomain(string $host): static
+    {
+        return $this->state(fn (): array => ['domain' => $host]);
+    }
+
+    public function viaApi(): static
+    {
+        return $this->state(fn (): array => ['source' => LinkSource::Api]);
     }
 
     public function expiresIn(int $days): static

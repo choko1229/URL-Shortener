@@ -29,6 +29,10 @@ final readonly class LinkRowData
         public string $createdLabel = '',
         // 「残りN日」「期限切れ」の下に添える期限の日時（それ以外は null）
         public ?string $expiryDetail = null,
+        // 短縮URLのドメイン（空文字 = メインドメイン）
+        public string $domain = '',
+        // API で発行したもの
+        public bool $isFromApi = false,
     ) {}
 
     public static function fromModel(
@@ -44,8 +48,8 @@ final readonly class LinkRowData
         return new self(
             id: $link->id,
             slug: $link->slug,
-            shortUrl: $urls->url($link->slug),
-            displayUrl: $urls->display($link->slug),
+            shortUrl: $urls->urlFor($link),
+            displayUrl: $urls->displayFor($link),
             originalUrl: $link->original_url,
             clickCount: $link->click_count,
             status: $status,
@@ -55,7 +59,20 @@ final readonly class LinkRowData
             ownerLabel: $withOwner ? self::ownerLabel($link) : null,
             createdLabel: $link->created_at?->setTimezone($timezone)->format('Y/m/d') ?? '',
             expiryDetail: self::expiryDetail($link->expires_at, $status, $timezone),
+            domain: (string) $link->domain,
+            isFromApi: $link->isFromApi(),
         );
+    }
+
+    /** QR コードのダウンロード URL（追加ドメインの短縮URLは domain を付ける） */
+    public function qrUrl(string $format): string
+    {
+        $parameters = ['code' => $this->slug, 'format' => $format];
+        if ($this->domain !== '') {
+            $parameters['domain'] = $this->domain;
+        }
+
+        return route('main.short-link.qr', $parameters);
     }
 
     public function isUsable(): bool

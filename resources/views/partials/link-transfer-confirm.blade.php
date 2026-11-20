@@ -45,7 +45,7 @@
                 <li class="rounded-control border border-border bg-surface p-4">
                     <fieldset>
                         <legend class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                            <span class="font-mono text-sm font-bold">{{ $shortUrls->display($conflict['slug']) }}</span>
+                            <span class="font-mono text-sm font-bold">{{ $shortUrls->display($conflict['slug'], $conflict['domain'] ?? '') }}</span>
                             <span class="text-xs text-text-secondary">{{ $conflict['line'] }}行目</span>
                         </legend>
                         <p class="mt-1 text-[13px] text-text-secondary">{{ $conflict['reason'] }}</p>

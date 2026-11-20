@@ -69,12 +69,12 @@
         @if ($link->qrCodeDataUri !== null)
             <p class="mt-5 text-[13px] font-medium text-text-secondary">ダウンロード</p>
             <div class="mt-2 flex flex-wrap justify-center gap-2.5">
-                <x-button variant="secondary" size="sm" :href="route('main.short-link.qr', ['code' => $link->code, 'format' => 'svg'])" download>
+                <x-button variant="secondary" size="sm" :href="$link->qrUrl('svg')" download>
                     <x-icon name="qr-code" :size="16" />
                     SVG
                 </x-button>
                 @if (\App\Services\ShortUrl\QrCodeGenerator::supportsPng())
-                    <x-button variant="secondary" size="sm" :href="route('main.short-link.qr', ['code' => $link->code, 'format' => 'png'])" download>
+                    <x-button variant="secondary" size="sm" :href="$link->qrUrl('png')" download>
                         <x-icon name="qr-code" :size="16" />
                         PNG
                     </x-button>

@@ -2,7 +2,7 @@
     全URLの管理（管理者）
     @var \App\ViewModels\ViewerData $viewer
     @var \Illuminate\Contracts\Pagination\LengthAwarePaginator $links
-    @var array{owner: string, state: string, q: string} $filters
+    @var array{owner: string, state: string, q: string, source: string} $filters
 --}}
 <x-dashboard.admin-page :viewer="$viewer" title="全URL" description="すべての短縮URLを確認・削除できます。ログインせずに発行されたURLの統計も確認できます。">
     @php $importResult = session(\App\Http\Controllers\Admin\LinkImportController::RESULT_SESSION_KEY); @endphp
@@ -57,6 +57,14 @@
                 <option value="all" @selected($filters['owner'] === 'all')>すべて</option>
                 <option value="member" @selected($filters['owner'] === 'member')>ログインユーザー</option>
                 <option value="guest" @selected($filters['owner'] === 'guest')>未ログイン</option>
+            </select>
+        </div>
+        <div>
+            <label for="filter-source" class="block text-[13px] font-medium text-text-secondary">発行元</label>
+            <select id="filter-source" name="source" class="form-control mt-2">
+                <option value="all" @selected($filters['source'] === 'all')>すべて</option>
+                <option value="page" @selected($filters['source'] === 'page')>ページで発行</option>
+                <option value="api" @selected($filters['source'] === 'api')>API で発行</option>
             </select>
         </div>
         <div>

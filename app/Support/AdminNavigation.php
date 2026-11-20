@@ -29,6 +29,7 @@ final class AdminNavigation
             new NavItemData('お問い合わせ', IconName::Mail, route('dashboard.admin.inquiries'), $request->routeIs('dashboard.admin.inquiries*')),
             new NavItemData('サイト設定', IconName::Sliders, route('dashboard.admin.site'), $request->routeIs('dashboard.admin.site*')),
             new NavItemData('外部サービス', IconName::Plug, route('dashboard.admin.services'), $request->routeIs('dashboard.admin.services*')),
+            new NavItemData('ドメイン', IconName::ExternalLink, route('dashboard.admin.domains'), $request->routeIs('dashboard.admin.domains*')),
             new NavItemData('予約語', IconName::Ban, route('dashboard.admin.reserved-words'), $request->routeIs('dashboard.admin.reserved-words*')),
             new NavItemData('APIキー', IconName::Key, route('dashboard.admin.api-keys'), $request->routeIs('dashboard.admin.api-keys*')),
             new NavItemData('アップデート', IconName::Refresh, route('dashboard.admin.updates'), $request->routeIs('dashboard.admin.updates*')),

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Redirect;
 
 use App\Enums\PreviewMode;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\ResolveShortDomain;
 use App\Models\ShortUrl;
 use App\Services\Redirect\CrawlerDetector;
 use App\Services\Redirect\PasswordAttemptGuard;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response as HttpStatus;
 
 /**
- * 短縮URL（/{code}）へのアクセス受付（requirements.md 3: 手順 1〜4）。
+ * 短縮URL（/{code}）へのアクセス受付（requirements.md 3: 手順 1〜4）。メインドメインと、管理画面で追加したドメインで共用する。
  * 中間ページを返し、JavaScript で redirect サブドメインへ自動 POST させる。
  */
 final class ShortLinkController extends Controller
@@ -43,7 +44,7 @@ final class ShortLinkController extends Controller
     public function show(Request $request, string $code): HttpStatus
     {
         $now = CarbonImmutable::now();
-        $link = $this->resolveActive($code);
+        $link = $this->resolveActive($request, $code);
 
         if ($link->isExpiredAt($now)) {
             return $this->expired($link);
@@ -64,7 +65,7 @@ final class ShortLinkController extends Controller
     public function unlock(Request $request, string $code): Response
     {
         $now = CarbonImmutable::now();
-        $link = $this->resolveActive($code);
+        $link = $this->resolveActive($request, $code);
 
         if ($link->isExpiredAt($now)) {
             return $this->expired($link);
@@ -109,14 +110,14 @@ final class ShortLinkController extends Controller
         }
 
         return $this->noStore(response()->view('redirect.preview', [
-            'preview' => SharePreviewData::forLink($link, $this->site, $this->urls->url($link->slug)),
+            'preview' => SharePreviewData::forLink($link, $this->site, $this->urls->urlFor($link)),
         ]));
     }
 
-    /** 存在しない・削除済みのコードは 404（削除済みは欠番のまま再利用しない） */
-    private function resolveActive(string $code): ShortUrl
+    /** 存在しない・削除済みのコードは 404（削除済みは欠番のまま再利用しない）。短縮コードは開いたドメインの中で探す */
+    private function resolveActive(Request $request, string $code): ShortUrl
     {
-        $link = $this->resolver->find($code);
+        $link = $this->resolver->find($code, ResolveShortDomain::domainOf($request));
 
         abort_if($link === null || $link->trashed(), HttpStatus::HTTP_NOT_FOUND);
 
@@ -140,8 +141,14 @@ final class ShortLinkController extends Controller
             default => HttpStatus::HTTP_OK,
         };
 
+        $domain = ResolveShortDomain::domainOf($request);
+
         return $this->noStore(response()->view('redirect.password', [
             'code' => $code,
+            // 追加ドメインで開いた短縮URLは、同じドメインに送る
+            'unlockUrl' => $domain === ''
+                ? route('main.short-link.unlock', ['code' => $code])
+                : route('short.unlock', [ResolveShortDomain::PARAMETER => $domain, 'code' => $code]),
             'error' => $error,
             'lockedMinutes' => $lockedSeconds > 0 ? (int) ceil($lockedSeconds / 60) : null,
         ], $status));

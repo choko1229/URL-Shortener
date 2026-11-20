@@ -8,6 +8,7 @@ use App\Enums\ExpiryOption;
 use App\Enums\PreviewMode;
 use App\Rules\NotOwnDomain;
 use App\Services\ShortUrl\ShortUrlDraft;
+use App\Support\ShortDomains;
 use App\Support\ShortenerSettings;
 use App\ViewModels\ShortUrlFormData;
 use Carbon\CarbonImmutable;
@@ -62,6 +63,12 @@ final class StoreShortUrlRequest extends FormRequest
             'preview_title' => ['exclude_unless:preview_mode,'.PreviewMode::Custom->value, 'required', 'string', 'max:120'],
             'preview_description' => ['exclude_unless:preview_mode,'.PreviewMode::Custom->value, 'nullable', 'string', 'max:300'],
             'preview_image_url' => ['exclude_unless:preview_mode,'.PreviewMode::Custom->value, 'nullable', 'string', 'max:2048', 'url:http,https'],
+            // 短縮URLのドメイン（空欄 = メインドメイン）。「API のみ」の追加ドメインは選べない
+            'domain' => ['nullable', 'string', 'max:255', function (string $attribute, mixed $value, Closure $fail): void {
+                if ($this->domains()->resolveInput(is_string($value) ? $value : null, $this->domains()->forPage()) === null) {
+                    $fail('このドメインでは発行できません。一覧から選び直してください。');
+                }
+            }],
             // reCAPTCHA v3 のトークン（検証はコントローラで行う）
             'recaptcha_token' => ['nullable', 'string', 'max:4096'],
         ];
@@ -83,7 +90,13 @@ final class StoreShortUrlRequest extends FormRequest
             previewTitle: $this->previewValue('preview_title'),
             previewDescription: $this->previewValue('preview_description'),
             previewImageUrl: $this->previewValue('preview_image_url'),
+            domain: (string) $this->domains()->resolveInput($this->previewValue('domain'), $this->domains()->forPage()),
         );
+    }
+
+    private function domains(): ShortDomains
+    {
+        return $this->container->make(ShortDomains::class);
     }
 
     private function previewValue(string $key): ?string
