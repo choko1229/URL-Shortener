@@ -62,6 +62,12 @@ final class ShortLinkController extends Controller
         return $this->intermediate($request, $link, passwordVerified: false, now: $now);
     }
 
+    /** 追加ドメインのトップ（/）は短縮URLではないため、メインドメインのトップページへ移す */
+    public function domainHome(): HttpStatus
+    {
+        return redirect()->away(route('main.home'));
+    }
+
     public function unlock(Request $request, string $code): Response
     {
         $now = CarbonImmutable::now();

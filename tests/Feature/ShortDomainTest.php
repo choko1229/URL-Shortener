@@ -11,6 +11,7 @@ use App\Models\ShortDomain;
 use App\Models\ShortUrl;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Middleware\TrustHosts;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -159,6 +160,28 @@ final class ShortDomainTest extends TestCase
         // 登録していないホストは開けない
         ShortUrl::factory()->custom('other')->onDomain('unknown.localhost')->create();
         $this->get('http://unknown.localhost/other')->assertNotFound();
+    }
+
+    public function test_added_domains_are_trusted_hosts(): void
+    {
+        $this->addDomains();
+
+        // テスト中は Host の検査自体が無効になるため、検査に使うホストの一覧を直接確かめる
+        $patterns = app(TrustHosts::class)->hosts();
+        $matches = static fn (string $host): bool => array_filter($patterns, static fn (string $p): bool => preg_match('/'.$p.'/', $host) === 1) !== [];
+
+        $this->assertTrue($matches(self::PAGE_HOST));
+        $this->assertTrue($matches(self::API_HOST));
+        $this->assertTrue($matches('dash.localhost'));
+        $this->assertFalse($matches('evil.example.org'));
+    }
+
+    public function test_top_of_added_domain_redirects_to_main_home(): void
+    {
+        $this->addDomains();
+
+        $this->get('http://'.self::PAGE_HOST.'/')->assertRedirect(route('main.home'));
+        $this->get('http://unknown.localhost/')->assertNotFound();
     }
 
     public function test_password_protected_link_on_extra_domain_unlocks_on_the_same_domain(): void

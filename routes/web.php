@@ -235,6 +235,8 @@ Route::domain('{'.ResolveShortDomain::PARAMETER.'}')
     ->name('short.')
     ->middleware(ResolveShortDomain::class)
     ->group(static function (): void {
+        // ドメインのトップは短縮URLではないため、メインドメインのトップページへ移す
+        Route::get('/', [ShortLinkController::class, 'domainHome'])->name('home');
         Route::get('/{code}', [ShortLinkController::class, 'show'])
             ->where('code', ShortLinkController::CODE_PATTERN)
             ->name('show');

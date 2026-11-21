@@ -8,6 +8,8 @@ use App\Http\Middleware\SetSecurityHeaders;
 use App\Http\Middleware\TriggerPeriodicTasks;
 use App\Http\Middleware\UpdateDatabaseSchema;
 use App\Installer\InstallationState;
+use App\Models\ShortDomain;
+use App\Support\ShortDomains;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -46,17 +48,19 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(static fn (): string => route('auth.login'));
         $middleware->redirectUsersTo(static fn (): string => route('dashboard.home'));
 
-        // Host ヘッダー偽装対策: 設定済みのサブドメインのみ受け付ける（local / テスト時は無効）。
-        // セットアップ前はドメインが未確定のため制限しない
+        // Host ヘッダー偽装対策: 設定済みのサブドメインと、管理画面で追加した短縮URL用のドメインのみ受け付ける
+        // （local / テスト時は無効）。セットアップ前はドメインが未確定のため制限しない
         $middleware->trustHosts(at: static function (): array {
             if (! app(InstallationState::class)->isInstalled()) {
                 return [];
             }
 
-            return array_map(
-                static fn (string $domain): string => '^'.preg_quote($domain, '/').'$',
-                array_values(array_filter(config('shortener.domains'), 'is_string')),
-            );
+            $hosts = [
+                ...array_values(array_filter(config('shortener.domains'), 'is_string')),
+                ...array_map(static fn (ShortDomain $domain): string => $domain->host, app(ShortDomains::class)->extra()),
+            ];
+
+            return array_map(static fn (string $host): string => '^'.preg_quote($host, '/').'$', $hosts);
         }, subdomains: false);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
